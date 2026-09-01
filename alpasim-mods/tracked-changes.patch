@@ -1,0 +1,101 @@
+diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
+index ef88c88..cdb88bc 100644
+--- a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
++++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
+@@ -133,6 +133,21 @@ class VavamPolicyHandle:
+             LOGGER.exception("VAVAM policy load failed")
+             return
+ 
++        # LOCAL PATCH: warm up (cuDNN autotune, tokenizer first run, allocator) before serving. Default 3 calls.
++        n_warm = int(os.environ.get("VAVAM_WARMUP", "3"))
++        if n_warm > 0:
++            try:
++                import numpy as _np, time as _time
++                dummy = _np.full((1080, 1920, 3), 96, dtype=_np.uint8)
++                t0 = _time.time()
++                for _ in range(n_warm):
++                    policy.predict(dummy, command=2)
++                if hasattr(policy, "_n_calls"):
++                    policy._n_calls = 0  # keep the seeded noise sequence independent of warm-up
++                LOGGER.info("VAVAM warm-up: %d inferences in %.1fs", n_warm, _time.time() - t0)
++            except Exception:
++                LOGGER.exception("VAVAM warm-up failed (continuing)")
++
+         with self._lock:
+             self._policy = policy
+         LOGGER.info("VAVAM policy load complete")
+diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
+index 0d57dda..e62ff0a 100644
+--- a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
++++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
+@@ -6,6 +6,7 @@
+ from __future__ import annotations
+ 
+ import logging
++import os
+ import platform
+ from collections import OrderedDict
+ from contextlib import nullcontext
+@@ -71,6 +72,14 @@ class VavamPolicy:
+         for key, value in ckpt["state_dict"].items():
+             state_dict[key.replace("vam.", "")] = value
+         vam.load_state_dict(state_dict, strict=True)
++        # LOCAL PATCH: apply the muP base shapes the checkpoint was trained with (MuReadout divides
++        # by width_mult = 4 for B, 8 for L). Upstream sample leaves them None. Opt-in via env var.
++        mup_dir = os.environ.get("VAVAM_MUP_SHAPES_DIR")
++        if mup_dir:
++            import mup
++            mup.set_base_shapes(vam.gpt, os.path.join(mup_dir, "gpt2_24layers_basewidth256.bsh"), rescale_params=False)
++            mup.set_base_shapes(vam.action_expert, os.path.join(mup_dir, "actionexpert_24layers_baseattentiondim256_baseembeddingdim64.bsh"), rescale_params=False)
++            LOGGER.info("Applied muP base shapes from %s", mup_dir)
+         self._vam = vam.eval().to(resolved_device)
+ 
+         LOGGER.info("Loading VQ tokenizer from %s", tokenizer_path)
+@@ -79,6 +88,13 @@ class VavamPolicy:
+ 
+         self._device = resolved_device
+         self._preproc_pipeline = NeuroNCAPTransform()
++        # LOCAL PATCH (opt-in, inert by default): output gain on the predicted waypoints and deterministic
++        # per-call seeding of the flow-matching sampler (torch.randn start noise). VAVAM_SEED=-1 -> unseeded.
++        self._output_gain = float(os.environ.get("VAVAM_OUTPUT_GAIN", "1.0"))
++        self._seed = int(os.environ.get("VAVAM_SEED", "-1"))
++        self._n_calls = 0
++        if self._output_gain != 1.0 or self._seed >= 0:
++            LOGGER.info("Policy options: output_gain=%.3f seed=%d", self._output_gain, self._seed)
+         self._use_autocast = (
+             resolved_device.type == "cuda" and platform.machine() != "aarch64"
+         )
+@@ -103,6 +119,9 @@ class VavamPolicy:
+             else nullcontext()
+         )
+ 
++        if self._seed >= 0:  # reproducible noise sequence; predict() is serialised by the driver's inference lock
++            torch.manual_seed(self._seed + self._n_calls)
++        self._n_calls += 1
+         with torch.no_grad():
+             with autocast_ctx:
+                 tokens = self._tokenizer(tensor)
+@@ -115,6 +134,8 @@ class VavamPolicy:
+                 trajectory = self._vam(batched_tokens, batched_command, self.dtype)
+ 
+         trajectory_xy = _format_trajectory(trajectory)
++        if self._output_gain != 1.0:
++            trajectory_xy = trajectory_xy * self._output_gain
+         return VavamPrediction(
+             trajectory_xy=trajectory_xy,
+             headings=_compute_headings(trajectory_xy),
+diff --git a/src/controller/pyproject.toml b/src/controller/pyproject.toml
+index fbb5916..6953652 100644
+--- a/src/controller/pyproject.toml
++++ b/src/controller/pyproject.toml
+@@ -10,6 +10,10 @@ requires-python = ">=3.11,<3.13"
+ dependencies = [
+     "numpy",
+     "do_mpc",
++    # casadi 3.8.0 removed the casadi.tools re-exports (SX/MX) that do-mpc 5.1.1
++    # imports at module load -- upstream lock pins the broken pair. Cap until
++    # do-mpc supports casadi 3.8.
++    "casadi<3.8",
+     "pytest",
+     "matplotlib",
+     "osqp",

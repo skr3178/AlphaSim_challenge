@@ -1,0 +1,57 @@
+# ---- nested upstream clones (not our code; pinned by commit in README.md) ----
+alpasim/
+VideoActionModel/
+
+# ---- model checkpoints / weights / HF caches ----
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.jit
+*.onnx
+*.engine
+*.bsh.large
+**/assets/vavam/
+**/assets/vavam-l/
+**/vavam-weights/
+huggingface/
+.cache/
+hf_cache/
+**/.huggingface/
+
+# ---- datasets / simulator outputs ----
+nuplan-track/
+nuplan-track-hf/
+runs/
+*.asl
+*.usdz
+*.ply
+*.tar
+*.tar.gz
+*.zip
+
+# ---- captured sim dumps (images + request logs; code in capture/*.py is kept) ----
+capture/captured/
+
+# ---- local scratch ----
+workdir/
+uv-git-cache/
+*.bak
+__pycache__/
+*.pyc
+.venv/
+.env
+*.log
+vram-*.csv
+vram-*.csv.gpu
+
+# ---- secrets (never) ----
+challenge.json
+*.token
+
+# ---- local-only extras (not our modifications)
+viz/
+navhard-docs/
+STATUS.md.bak
+workdir

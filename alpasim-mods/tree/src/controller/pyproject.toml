@@ -1,0 +1,43 @@
+[build-system]
+requires = [ "setuptools>=61.0" ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "alpasim_controller"
+version = "0.53.0"
+description = "A simple, open source controller + vehicle model"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "numpy",
+    "do_mpc",
+    # casadi 3.8.0 removed the casadi.tools re-exports (SX/MX) that do-mpc 5.1.1
+    # imports at module load -- upstream lock pins the broken pair. Cap until
+    # do-mpc supports casadi 3.8.
+    "casadi<3.8",
+    "pytest",
+    "matplotlib",
+    "osqp",
+    "scipy",
+    "pyyaml",
+    "alpasim_grpc",
+    "alpasim_utils[geometry]",
+    "alpasim_plugins",
+]
+authors = [
+    {name = "Michael Watson", email = "mwatson@nvidia.com"},
+]
+
+[project.entry-points."alpasim.mpc"]
+linear = "alpasim_controller.mpc_impl.linear_mpc:LinearMPC"
+nonlinear = "alpasim_controller.mpc_impl.nonlinear_mpc:NonlinearMPC"
+
+[tool.setuptools.packages.find]
+include = [ "alpasim_controller", "benchmark", "tests" ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.uv.sources]
+alpasim_grpc = {workspace = true}
+alpasim_utils = {workspace = true}
+alpasim_plugins = {workspace = true}

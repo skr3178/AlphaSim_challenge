@@ -1,0 +1,26 @@
+# @package _global_
+# LOCAL step-2 fast preset (not upstream): dev_fast + two rollouts in flight inside ONE simulator stack
+# (one renderer process; rollouts are on different scenes). Concurrency must be restated here because
+# e2e_challenge_nuplan_common/base.yaml forces 1 and composes after topology. Validate separately: the risk
+# is two live MTGS renderers on a 24 GB card -> watch for OutOfMemory / "Batch rendering failed".
+#
+#   uv run alpasim_wizard +e2e_challenge_nuplan=dev_fast2 nuplan_scenes=navtest_local100 wizard.log_dir=./runs/<name>
+defaults:
+  - dev_fast
+  - _self_
+
+wizard:
+  run_name: "e2e_challenge_nuplan_dev_fast2"
+
+defines:
+  nre_cache_size: 3          # 2 in-use renderers + 1
+
+runtime:
+  nr_workers: 2
+  endpoints:
+    renderer:
+      n_concurrent_rollouts: 2
+    driver:
+      n_concurrent_rollouts: 2
+    controller:
+      n_concurrent_rollouts: 2

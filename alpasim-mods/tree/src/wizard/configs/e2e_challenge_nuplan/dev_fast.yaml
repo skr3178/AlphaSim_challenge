@@ -1,0 +1,30 @@
+# @package _global_
+# LOCAL fast-iteration preset (not upstream): the nuPlan dev preset with
+#   - only CAM_F0 requested from the renderer (VaVAM reads CAM_F0 only; the MTGS renderer still
+#     rasterises all 8 views internally, but we skip 7x JPEG encode / gRPC / ASL / eval pickling)
+#   - eval video rendering off (~3.5-4 s per scene of matplotlib on the critical path)
+# Concurrency is deliberately left at the nuPlan default (1) -- see dev_fast2 if/when added.
+#
+#   uv run alpasim_wizard +e2e_challenge_nuplan=dev_fast nuplan_scenes=navtest_local100 wizard.log_dir=./runs/<name>
+defaults:
+  - dev
+  - _self_
+
+wizard:
+  run_name: "e2e_challenge_nuplan_dev_fast"
+  description: "NuPlan local fast-iteration preset (CAM_F0 only, no video)"
+
+scenes:
+  limit_to_first_n: 0
+
+runtime:
+  simulation_config:
+    cameras:
+      - logical_id: CAM_F0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920
+
+eval:
+  video:
+    render_video: false

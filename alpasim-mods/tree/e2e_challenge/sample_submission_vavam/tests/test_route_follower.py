@@ -127,14 +127,16 @@ def test_curvature_cap_slows_before_the_turn():
         p = pose_on_lane(L, s)
         rm.update(route_window(L, p), p)
     pose = pose_on_lane(L, 45.0)
-    r = build_follow_plan(rm, pose, 16.0, 0, FollowConfig(speed_src="curv"))
+    # 13 m/s with ~15 m of runway is reachable at d_max; from 16 m/s it is not, and the profile then
+    # (correctly) enters the turn above the cap rather than jumping the speed.
+    r = build_follow_plan(rm, pose, 13.0, 0, FollowConfig(speed_src="curv"))
     assert r is not None
     xy = r.plan.positions_xy
     v = np.linalg.norm(np.diff(xy, axis=0), axis=1) / 0.1
     in_turn = xy[1:, 0] > 62
     assert in_turn.any()
     assert v[in_turn].max() < 11.6, f"in-turn speed {v[in_turn].max():.1f} exceeds the cap"
-    assert v[0] > 13.0, "does not brake to the cap instantly (dilated curvature starts the cap ~3 m early)"
+    assert v[0] > 12.0, "does not brake to the cap instantly (dilated curvature starts the cap ~3 m early)"
     assert np.all(np.diff(v) > -0.35), "decel bounded (d_max 3 m/s2 -> 0.3 m/s per 0.1 s)"
     assert r.limiting == "curv"
 

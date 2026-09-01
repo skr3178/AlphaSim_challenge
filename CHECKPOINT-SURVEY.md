@@ -81,9 +81,10 @@ target GPU.
 | **CLOVER** | arXiv 2605.15120 | DINOv2 ViT-S generator + scorer (DrivoR lineage), closed-loop self-distillation | **94.5 / 90.4** | — | GitHub Releases `ckpt`: `stage1.ckpt` 306 MB, `stage2.ckpt` 420 MB **[verified]** | Apache-2.0 | Low. Official training code not yet released; inference + ckpt are. |
 | **RAP-DINO** | ICLR 2026 | DINOv3-h16+ (888 M params), rasterisation-augmented | **93.8 PDMS** | v2 ckpt exists | `Lanl11/RAP_ckpts/RAP_DINO_navsimv{1,2}.ckpt` **[verified]** | Apache-2.0 | ViT-H at 0.1 s is marginal on a 4090; ~3.5 GB weights OK. |
 | **Drive-JEPA** | arXiv 2601.22032 | V-JEPA ViT-L video encoder; perception-based and **perception-free single-front-cam** variants | 93.3 (93.7 pf) / 87.8 | — | HF *dataset* `LinhanWang/Drive-JEPA`: `drive_jepa_perception_{based,free}_agent_vitl*.ckpt` 3.7 GB **[verified]** | CC0 (as listed) | ViT-L over a frame stack; latency unmeasured. |
+| **WA-JEPA** | arXiv 2608.20974 (Aug 2026) | V-JEPA 2.1 ViT-L/16 + 12-layer joint flow predictor (12 sampling steps); **4 cams L0/F0/R0/B0 @ 256×512, 4 history frames @ 2 Hz**, ego status `[cmd onehot(4), vx, vy, ax, ay]`; 8 waypoints @ 2 Hz (4 s) | 91.8 PDMS / **91.7 EPDMS** (10-seed σ 0.05) | — (not reported) | `AFARI-Research/WA-JEPA/model_state_dict.pt` 1.58 GB **[verified]** | Apache-2.0 (code + weights) | VRAM fine (~1.6 GB weights). Latency **unmeasured**: ViT-L over 16 frames + 12 flow steps per tick. **Only released model with zero-shot closed-loop evidence under neural rendering**: HUGSIM (3DGS, reactive agents, 436 scenes, no HUGSIM training) HD-Score **0.4462 vs DrivoR 0.3252 / LTF 0.2310**; NC 0.686 vs 0.522, TTC 0.612 vs 0.462, RC 0.569 vs 0.472 — i.e. fewer collisions and more route completion, exactly the ZOIB zero-branch levers. Ships `close_loop/hugsim_planner.py` (history buffer, 2 Hz striding, camera-slot/command/frame mapping) + `datasets/nav_command_infer.py` (command from trajectory geometry) — a near-template for an AlpaSim adapter (route waypoints → command). Note HUGSIM Comf 0.66 vs 0.94 for DrivoR: comfort is unscored here, but discontinuity was our `w_disc` topic. |
 | **DVGT-2** | arXiv 2604.00813 | 1.8 B Vision-Geometry-Action, multi-view streaming, DINOv3 | 89.7 EPDMS | — | `RainyNight/DVGT-2/dvgt2.pt` 6.8 GB **[verified]** | not stated | 1.8 B + dense geometry head; latency likely > 0.1 s. |
 | **GTRS official (NVlabs)** | CVPR'25 challenge winner | V2-99 @ 512×2048, camera-only; GTRS-Dense / GTRS-Aug / Hydra-MDP-img / DiffusionPolicy | — | 41.7 / 42.1 / 37.5 / 25.6 | `Zzxxxxxxxx/gtrs/{gtrs_dense_vov,gtrs_aug_vov,hydra_mdp_vov,gtrs_dp}.ckpt` (linked from README) | Apache-2.0 | Fine; the SimScale V2-99 variants (48.0) supersede these. |
-| **SimWAM** | arXiv 2608.07468 (Aug 2026) | Wan2.2-5B video DiT (frozen prior) + 0.2–1 B action DiT, **1 front cam 384×672**, no future-frame generation at inference | **91.5 / 90.2** | 37.6 | `H-EmbodVis/SimWAM/weights/SimWAM.pt`, `SimWAM-RL.pt`, **`SimWAM-PAI-AV.pt`** — 12.0 GB each **[verified]** | code Apache-2.0, weights "other" | 12 GB checkpoint ⇒ ~12 GB bf16 resident + activations: **right at the 16 GiB line**. Conceptually the closest cousin to VaVAM with a far higher NAVSIM score, and it ships a PAI-AV checkpoint too. |
+| **SimWAM** | arXiv 2608.07468 (Aug 2026) | Wan2.2-5B video DiT (frozen prior) + 0.2–1 B action DiT, **1 front cam 384×672**, no future-frame generation at inference | **91.5 / 90.2** | 37.6 | `H-EmbodVis/SimWAM/weights/SimWAM.pt`, `SimWAM-RL.pt`, **`SimWAM-PAI-AV.pt`** — 12.0 GB each **[verified]** | code Apache-2.0, weights "other" | 12 GB checkpoint ⇒ ~12 GB bf16 resident + activations: **right at the 16 GiB line**. **Latency is the blocker, measured by the authors (paper Tab. 13, A100): 518 ms at 10 flow steps (90.3 PDMS), 297 ms at 5, 115 ms at 1 step (68.9 PDMS)** — the Wan2.2-5B encoder + VAE + T5 forward alone exceeds the 0.1 s tick. Conceptually the closest cousin to VaVAM with a far higher NAVSIM score, and it ships a PAI-AV checkpoint too, but not usable at 10 Hz without replacing the video expert. |
 
 ## 4. Not usable / not really released
 
@@ -109,10 +110,26 @@ target GPU.
 2. **Keep VaVAM as the anchor** — it is the only model with measured PCS (1590 stock, 1720.7
    tuned by `metamon`), and the licence (research-only) is evidently acceptable to the
    organisers since they ship it as a sample.
-3. **SimWAM is the interesting long shot**: same single-front-cam video-prior idea as VaVAM,
-   91.5 PDMS, Apache-2.0 code, and a PAI-AV checkpoint. Blockers are the 12 GB weight file
-   against 16 GiB and unquantified latency; worth one afternoon of measurement before
-   committing.
+3. **SimWAM — dropped 2026-09-01 on latency.** Same single-front-cam video-prior idea as VaVAM,
+   91.5 PDMS, Apache-2.0 code, and a PAI-AV checkpoint, but the authors' own numbers (Tab. 13,
+   A100) are 518 ms/prediction at the 10 steps the score needs and 115 ms even at 1 step: ~5× the
+   stock-B driver. The binding gate is total wall time (official margin was 9 %, `strategy.md` §5),
+   with the model replanning at 2 Hz sim time and 8 streams per GPU — so a ~5× slower driver is
+   borderline-to-failing, not impossible. If ever revisited: 5 steps (297 ms), cached T5 command
+   embeddings, CUDA graphs, fp8, then `capture/driver_loadtest.py --streams 8` vs stock B is the
+   arbiter. Not worth a slot while WA-JEPA is untested (see 3b).
+3b. **WA-JEPA (added 2026-09-01) is the strongest new candidate for the *closed-loop* problem specifically.**
+   Its navtest score is in the same band as CLOVER/DrivoR, but it is the only checkpoint with a
+   published zero-shot closed-loop result under Gaussian-splat rendering with reactive agents
+   (HUGSIM), where it beats DrivoR by +0.12 HD-Score, mostly via collision rate and route
+   completion. That is the closest public proxy for AlpaSim's MTGS loop. Two unknowns before
+   committing: (a) tick latency on the target GPU — ViT-L × 4 cams × 4 frames + 12 flow steps;
+   measure `plan()` from `close_loop/hugsim_planner.py` on dummy frames, and sweep
+   `num_inference_steps` 12→4 if over 0.1 s; (b) no navhard number, so its synthetic-stage
+   robustness is inferred from HUGSIM only. Adapter is mostly mapping: CAM_L0/F0/R0/B0 → its
+   fixed camera-slot order, 10 Hz loop → 2 Hz history stride of 5, route waypoints → command via
+   `nav_command_infer.py`, 2 Hz waypoints → resampled trajectory. Its HUGSIM doc lists the four
+   silent-failure pitfalls (slot order, stride, command encoding, output frame) — same list applies.
 4. **Skip DiffusionDriveV2 / WoTE unless a camera-only config is confirmed** — the NAVSIM
    defaults include the LiDAR branch and AlpaSim never sends LiDAR.
 5. **On B6 (sim-domain fine-tune):** SimScale's 2.6 TB of MTGS-rendered pseudo-expert data
@@ -140,6 +157,7 @@ target GPU.
 - DrivoR: https://github.com/valeoai/DrivoR · TOAD: https://github.com/valeoai/TOAD · https://arxiv.org/abs/2606.07170
 - CLOVER: https://github.com/WilliamXuanYu/CLOVER · https://arxiv.org/abs/2605.15120
 - RAP: https://github.com/vita-epfl/RAP · https://huggingface.co/Lanl11/RAP_ckpts
+- WA-JEPA: https://github.com/AFARI-Research/WA-JEPA · https://huggingface.co/AFARI-Research/WA-JEPA · https://arxiv.org/abs/2608.20974
 - Drive-JEPA: https://github.com/linhanwang/Drive-JEPA · https://huggingface.co/datasets/LinhanWang/Drive-JEPA
 - DVGT: https://github.com/wzzheng/DVGT · https://huggingface.co/RainyNight/DVGT-2
 - SimWAM: https://github.com/H-EmbodVis/SimWAM · https://huggingface.co/H-EmbodVis/SimWAM

@@ -326,3 +326,16 @@ cheaper and better-grounded experiment. From one k=5 capture with selection off:
 Offline first: `reference/CarPlanner/diag_rule_selector.py` ("*diagnose whether the rule-augmented
 selector is overriding correct mode choices*") is the diagnostic we want, already written for the
 same question; adapt it rather than starting fresh.
+
+## 7. After S1/S1b — where the selection branch stands and what replaced it  (re-added 09-01 18:00; the 15:20 version was lost to a concurrent whole-file edit)
+
+- **Selection branch parked (user, 17:50).** S1: neutral safety, +2.7 % progress. S1b `w_disc` 0/0.05/0.2/0.4: at-fault 6/6/5/4 —
+  monotone but p = 0.5, inside the ±2/100 numerics and ±4/100 seed floors. Effect too small to resolve at 100 scenes.
+- **Replaced by the route-follower hybrid — `ROUTE-FOLLOWER-CONCEPT.md`.** Route geometry (accumulated across ticks; it is the recorded
+  path projected onto lane centres) fixes the lateral path; the frozen camera model only supplies a speed cue. First run F0 = route path
+  + curvature-capped speed, no camera model.
+- **B3 temporal context stays queued behind it** — fact from the checkpoint hyper-parameters: the VaVAM-B action expert was fine-tuned
+  with `finetuning_timesteps: 8` (8-frame context, 576 tokens/frame) at **2 Hz** (`vam/datalib/data_mixing.py:139`: nuPlan 10 Hz
+  subsampled to 2 Hz = the sim's 500 ms camera interval); the sample driver feeds 1 frame. Relevant once the longitudinal cue matters.
+- **Codex proposal cross-check:** its ranking (B1+B4 → B3 → frozen CLOVER → B8 → B2) and its 400-scene gate (≥ 5 fewer at-fault,
+  progress ≥ −3 %, rear not up, no city regression, throughput ≈ baseline) are adopted for F3.

@@ -1,26 +1,45 @@
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-index ef88c88..4a55baa 100644
+index ef88c88..9911ffd 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-@@ -29,6 +29,7 @@ from .rectification import (
+@@ -29,6 +29,25 @@ from .rectification import (
      RectificationTargetConfig,
      build_ftheta_rectifier_for_resolution,
  )
-+from .selection import select
++from .selection import SelectConfig, select
++
++# LOCAL PATCH (opt-in, inert by default): route-aware selection among the k sampled candidates.
++_ROUTE_SELECT = os.environ.get("VAVAM_ROUTE_SELECT", "0") == "1"
++_SELECT_CFG = SelectConfig(
++    w_mode=float(os.environ.get("VAVAM_SELECT_W_MODE", "0.3")),
++    w_disc=float(os.environ.get("VAVAM_SELECT_W_DISC", "0.0")),
++    heading_w=float(os.environ.get("VAVAM_SELECT_HEADING_W", "2.0")),
++    max_route_y_m=float(os.environ.get("VAVAM_SELECT_MAX_ROUTE_Y_M", "30.0")),
++    use_safety_mask=os.environ.get("VAVAM_SELECT_SAFETY_MASK", "0") == "1",
++    ref=os.environ.get("VAVAM_SELECT_REF", "hermite"),
++)
++
++
++def _headings_from_xy(xy: np.ndarray) -> np.ndarray:
++    prev = np.zeros_like(xy)
++    prev[1:, :] = xy[:-1, :]
++    d = xy - prev
++    return np.arctan2(d[:, 1], d[:, 0])
  from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
  
  _RUNTIME_WRITE_DIR_DEFAULTS = {
-@@ -71,6 +72,9 @@ class SessionState:
+@@ -71,6 +90,10 @@ class SessionState:
      )
      command: int = 2
      cached_plan: CachedPlan | None = None
 +    route_xy: np.ndarray | None = None
 +    session_uuid: str = ""
 +    scene_id: str = ""
++    last_selected_xy: np.ndarray | None = None
      camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
          field(default_factory=dict)
      )
-@@ -133,6 +137,35 @@ class VavamPolicyHandle:
+@@ -133,6 +156,35 @@ class VavamPolicyHandle:
              LOGGER.exception("VAVAM policy load failed")
              return
  
@@ -56,7 +75,7 @@ index ef88c88..4a55baa 100644
          with self._lock:
              self._policy = policy
          LOGGER.info("VAVAM policy load complete")
-@@ -198,8 +231,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -198,8 +250,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          camera_id = self._select_camera_id(camera_specs)
  
@@ -75,7 +94,7 @@ index ef88c88..4a55baa 100644
                  camera_id=camera_id,
                  camera_specs=camera_specs,
              )
-@@ -276,8 +319,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -276,8 +338,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
      ) -> common_pb2.Empty:
          session = self._get_session(request.session_uuid, context)
          command = _command_from_route(request.route)
@@ -91,7 +110,7 @@ index ef88c88..4a55baa 100644
          return common_pb2.Empty()
  
      def submit_recording_ground_truth(
-@@ -380,11 +430,33 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -380,16 +449,51 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          with self._inference_lock:
              try:
@@ -109,13 +128,26 @@ index ef88c88..4a55baa 100644
 +        # S0 diagnostics. Selection is not applied — `prediction.trajectory_xy` is row 0,
 +        # which on CUDA is the same draw k=1 would have produced, so driving is unchanged.
 +        cands = prediction.candidates_xy
++        chosen_xy, chosen_headings = prediction.trajectory_xy, prediction.headings
 +        if cands is not None:
 +            ends = cands[:, -1, :]
 +            spread = float(np.sqrt(np.mean(np.sum((ends - ends.mean(axis=0)) ** 2, axis=1))))
 +            medoid_d = np.linalg.norm(ends - np.median(ends, axis=0), axis=1)
 +            with self._lock:
 +                route_xy = session.route_xy
-+            sel = select(cands, route_xy) if route_xy is not None else None
++            sel = select(
++                cands, route_xy, cfg=_SELECT_CFG,
++                previous_xy=session.last_selected_xy,
++            ) if route_xy is not None else None
++            # Apply it only when explicitly enabled. Off (default) the driver keeps row 0, so
++            # the same binary reproduces the selection-off arm exactly - that is the identity
++            # control, and it means one image serves both arms of the A/B.
++            if _ROUTE_SELECT and sel is not None and sel.index != 0:
++                chosen_xy = cands[sel.index]
++                chosen_headings = _headings_from_xy(chosen_xy)
++            if _ROUTE_SELECT:
++                with self._lock:
++                    session.last_selected_xy = chosen_xy
 +            LOGGER.info(
 +                "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s infer_ms=%.1f",
 +                len(cands), spread, float(medoid_d.min()), float(medoid_d.max()),
@@ -126,6 +158,13 @@ index ef88c88..4a55baa 100644
          plan = make_cached_plan(
              created_time_us=time_now_us,
              anchor_pose=anchor_pose,
+-            trajectory_xy=prediction.trajectory_xy,
+-            headings=prediction.headings,
++            trajectory_xy=chosen_xy,
++            headings=chosen_headings,
+             source_frequency_hz=policy.output_frequency_hz,
+         )
+         if plan is not None:
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
 index 0d57dda..afe5d13 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py

@@ -88,6 +88,24 @@ d. **Never latch:** every factor is recomputed per inference; a full stop is onl
 Expected side effect to measure explicitly: **rear collisions** (not at-fault, but they truncate progress) and `dist_to_gt_location`
 (timing lag). The screen compares at-fault count, rear count, progress, dist_to_gt together.
 
+## 3b. Stage tracker  (update this — it is the durable status)
+
+_Last updated 2026-09-01 ~09:45. Conversation state is not a record; this table is._
+
+| Stage | Status | Evidence / run | Verdict |
+|---|---|---|---|
+| **S0** diagnose | ✅ **PASSED** | `screen-s0-k5` (100 scenes, k=5, selection off) | spread median **1.74 m** vs 0.5 m kill switch · argmin≠0 **60 %** · Drive +22 %/call · VRAM 3.1/16 GiB · aggregate within noise of candidate #2. **Machinery works and candidates are diverse — says continue, not "it helps".** |
+| — | ⚠️ **3 defects found and fixed** | — | (1) salted `hash()` seeding → runs not reproducible; (2) `session_uuid` key → pairing impossible (uuid v1, fresh per run); (3) `\|y\|>12 m` guard fired on **27 %** of ticks, disabling selection on turns. Also: heading term never reached `scores`; progress used `x_end` not arc length. |
+| **S1** select on | 🔄 **RUNNING** | `s1a-k1` / `s1b-k5-off` / `s1c-k5-on`, navtest_local100, dev_fast2, seed 1234, one image | Three arms because the seeding fix makes all earlier runs unpairable. s1a vs s1b = identity control; **s1c vs s1b = the first real read.** |
+| **S1b** variants | ☐ | — | chord vs hermite ref, `w_mode` sweep (0.3 inherited from a *learned* score — unvalidated for consensus), `w_disc`, safety mask on/off, k=3 vs 5 vs 8 |
+| **S2** slow-down | ☐ | — | B2 conditional slow-down + B8 decelerating fallback. Gate: at-fault ↓ ≥2 **and** rear collisions not up by more than the gain |
+| **S3** confirm | ☐ | — | `navtest_local400`, paired vs the S1 winner |
+| **S4** ship | ☐ | — | bake env into Dockerfile.submit-mup, push, submit. **Only on explicit go.** API closed until ~Sep 6 |
+
+**Rules that apply to every stage:** never skip upward · identical scenes and seed for any comparison ·
+read at-fault + progress + dist_to_gt together, never one · effects below ~5 incidents/300 are noise ·
+one GPU run at a time (two stacks OOM).
+
 ## 4. Staged validation (the eval ladder from `strategy.md` §2; each stage gates the next)
 
 | Stage | What | Run | Pass criterion |

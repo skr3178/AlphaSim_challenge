@@ -29,7 +29,25 @@ from .rectification import (
     RectificationTargetConfig,
     build_ftheta_rectifier_for_resolution,
 )
-from .selection import select
+from .selection import SelectConfig, select
+
+# LOCAL PATCH (opt-in, inert by default): route-aware selection among the k sampled candidates.
+_ROUTE_SELECT = os.environ.get("VAVAM_ROUTE_SELECT", "0") == "1"
+_SELECT_CFG = SelectConfig(
+    w_mode=float(os.environ.get("VAVAM_SELECT_W_MODE", "0.3")),
+    w_disc=float(os.environ.get("VAVAM_SELECT_W_DISC", "0.0")),
+    heading_w=float(os.environ.get("VAVAM_SELECT_HEADING_W", "2.0")),
+    max_route_y_m=float(os.environ.get("VAVAM_SELECT_MAX_ROUTE_Y_M", "30.0")),
+    use_safety_mask=os.environ.get("VAVAM_SELECT_SAFETY_MASK", "0") == "1",
+    ref=os.environ.get("VAVAM_SELECT_REF", "hermite"),
+)
+
+
+def _headings_from_xy(xy: np.ndarray) -> np.ndarray:
+    prev = np.zeros_like(xy)
+    prev[1:, :] = xy[:-1, :]
+    d = xy - prev
+    return np.arctan2(d[:, 1], d[:, 0])
 from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
 
 _RUNTIME_WRITE_DIR_DEFAULTS = {
@@ -75,6 +93,7 @@ class SessionState:
     route_xy: np.ndarray | None = None
     session_uuid: str = ""
     scene_id: str = ""
+    last_selected_xy: np.ndarray | None = None
     camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
         field(default_factory=dict)
     )
@@ -443,13 +462,26 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
         # S0 diagnostics. Selection is not applied — `prediction.trajectory_xy` is row 0,
         # which on CUDA is the same draw k=1 would have produced, so driving is unchanged.
         cands = prediction.candidates_xy
+        chosen_xy, chosen_headings = prediction.trajectory_xy, prediction.headings
         if cands is not None:
             ends = cands[:, -1, :]
             spread = float(np.sqrt(np.mean(np.sum((ends - ends.mean(axis=0)) ** 2, axis=1))))
             medoid_d = np.linalg.norm(ends - np.median(ends, axis=0), axis=1)
             with self._lock:
                 route_xy = session.route_xy
-            sel = select(cands, route_xy) if route_xy is not None else None
+            sel = select(
+                cands, route_xy, cfg=_SELECT_CFG,
+                previous_xy=session.last_selected_xy,
+            ) if route_xy is not None else None
+            # Apply it only when explicitly enabled. Off (default) the driver keeps row 0, so
+            # the same binary reproduces the selection-off arm exactly - that is the identity
+            # control, and it means one image serves both arms of the A/B.
+            if _ROUTE_SELECT and sel is not None and sel.index != 0:
+                chosen_xy = cands[sel.index]
+                chosen_headings = _headings_from_xy(chosen_xy)
+            if _ROUTE_SELECT:
+                with self._lock:
+                    session.last_selected_xy = chosen_xy
             LOGGER.info(
                 "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s infer_ms=%.1f",
                 len(cands), spread, float(medoid_d.min()), float(medoid_d.max()),
@@ -460,8 +492,8 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
         plan = make_cached_plan(
             created_time_us=time_now_us,
             anchor_pose=anchor_pose,
-            trajectory_xy=prediction.trajectory_xy,
-            headings=prediction.headings,
+            trajectory_xy=chosen_xy,
+            headings=chosen_headings,
             source_frequency_hz=policy.output_frequency_hz,
         )
         if plan is not None:

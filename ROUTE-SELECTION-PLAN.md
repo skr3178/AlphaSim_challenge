@@ -110,8 +110,8 @@ margin. **`w_disc ≈ 0.18` is the tipping point.**
 |---|---|---|---|
 | 0.02 | 0.005 | 11 % | not run (predicted no-op) |
 | **0.05** | 0.012 | 27 % | ✅ **confirmed no-op** — 98/100 scenes identical to control, 1 up 1 down |
-| **0.2** | 0.049 | 108 % | running |
-| **0.4** | 0.098 | 217 % | running |
+| **0.2** | 0.049 | 108 % | at-fault 6→5 (1 removed, 0 new); `d_end` 2.07→1.72 m |
+| **0.4** | 0.098 | 217 % | at-fault 6→4 (2 removed, 0 new); `d_end` 2.07→1.53 m — **best seen** |
 
 ### Term attribution — mean |weighted (winner − runner-up)|
 
@@ -137,6 +137,16 @@ Recorded so the same mistake is not repeated for `w_mode`, `w_heading` or any ot
 The only reliable route is the `attrib` measurement. An earlier version of this section
 carried estimate (2) and told the reader not to use `{0.1, 0.3, 1.0}`; that advice was wrong —
 those values are approximately the right zone.
+
+### Reading per-scene at-fault — use `rollouts[]`, do not re-derive
+
+`results-summary.json` carries `rollouts[].metrics` with `collision_at_fault` (and `collision_any`,
+`front`, `lateral`, `rear`, `offroad_or_collision`) **already post-modifier, per scene**. Use it.
+It is absent from both parquet files, and re-deriving it from `metrics_unprocessed.parquet` does
+**not** reproduce the official count: applying the two `DEFAULT_MODIFIERS`
+(`RemoveTimestepsBeforeEvent(eval_relevant>0)`, `RemoveTimestepsAfterEvent(offroad_or_collision>0)`)
+matches on some runs and is one scene high on others — at least one further rule (likely the
+`max_dist_to_gt_trajectory` truncation in `aggregation/main.py`) is unaccounted for.
 
 ### Why this was invisible before
 
@@ -167,8 +177,8 @@ _Last updated 2026-09-01 ~16:40. Conversation state is not a record; this table 
 |---|---|---|---|
 | **S0** diagnose | ✅ **PASSED** | `screen-s0-k5` (100 scenes, k=5, selection off) | spread median **1.74 m** vs 0.5 m kill switch · argmin≠0 **60 %** · Drive +22 %/call · VRAM 3.1/16 GiB · aggregate within noise of candidate #2. **Machinery works and candidates are diverse — says continue, not "it helps".** |
 | — | ⚠️ **3 defects found and fixed** | — | (1) salted `hash()` seeding → runs not reproducible; (2) `session_uuid` key → pairing impossible (uuid v1, fresh per run); (3) `\|y\|>12 m` guard fired on **27 %** of ticks, disabling selection on turns. Also: heading term never reached `scores`; progress used `x_end` not arc length. |
-| **S1** select on | ✅ **DONE 09-01 15:35 — NEUTRAL safety, +2.7 % progress** | `s1a-k1` / `s1b-k5-off` (rerun after CUDA-timeout) / `s1c-k5-on` | s1c vs s1b: at-fault 5→6, rear 1→0, corridor 8→6, progress 1.030→1.058 (45↑/7↓), dist_to_gt +0.13 m, score proxy +0.019. Identity control alone moved at-fault 7→5 → numerics floor ±2/100, seed floor ±4/100. Switch rate 78 % → w_disc is the lever. |
-| **S1b** `w_disc` | 🔄 **running 09-01 16:40** | `disc-d00-s1234` (control, done) · `disc-d005-s1234` · `disc-d002-s1234` | Control gave the calibration in **§2c**: median decision margin **0.043**, so the original `{0.1, 0.3, 1.0}` bracket was 6-50× too large (0.3 overrides 97 % of decisions). First pass: 0.05 is a **confirmed no-op** (98/100 scenes identical). Re-sized on the *measured* 0.246/unit separation → 0.2 and 0.4 running. See **§2c**. |
+| **S1** select on | ✅ **DONE 09-01 15:35 — NEUTRAL safety, +2.7 % progress** | `s1a-k1` / `s1b-k5-off` (rerun after CUDA-timeout) / `s1c-k5-on` | s1c vs s1b: at-fault 5→6, rear 1→0, corridor 8→6, progress 1.030→1.058 (45↑/7↓), dist_to_gt +0.13 m, score proxy +0.019. Identity control alone moved at-fault 7→5 → numerics floor ±2/100, seed floor ±4/100. ~~Switch rate 78 %~~ — **retracted**: with fresh noise each tick, candidate index *i* has no identity across ticks, so an index change means nothing. `d_end` (ego motion removed) is the continuity metric; by that measure the churn was real (2.07 m/tick), so the `w_disc` sweep was justified, but not by this number. |
+| **S1b** `w_disc` | ✅ **DONE 09-01 17:05 — trend right, at the noise floor, NOT proven** | `disc-d00-s1234` / `-d005-` / `-d020-` / `-d040-` (100 scenes each, seed 1234, paired) | at-fault **6 / 6 / 5 / 4** for `w_disc` 0 / 0.05 / 0.2 / 0.4 — both changes are **removals, 0 new** (read from `results-summary.json` → `rollouts[].metrics`, matches the aggregate to 1e-9). Zeroed 16→14, progress −0.5 %, latency flat, `d_end` 2.07→1.53 m monotone. **But: sign test on 2-vs-0 is p = 0.50.** Only 2–4 scenes change outcome at any weight and discordance does **not** rise with `w_disc`, so ~625 scenes would be needed for a 70/30 win rate — 100- and even 400-scene arms cannot resolve this. `w_disc=0.4` is the best config seen and free to carry. See **§2c**. |
 | **S1b** other variants | ☐ | — | chord vs hermite ref, `w_mode` sweep (0.3 inherited from a *learned* score — unvalidated for consensus), `w_disc`, safety mask on/off, k=3 vs 5 vs 8 |
 | **S2** slow-down | ☐ | — | B2 conditional slow-down + B8 decelerating fallback. Gate: at-fault ↓ ≥2 **and** rear collisions not up by more than the gain |
 | **S3** confirm | ☐ | — | `navtest_local400`, paired vs the S1 winner |

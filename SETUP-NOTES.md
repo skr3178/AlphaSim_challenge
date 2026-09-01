@@ -1524,7 +1524,7 @@ NVlabs/alpasim issues #133 / #138 / #166, `route_generator.py` (`RouteGeneratorM
 
 | entry | PCS | at-fault km | dist_to_gt | profile → inferred approach |
 |---|---|---|---|---|
-| NaLa `sub1` | 1715 | 3.36 | **0.98** | 2× stock's safety **and** 3× tighter path than any VaVAM entry, while keeping progress. Only consistent with a driver that **follows the route/GT path directly** (route = recorded trajectory snapped to lane centres, `route_generator.py:355-377`), i.e. a path-follower with a speed policy, not a camera policy with knobs |
+| NaLa `sub1` | 1715 | 3.36 | **0.98** | MEASURED: 2.1× stock's at-fault km, dist_to_gt 3× tighter than any `vavam-*` entry (2.65–3.72). INFERRED: progress not sacrificed (equally tight but slow entries score 1420–1450). HYPOTHESIS (unverified — no writeup exists): a driver that **follows the route/GT path directly** (route = recorded trajectory snapped to lane centres, `route_generator.py:355-377`) with a speed policy; alternatives: a map-input model, or a VaVAM hybrid with trajectory-level route correction |
 | 메타몽 `vavam-route-cudagraph-v5` | 1715 | 3.09 | 2.65 | VaVAM **plus real route conditioning** (halved incidents vs stock, path a bit tighter) + CUDA graphs for speed. The same score as NaLa via a different route |
 | SymPhi `gain1075` | 1691 | 1.75 | 3.72 | stock VaVAM × 1.075 — pure speed; same safety as stock |
 | stock VaVAM (us, foxhihi b1, Host) | 1590–1600 | 1.5–1.7 | 3.05 | baseline cluster |

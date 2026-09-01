@@ -1562,3 +1562,17 @@ the ego frame — bearing +34°, a left turn ahead — and **every returned plan
 reason now logged per tick. Also learned: nuPlan-track Drive is **2 Hz** (10 ticks per 5 s scene), so the first ~3–4 s of every scene run
 on the cold-start bridge and the accumulated path only takes over near the end — the bridge quality *is* the follower on this track.
 F0 v2 (`f0b-follow-curv`) launched with the fix and per-tick logging.
+
+**F0 v2 (`f0b-follow-curv`, gate fixed) [23:42–23:52]:** 100/100, 577 s, Drive **2 ms**. vs `s1a-k1`:
+| | at-fault | corridor | wrong-lane | progress | dist_gt mean/median | lateral | score proxy |
+|---|---|---|---|---|---|---|---|
+| s1a-k1 (VaVAM) | 7 | 6 | 27 | 1.031 | 2.66 / — | 1.39 | 0.858 |
+| F0 v1 (bug) | 5 | 19 | 23 | 0.961 | 2.48 | 1.61 | 0.750 |
+| **F0 v2** | 8 (7 front, 1 lat) | 6 | **20** | 0.987 | **2.19 / 1.84** | **1.08** | 0.848 |
+
+**Path thesis validated:** best path metrics of any run so far (dist_to_gt better in 62/37 scenes, median 1.84 m, lateral 1.08 m,
+wrong-lane 20). **Residual exactly as predicted:** the new at-fault scenes are front collisions at low progress and tiny dist
+(0.38–0.84 prog, 0.75–1.6 m dist) — the pure follower drives into stopped/slow traffic because nothing brakes for it; 18 scenes
+still < 0.8 progress (stopped starts crawling at v_min). The 6 corridor exits are new scenes (baseline's 6 all fixed) — likely
+end-of-path/fallback cases (62 remaining "straight" fallbacks besides tick-1 no_path). Next: **F1 = SPEED_SRC=min** (VaVAM speed cue
+brakes for what the camera sees, route keeps the path); diagnostics enabled by the log-cadence fix.

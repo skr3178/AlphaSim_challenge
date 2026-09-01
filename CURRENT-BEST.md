@@ -64,6 +64,12 @@ public leaderboard closes **2026-10-31**, final results **2026-11-15**. No quota
 
 ## 6. Next after candidate #2 is decided
 
+**S1b `w_disc` sweep — done 09-01 17:04 (seed 1234, 100 scenes):** at-fault 6 / 6 / 5 / **4** and corridor 6 / 6 / 5 / 5 for w_disc 0 / 0.05 /
+0.2 / 0.4; progress −0.5 %, dist_to_gt flat, score proxy 0.878 → **0.906**; d_end 1.90 → 1.31 m. Monotone, direction right, size at the
+noise floor. Leading config: **k=5, selection on, w_disc 0.4** (SETUP-NOTES §6.21). Open: w_disc 1.0 arm; second seed (5678) for the pick;
+then 400-scene confirm before it becomes candidate #3.
+
+
 **S1 (selection ON, first run where the selector steers) — done 09-01 15:35: NEUTRAL safety / +2.7 % progress / +0.13 m path.** Proper
 control `s1b-k5-off` → `s1c-k5-on` on 100 scenes: at-fault 5 → 6, rear 1 → 0, corridor 8 → 6, progress 1.030 → 1.058 (45 up / 7 down),
 dist_to_gt 2.56 → 2.69, scene-score proxy 0.859 → 0.878. Identity control (`s1a-k1` → `s1b-k5-off`, numerics only) moved at-fault 7 → 5

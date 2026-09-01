@@ -371,7 +371,7 @@ def test_rebase_puts_the_old_plan_behind_the_ego_after_driving_forward():
     xy = _straight()
     out = rebase_to_current_frame(xy, (0.0, 0.0, 0.0), (5.0, 0.0, 0.0))
     assert np.allclose(out, xy - np.array([5.0, 0.0]), atol=1e-9)
-    assert out[0, 0] < 0.0  # the sign the driver's base_x check watches for
+    assert out[0, 0] < 0.0  # a plan that started AT the ego now starts behind it
 
 
 def test_rebase_handles_rotation():
@@ -439,3 +439,19 @@ def test_naive_discontinuity_picked_the_wrong_candidate_on_a_turn():
 
 def test_discontinuity_reference_declines_when_the_shift_eats_the_plan():
     assert discontinuity_reference(_straight(n=3), (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 3) is None
+
+
+def test_reference_starts_ahead_of_the_ego_for_a_real_plan():
+    """Pins the `base_x` expectation the driver logs, which caught me out once.
+
+    A real plan's point 0 is NOT at the ego: `make_cached_plan` times the model's offsets at
+    arange(1, n+1) * step_s, so point 0 is one step ahead. Ego at 10 m/s, step 0.5 s: the
+    plan spans 5..50 m, the ego advances 5 m, and after the shift the reference starts at
+    the old point 1 (10 m) seen from 5 m further on - i.e. +5 m, POSITIVE. An armed check
+    demanding a negative base_x fires on correct code.
+    """
+    step, speed = 0.5, 10.0
+    prev = np.stack([np.arange(1, 11) * speed * step, np.zeros(10)], axis=1)
+    ref = discontinuity_reference(prev, (0.0, 0.0, 0.0), (speed * step, 0.0, 0.0), shift=1)
+    assert ref[0, 0] == pytest.approx(speed * step, abs=1e-9)
+    assert ref[0, 0] > 0.0

@@ -280,6 +280,9 @@ def discontinuity_reference(
     emits points at a fixed rate, so after `shift` plan steps have elapsed, index i of a new
     candidate describes the same instant as index i + shift of the old plan.
 
+    Note the plan's point 0 is one step AHEAD of the ego (make_cached_plan times offsets
+    at arange(1, n+1) * step_s), so the shifted reference starts ahead of the ego too.
+
     Without the shift the term still prefers slow candidates even in the right frame, because
     a plan that keeps driving is displaced by one step from the stored one while a plan that
     brakes stays near it. With both corrections, re-issuing the same trajectory scores exactly

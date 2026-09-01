@@ -48,12 +48,8 @@ def _pose_xy_yaw(pose) -> tuple[float, float, float] | None:
     """(x, y, yaw) in the global frame from a PoseAtTime, or None if unusable."""
     if pose is None:
         return None
-    v, q = pose.pose.vec, pose.pose.quat
-    yaw = math.atan2(
-        2.0 * (q.w * q.z + q.x * q.y),
-        1.0 - 2.0 * (q.y * q.y + q.z * q.z),
-    )
-    out = (float(v.x), float(v.y), float(yaw))
+    v = pose.pose.vec
+    out = (float(v.x), float(v.y), float(yaw_from_quat(pose.pose.quat)))
     return out if all(math.isfinite(c) for c in out) else None
 
 
@@ -62,7 +58,7 @@ def _headings_from_xy(xy: np.ndarray) -> np.ndarray:
     prev[1:, :] = xy[:-1, :]
     d = xy - prev
     return np.arctan2(d[:, 1], d[:, 0])
-from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
+from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan, yaw_from_quat
 
 _RUNTIME_WRITE_DIR_DEFAULTS = {
     "XDG_CACHE_HOME": "/tmp/.cache",
@@ -516,20 +512,49 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
             # d_end: how far the chosen END POINT moved from the previous tick's chosen end
             # point, in a common frame. This separates "committed to a different plan" from
             # "chasing a target that moves every tick" - ego motion is already removed.
-            # base_x: the rebased previous plan's first point, which must sit BEHIND the ego
-            # (negative x, magnitude ~ speed x 0.5 s). It is a live check on the pose
-            # convention; a positive or wildly large base_x means the transform is wrong.
+            # base_x: the reference's first point. make_cached_plan times the model's
+            # offsets at arange(1, n+1) * step_s, so a plan's point 0 is one step AHEAD of
+            # the ego, not at it. After the receding-horizon shift the reference therefore
+            # starts roughly one step ahead too: base_x should be positive and of order
+            # speed x step_s. A large negative value, or one far from that scale, means the
+            # pose transform is wrong.
             d_end, base_x = float("nan"), float("nan")
             if prev_xy is not None and len(prev_xy):
                 m = min(len(chosen_xy), len(prev_xy))
                 d_end = float(np.linalg.norm(chosen_xy[m - 1] - prev_xy[m - 1]))
                 base_x = float(prev_xy[0, 0])
+            # gap: winner's score minus runner-up's. This is the margin any new term has to
+            # beat to change a decision, so it is what calibrates w_disc. Without it we were
+            # inferring "0.1 is probably too weak" from term magnitudes rather than measuring.
+            # attrib: the WEIGHTED term-by-term difference between the winner and the
+            # runner-up. The six values sum to `gap`, so this says which term actually made
+            # the decision. Without it we can see that a decision was close but not why, and
+            # cannot tell whether `route` dominates so heavily that w_disc can never matter -
+            # which would make the whole w_disc sweep a foregone conclusion.
+            gap, attrib = float("nan"), ""
+            if sel is not None and sel.scores is not None and len(sel.scores) > 1:
+                order = np.argsort(sel.scores)[::-1]
+                i1, i2 = int(order[0]), int(order[1])
+                gap = float(sel.scores[i1] - sel.scores[i2])
+                if sel.terms:
+                    w = {
+                        "comfort": _SELECT_CFG.w_rule * _SELECT_CFG.w_comfort,
+                        "progress": _SELECT_CFG.w_rule * _SELECT_CFG.w_progress,
+                        "drivable": _SELECT_CFG.w_rule * _SELECT_CFG.w_drivable,
+                        "route": _SELECT_CFG.w_rule * _SELECT_CFG.w_route,
+                        "consensus": _SELECT_CFG.w_mode,
+                        "disc": -_SELECT_CFG.w_disc,
+                    }
+                    attrib = ",".join(
+                        f"{k}:{w[k] * float(v[i1] - v[i2]):+.4f}"
+                        for k, v in sel.terms.items() if k in w
+                    )
             LOGGER.info(
                 "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s "
-                "infer_ms=%.1f d_end=%.2f base_x=%.2f",
+                "infer_ms=%.1f d_end=%.2f base_x=%.2f gap=%.4f attrib=[%s]",
                 len(cands), spread, float(medoid_d.min()), float(medoid_d.max()),
                 sel.index if sel else "n/a", sel.reason if sel else "no_route",
-                infer_s * 1e3, d_end, base_x,
+                infer_s * 1e3, d_end, base_x, gap, attrib,
             )
 
         plan = make_cached_plan(

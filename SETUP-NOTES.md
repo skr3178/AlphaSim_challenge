@@ -1496,3 +1496,23 @@ below that is evidence.
 scene-score proxy +0.019), slightly worse path (+0.13 m dist_to_gt).** Selector applied 87 % of ticks, switches plan on ≈ 78 % of
 consecutive ticks (w_disc = 0). Per plan §7 → "neutral" branch: S1b = `w_disc` sweep {0.1, 0.3} (+ consensus gate) on **two seeds × 100**,
 then B3 temporal context.
+
+## 6.21 S1b — `w_disc` sweep, seed 1234, 100 scenes, image v4 (peer session)  [2026-09-01 16:05–17:04]
+
+Control `disc-d00` is **bit-identical to `s1c-k5-on`** (100/100 scenes) → v3/v4 image caveat closed. `base_x` early-check corrected
+(plan point 0 is one step ahead of the ego, so ≈ +5 m is right; the "must be negative" version aborted a correct run at 14/100).
+
+| w_disc | at-fault | corridor | wrong-lane | progress | dist_to_gt | score proxy | vs control | d_end median / >1 m | disc share of margin |
+|---|---|---|---|---|---|---|---|---|---|
+| 0 (control) | 6 | 6 | 29 | 1.0575 | 2.692 | 0.878 | — | 1.90 / 0.75 | 0 |
+| 0.05 | 6 | 6 | 30 | 1.0552 | 2.725 | 0.878 | 57 scenes identical; no-op | 1.75 / 0.71 | 0.15 |
+| 0.2 | **5** | **5** | 29 | 1.0518 | 2.676 | **0.897** | −1 at-fault (removed), −1 corridor, −0.6 % progress | 1.55 / 0.66 | 0.54 |
+| 0.4 | **4** | 5 | 29 | 1.0521 | 2.686 | **0.906** | −2 at-fault (removed, 0 new), −1 corridor, −0.5 % progress | 1.31 / 0.60 | 0.77 |
+
+Monotone: more plan continuity → fewer at-fault and corridor exits, progress cost flat at −0.5 %, path accuracy unchanged, Drive 127–130 ms.
+Effect size (−2/100) equals the numerics floor, so it is "consistent with helping", not proof; the monotone trend across four arms and the
+falling `d_end` are the evidence that it is real. **Measurement note:** the candidate-index "switch rate" stays 0.80 at every weight and is
+meaningless — with fresh noise each tick index i has no identity across ticks; `d_end` is the continuity measure. (The peer's alternative —
+persistent noise vectors so candidates are persistent modes — would make the index meaningful; parked, not rejected.)
+Next candidates: w_disc = 1.0 at seed 1234 (does the trend continue or does progress start paying?), then the best weight + its control at
+seed 5678; then S3 on 400 if two seeds agree.

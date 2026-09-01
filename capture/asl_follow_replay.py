@@ -29,7 +29,8 @@ async def load(path):
             plans.append((int(ps[0].get("timestamp_us", 0)) if ps else 0, np.array([[p["pose"]["vec"].get("x",0.0), p["pose"]["vec"].get("y",0.0)] for p in ps], float) if ps else np.zeros((0,2))))
         elif kind == "actor_poses":
             ts = int(d.get("timestamp_us", 0)); aps = d.get("actor_poses", [])
-            if aps: truth.append((ts, pxyyaw(aps[0].get("actor_pose", aps[0].get("pose", {})))))
+            ego = [a for a in aps if a.get("actor_id") == "EGO"]
+            if ego: truth.append((ts, pxyyaw(ego[0].get("actor_pose", {}))))
     return routes, egoposes, plans, truth
 
 def analyse(path, label):

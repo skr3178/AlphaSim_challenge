@@ -439,7 +439,7 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
                 n_fb = session.follow_fallbacks
             if res is not None:
                 plan = res.plan
-                if _FOLLOW_LOG_EVERY > 0 and n_tick % _FOLLOW_LOG_EVERY == 1:
+                if _FOLLOW_LOG_EVERY > 0 and (n_tick - 1) % _FOLLOW_LOG_EVERY == 0:
                     LOGGER.info(
                         "FOLLOW tick=%d s_ego=%.1f e_y=%+.2f e_psi=%+.1fdeg dist=%.2f join=%.0f v0=%.1f "
                         "v_end=%.1f kmax=%.4f lim=%s path_len=%.0f upd=%d fb=%d",

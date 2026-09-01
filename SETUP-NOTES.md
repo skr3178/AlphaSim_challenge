@@ -1545,3 +1545,20 @@ nuPlan spread is where structure (route following) pays.
 simply braking hard … this will not result in a very high scene score"; final = rerun of the top ~5 on a private set.
 **Where we went wrong:** we optimised VaVAM's sampling around a 3-way command and never used the route *geometry* for control. The two
 1715 entries both put the route into the loop — one as the trajectory itself, one as conditioning.
+
+## 6.23 Route follower F0 v1 — `f0-follow-curv`  [2026-09-01 20:07–20:17]  and the bug it exposed
+
+Image `local-follow` (route_map.py + follower.py, `VAVAM_FOLLOW_ROUTE=1 VAVAM_FOLLOW_NO_MODEL=1 SPEED_SRC=curv`), 100 scenes, 573 s,
+Drive **1 ms**/call. Result vs `s1a-k1`: lateral at-fault 1 → **0**, wrong-lane 27 → 23, rear 1 → 0, dist_to_gt better in 58 / worse in
+38 (median 2.66 → 2.47), **but corridor exits 6 → 19**, progress 1.031 → 0.961 (22 scenes < 0.8), at-fault 5 (all front; 3 new / 5
+removed), score proxy 0.858 → 0.750.
+Per-timestep view of the 19 exits: dist_to_gt grows monotonically from t = 0 (≈1 m @1.5 s, 3–6 m @3 s, 5–15 m @5 s) at normal speed —
+a diverging *path*, in scenes where the baseline stays at 1–3 m. ASL replay of `…veh-35_01100_01664-1893f` (routes as received, ego
+truth, returned plans; tool `capture/asl_follow_replay.py`): route windows consistent to 1 cm; route at t=0 starts at (33.5, +22.7) m in
+the ego frame — bearing +34°, a left turn ahead — and **every returned plan was the straight-line fallback** along the heading
+(`fallback` logged 56×): `build_follow_plan` rejected the cold start because its lateral gate (`|lat| ≤ 15 m`) treated a turn ahead as
+"not our lane". Same class of mistake as the selector's `|y| > 12 m` guard. Fix: reject only a route start behind the ego (or > 90 m /
+> 100° off the bow); the Hermite join handles any bearing ahead. Regression test added (`test_cold_start_accepts_a_turn_ahead`), fallback
+reason now logged per tick. Also learned: nuPlan-track Drive is **2 Hz** (10 ticks per 5 s scene), so the first ~3–4 s of every scene run
+on the cold-start bridge and the accumulated path only takes over near the end — the bridge quality *is* the follower on this track.
+F0 v2 (`f0b-follow-curv`) launched with the fix and per-tick logging.

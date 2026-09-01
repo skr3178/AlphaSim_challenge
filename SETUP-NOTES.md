@@ -1465,3 +1465,18 @@ bit-deterministic. Verdict: k path sound; S0 PASS; identity vs the old baseline 
 `guard_route_implausible` (|y|>12 m or x<5 m on route[0]) fires on 27 % of ticks — at 40 m lookahead any turn > ~40° exceeds 12 m, so it
 disables selection exactly on turns; loosen/curvature-based. Review of selection.py (heading term not in scores; progress = x_end;
 no_safe ranks all; drivable≡route) sent to the selector session for S1.
+
+## 6.20 S1 sequence (peer session `alpasim-challenge-ad`, image `local-mup-k` v3, scene-keyed seeding)  [2026-09-01 15:01–15:26]
+
+| run | scenes | wall | Drive mean | note |
+|---|---|---|---|---|
+| `s1a-k1` (k=1, new baseline) | 100/100 | 606 s | 102 ms | at-fault **7**, rear 1, corridor 6, wrong-lane 27, progress 1.031, dist_to_gt 2.66 |
+| `s1b-k5-off` (identity control) | **2/100** | 195 s | — | renderer died: `CUDA error: the launch timed out and was terminated` (display-GPU watchdog; peak GPU 22.8 GiB on s1c → memory pressure plausible). Wizard exited 0 and wrote an aggregate with 98 failed rows — **`RUN DONE` is not proof of a valid run; gate on completed count.** Moved to `s1b-k5-off-FAILED-cuda-timeout`; rerun launched 15:35 |
+| `s1c-k5-on` (selection ON — first run where the selector steers) | 100/100 | 624 s | 126 ms | at-fault **6** (2 removed, 1 new front), rear 0, corridor 6, wrong-lane 29, progress **1.058**, dist_to_gt 2.69, lateral 1.29; log: applied 87 % of ticks (guard 12 %), argmin≠0 80 %, spread median 1.69 m, consecutive-tick switch rate ≈ 0.78, infer 111 ms / p95 135 |
+
+Interim read (s1c vs s1a; valid to ~4 mm as identity proxy because row 0 of k=5 == k=1 under scene-keyed seeds): safety within noise
+(−1 at-fault), progress +0.026 mean (44 up / 9 down), path accuracy unchanged → neutral-to-slightly-positive. The selector switches plan
+almost every tick → `w_disc` is the first S1b arm.
+**Seed-variance finding:** `s1a-k1` (7 at-fault) vs `screen-mup-g100` (3) — same config, same 100 scenes, only the noise draw differs.
+The 100-scene at-fault count therefore carries **±4 seed noise, not ±2**; earlier `screen-*` numbers were single draws and may have been
+optimistic. Consequence for the eval standard: read arms on 400 scenes, or on two seeds, before believing a ≤ 4-incident delta.

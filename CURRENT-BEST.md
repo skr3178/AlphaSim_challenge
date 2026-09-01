@@ -45,7 +45,7 @@ future candidate must not add more than ~9 % to official wall time — see `ROUT
 | Screen | `navtest_local100` (25 / city), seed 1234 → ~10 min incl. warm-up |
 | Confirm | `navtest_local400` (100 / city), seed 1234 → ~30 min |
 | Baseline for comparisons | stock B on the same group (300: `local300-vavam`; 400 combined: `local300-vavam` + `sg100-vavam-submitted`) |
-| Noise floor | ±3 at-fault incidents / 300 scenes (±2 / 100). Read progress and dist_to_gt (continuous) with at-fault (count) |
+| Noise floor | **revised 09-01:** the same driver with a different noise draw moved 3 → 7 at-fault on the 100 (`screen-mup-g100` vs `s1a-k1`), so a single 100-scene screen carries ~±4 at-fault of seed noise; use 400 scenes or two seeds before believing a ≤ 4-incident delta. Read progress and dist_to_gt (continuous) with at-fault (count) |
 | Launcher | `~/alpasim-challenge/logs/run-eval.sh IMG NAME GROUP dev_fast2` with `DRIVER_ENV="VAVAM_OUTPUT_GAIN=1.00 VAVAM_SEED=1234"` |
 
 ## 5. Quota / clock

@@ -1,5 +1,5 @@
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-index ef88c88..97b42ff 100644
+index ef88c88..4a55baa 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 @@ -29,6 +29,7 @@ from .rectification import (
@@ -10,16 +10,17 @@ index ef88c88..97b42ff 100644
  from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
  
  _RUNTIME_WRITE_DIR_DEFAULTS = {
-@@ -71,6 +72,8 @@ class SessionState:
+@@ -71,6 +72,9 @@ class SessionState:
      )
      command: int = 2
      cached_plan: CachedPlan | None = None
 +    route_xy: np.ndarray | None = None
 +    session_uuid: str = ""
++    scene_id: str = ""
      camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
          field(default_factory=dict)
      )
-@@ -133,6 +136,35 @@ class VavamPolicyHandle:
+@@ -133,6 +137,35 @@ class VavamPolicyHandle:
              LOGGER.exception("VAVAM policy load failed")
              return
  
@@ -55,15 +56,26 @@ index ef88c88..97b42ff 100644
          with self._lock:
              self._policy = policy
          LOGGER.info("VAVAM policy load complete")
-@@ -200,6 +232,7 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -198,8 +231,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
+         camera_id = self._select_camera_id(camera_specs)
+ 
++        # scene_id is present locally and stripped in benchmark runs ("to avoid any potential
++        # data leakage"). Keying the RNG on it makes a given scene get the same noise in every
++        # local run -> genuinely paired A/Bs; officially it falls back to the session uuid,
++        # where only per-rollout independence matters.
++        scene_id = ""
++        if request.HasField("debug_info") and request.debug_info.scene_id:
++            scene_id = request.debug_info.scene_id
++
          with self._lock:
              self._sessions[request.session_uuid] = SessionState(
 +                session_uuid=request.session_uuid,
++                scene_id=scene_id,
                  camera_id=camera_id,
                  camera_specs=camera_specs,
              )
-@@ -276,8 +309,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -276,8 +319,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
      ) -> common_pb2.Empty:
          session = self._get_session(request.session_uuid, context)
          command = _command_from_route(request.route)
@@ -79,14 +91,15 @@ index ef88c88..97b42ff 100644
          return common_pb2.Empty()
  
      def submit_recording_ground_truth(
-@@ -380,11 +420,32 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -380,11 +430,33 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          with self._inference_lock:
              try:
 -                prediction = policy.predict(image, command)
 +                t_infer = time.perf_counter()
 +                prediction = policy.predict_k(
-+                    image, command, session_uuid=session.session_uuid
++                    image, command,
++                    session_uuid=session.scene_id or session.session_uuid,
 +                )
 +                infer_s = time.perf_counter() - t_infer
              except Exception:
@@ -114,18 +127,20 @@ index ef88c88..97b42ff 100644
              created_time_us=time_now_us,
              anchor_pose=anchor_pose,
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
-index 0d57dda..0c6df6f 100644
+index 0d57dda..afe5d13 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
-@@ -6,6 +6,7 @@
+@@ -6,7 +6,9 @@
  from __future__ import annotations
  
  import logging
 +import os
  import platform
++import zlib
  from collections import OrderedDict
  from contextlib import nullcontext
-@@ -32,6 +33,13 @@ torch.serialization.add_safe_globals(
+ from dataclasses import dataclass
+@@ -32,6 +34,13 @@ torch.serialization.add_safe_globals(
  class VavamPrediction:
      trajectory_xy: np.ndarray
      headings: np.ndarray
@@ -139,7 +154,7 @@ index 0d57dda..0c6df6f 100644
  
  
  class VavamPolicy:
-@@ -71,6 +79,14 @@ class VavamPolicy:
+@@ -71,6 +80,14 @@ class VavamPolicy:
          for key, value in ckpt["state_dict"].items():
              state_dict[key.replace("vam.", "")] = value
          vam.load_state_dict(state_dict, strict=True)
@@ -154,7 +169,7 @@ index 0d57dda..0c6df6f 100644
          self._vam = vam.eval().to(resolved_device)
  
          LOGGER.info("Loading VQ tokenizer from %s", tokenizer_path)
-@@ -79,17 +95,69 @@ class VavamPolicy:
+@@ -79,17 +96,77 @@ class VavamPolicy:
  
          self._device = resolved_device
          self._preproc_pipeline = NeuroNCAPTransform()
@@ -182,14 +197,22 @@ index 0d57dda..0c6df6f 100644
 -    def predict(self, image_hwc: np.ndarray, command: int) -> VavamPrediction:
 -        """Predict a trajectory from the latest RGB frame.
 +    def _seed_for(self, session_uuid: str | None) -> None:
-+        """Seed the sampler deterministically per session, not per global call."""
++        """Seed the sampler deterministically per scene (or per session), never per global call.
++
++        The caller passes scene_id when it has one, so the same scene draws the same noise in
++        every run and A/B pairs are genuinely paired. A global call counter (the original) made
++        the schedule depend on which rollout reached the lock first; `hash()` (my first fix)
++        made it depend on the process. Both are gone.
++        """
 +        if self._seed < 0:
 +            return
 +        key = session_uuid or ""
 +        n = self._session_calls.get(key, 0)
 +        self._session_calls[key] = n + 1
-+        # stable 32-bit offset per session; independent of arrival order
-+        offset = 0 if not key else (hash(key) & 0xFFFF) * 100_003
++        # zlib.crc32, NOT hash(): Python salts str hashes per process (PYTHONHASHSEED is unset
++        # in the image), so hash() gave a different seed schedule on every container start -
++        # two "seed 1234" runs were never paired. crc32 is deterministic everywhere.
++        offset = 0 if not key else (zlib.crc32(key.encode()) & 0xFFFF) * 100_003
 +        torch.manual_seed((self._seed + offset + n) % (2**31 - 1))
 +
 +    def predict(
@@ -226,7 +249,7 @@ index 0d57dda..0c6df6f 100644
  
          image = self._resize_and_center_crop(
              image_hwc,
-@@ -103,21 +171,38 @@ class VavamPolicy:
+@@ -103,21 +180,38 @@ class VavamPolicy:
              else nullcontext()
          )
  
@@ -271,7 +294,7 @@ index 0d57dda..0c6df6f 100644
          )
  
      @staticmethod
-@@ -146,6 +231,23 @@ class VavamPolicy:
+@@ -146,6 +240,23 @@ class VavamPolicy:
          return np.array(pil_img)
  
  

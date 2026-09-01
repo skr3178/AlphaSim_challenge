@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import os
 import platform
+import zlib
 from collections import OrderedDict
 from contextlib import nullcontext
 from dataclasses import dataclass
@@ -117,14 +118,22 @@ class VavamPolicy:
         )
 
     def _seed_for(self, session_uuid: str | None) -> None:
-        """Seed the sampler deterministically per session, not per global call."""
+        """Seed the sampler deterministically per scene (or per session), never per global call.
+
+        The caller passes scene_id when it has one, so the same scene draws the same noise in
+        every run and A/B pairs are genuinely paired. A global call counter (the original) made
+        the schedule depend on which rollout reached the lock first; `hash()` (my first fix)
+        made it depend on the process. Both are gone.
+        """
         if self._seed < 0:
             return
         key = session_uuid or ""
         n = self._session_calls.get(key, 0)
         self._session_calls[key] = n + 1
-        # stable 32-bit offset per session; independent of arrival order
-        offset = 0 if not key else (hash(key) & 0xFFFF) * 100_003
+        # zlib.crc32, NOT hash(): Python salts str hashes per process (PYTHONHASHSEED is unset
+        # in the image), so hash() gave a different seed schedule on every container start -
+        # two "seed 1234" runs were never paired. crc32 is deterministic everywhere.
+        offset = 0 if not key else (zlib.crc32(key.encode()) & 0xFFFF) * 100_003
         torch.manual_seed((self._seed + offset + n) % (2**31 - 1))
 
     def predict(

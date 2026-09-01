@@ -65,8 +65,10 @@ class SelectConfig:
     consensus_scale_m: float = 2.0
 
     # --- behaviour ---
-    use_safety_mask: bool = True
-    """Rank only among candidates with zero violations; if none, report `no_safe`."""
+    use_safety_mask: bool = False
+    """A/B arm, default OFF. `drivable` already scores the same signal softly, and the mask
+    gates on distance to an *assumed* bridged reference — a hard gate on an inferred quantity
+    is a strong claim. Turn on to test it against the soft term (S1b)."""
     min_progress_frac: float = 0.0
     """Reject candidates below this fraction of the best candidate's progress."""
     tie_eps_m: float = 0.25
@@ -74,7 +76,11 @@ class SelectConfig:
     ref: str = "hermite"
     sample_step_m: float = 1.0
     min_route_x_m: float = 5.0
-    max_route_y_m: float = 12.0
+    max_route_y_m: float = 30.0
+    """route[0] sits ~`route_start_offset_m` (40 m) ALONG the path, not 40 m straight ahead, so
+    on a curve it is far off-axis: a 40 deg turn puts it at 13.4 m, 60 deg at 19.1 m, 90 deg at
+    25.5 m. The old 12 m bound fired on 27 % of S0 ticks - disabling selection precisely on the
+    turns it exists for. 30 m admits a 90 deg turn and still rejects a genuinely broken route."""
 
 
 @dataclass(frozen=True)
@@ -305,9 +311,14 @@ def select(
     # --- CarPlanner terms, each normalised to roughly [-1, 1] -----------------------
     terms = {
         "comfort": _comfort(c, cfg.jerk_scale_m),
-        "progress": _progress(c, cfg.max_progress_m),
+        # Arc length along the reference, not x_end: on a turn a candidate that correctly
+        # follows the route has small x but large progress. end_arclen is already computed.
+        "progress": np.clip(end_arclen / max(cfg.max_progress_m, 1e-6), 0.0, 1.5),
         "drivable": -violation,
-        "route": -np.clip(mean_lat / max(cfg.lane_max_dist_m, 1e-6), 0.0, 2.0),
+        # `costs` (mean lateral + heading) is the quantity that ranks, normalised. Before this
+        # the heading term lived only in `costs` and never reached `scores`, so w_heading was
+        # silently inert - the tests only checked `costs`.
+        "route": -np.clip(costs / max(cfg.lane_max_dist_m, 1e-6), 0.0, 2.0),
         "consensus": _consensus(c, cfg.consensus_scale_m),
         "disc": _discontinuity(c, previous_xy, cfg.consensus_scale_m),
     }
@@ -328,9 +339,10 @@ def select(
 
     reason = "selected"
     if not eligible.any():
-        # CarPlanner emergency-stops here; we hand the signal up and B8 decelerates.
-        eligible = np.ones(k, dtype=bool)
-        reason = "no_safe"
+        # CarPlanner emergency-stops here. Until B8's decelerating fallback exists there is
+        # nothing safe to fall back TO, so return index 0 (baseline behaviour) and surface the
+        # signal in `reason` rather than ranking among candidates we have just called unsafe.
+        return Selection(0, costs, spread, "no_safe", ref, scores, terms, 0)
 
     masked = np.where(eligible, scores, -np.inf)
     best = float(masked.max())

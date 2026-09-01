@@ -74,6 +74,7 @@ class SessionState:
     cached_plan: CachedPlan | None = None
     route_xy: np.ndarray | None = None
     session_uuid: str = ""
+    scene_id: str = ""
     camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
         field(default_factory=dict)
     )
@@ -230,9 +231,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
 
         camera_id = self._select_camera_id(camera_specs)
 
+        # scene_id is present locally and stripped in benchmark runs ("to avoid any potential
+        # data leakage"). Keying the RNG on it makes a given scene get the same noise in every
+        # local run -> genuinely paired A/Bs; officially it falls back to the session uuid,
+        # where only per-rollout independence matters.
+        scene_id = ""
+        if request.HasField("debug_info") and request.debug_info.scene_id:
+            scene_id = request.debug_info.scene_id
+
         with self._lock:
             self._sessions[request.session_uuid] = SessionState(
                 session_uuid=request.session_uuid,
+                scene_id=scene_id,
                 camera_id=camera_id,
                 camera_specs=camera_specs,
             )
@@ -422,7 +432,8 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
             try:
                 t_infer = time.perf_counter()
                 prediction = policy.predict_k(
-                    image, command, session_uuid=session.session_uuid
+                    image, command,
+                    session_uuid=session.scene_id or session.session_uuid,
                 )
                 infer_s = time.perf_counter() - t_infer
             except Exception:

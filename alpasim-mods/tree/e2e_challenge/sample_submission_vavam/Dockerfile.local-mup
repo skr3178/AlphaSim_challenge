@@ -1,6 +1,7 @@
 # LOCAL-ONLY twin: Blackwell (sm_120) needs cu128 torch. Submit the cu124 Dockerfile, not this.
 FROM pytorch/pytorch:2.8.0-cuda12.8-cudnn9-runtime
 
+ENV PYTHONHASHSEED=0
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PIP_NO_CACHE_DIR=1

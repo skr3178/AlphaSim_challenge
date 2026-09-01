@@ -101,22 +101,34 @@ def test_equal_route_agreement_resolves_to_the_further_candidate():
 # ------------------------------------------------------- the CarPlanner-derived terms
 
 
+MASK = SelectConfig(use_safety_mask=True)   # the mask is an A/B arm, default OFF
+
+
+def test_safety_mask_is_off_by_default():
+    """`drivable` already scores this softly; the hard gate must be opted into."""
+    assert SelectConfig().use_safety_mask is False
+
+
 def test_safety_mask_excludes_violators_and_ranks_the_rest():
-    """Candidates with any point beyond lane_max_dist are not ranked at all."""
+    """With the mask ON, candidates beyond lane_max_dist are not ranked at all."""
     route = route_straight()
     good, ok, wild = traj(25, 0), traj(25, 1.5), traj(25, 20)
-    out = select(np.stack([wild, good, ok]), route, cfg=CFG)
+    out = select(np.stack([wild, good, ok]), route, cfg=MASK)
     assert out.index != 0, "the violator must never be chosen while safe candidates exist"
     assert out.n_safe == 2, f"expected 2 safe candidates, got {out.n_safe}"
     assert out.reason != "no_safe"
 
 
-def test_all_unsafe_reports_no_safe_for_the_b8_fallback():
-    """CarPlanner emergency-stops here; we surface the signal and B8 decelerates."""
+def test_all_unsafe_falls_back_to_index_zero():
+    """No safe candidate -> baseline behaviour, not a pick among ones we called unsafe.
+
+    CarPlanner emergency-stops here. Until B8's decelerating fallback exists there is nothing
+    safe to fall back TO, so return index 0 and surface the condition in `reason`.
+    """
     route = route_straight()
-    out = select(np.stack([traj(25, 18), traj(25, -20)]), route, cfg=CFG)
+    out = select(np.stack([traj(25, 18), traj(25, -20)]), route, cfg=MASK)
     assert out.reason == "no_safe" and out.n_safe == 0
-    assert 0 <= out.index < 2, "must still return a usable index"
+    assert out.index == 0, "must fall back to baseline, not rank unsafe candidates"
 
 
 def test_consensus_prefers_the_typical_draw():
@@ -288,3 +300,41 @@ def test_expand_arg_is_built_from_ndim_not_hardcoded():
         t = torch.zeros(shape, dtype=torch.long)
         out = t.expand(5, *([-1] * (t.dim() - 1)))
         assert out.shape[0] == 5 and out.shape[1:] == t.shape[1:], shape
+
+
+# --------------------------------------------- review items: heading in scores, arc progress
+
+
+def test_heading_term_reaches_the_score_not_just_costs():
+    """Regression: `heading_w` lived only in `costs` and never affected ranking."""
+    route = route_offset(+1)
+    cands = np.stack([traj(24, 5), np.vstack([traj(20, 3)[:-1], [[20.0, -2.0]]])])
+    a = select(cands, route, cfg=SelectConfig(heading_w=0.0))
+    b = select(cands, route, cfg=SelectConfig(heading_w=8.0))
+    assert not np.allclose(a.terms["route"], b.terms["route"]), "heading must move the route term"
+    assert not np.allclose(a.scores, b.scores), "and therefore the score"
+
+
+def test_progress_is_arc_length_along_the_reference_not_forward_x():
+    """On a turn, progress must reward following the route, not raw forward x.
+
+    The honest test is a candidate sampled FROM the reference (perfect follower) against one
+    that drives straight past it. With x_end the straight one wins on a left turn; with arc
+    length along the reference the follower does.
+    """
+    route = route_offset(+1)
+    ref = reference_path(route, CFG)
+    # perfect follower: 6 points along the reference out to ~25 m of arc
+    seg = np.linalg.norm(np.diff(ref, axis=0), axis=1)
+    arc = np.concatenate([[0.0], np.cumsum(seg)])
+    take = [int(np.argmin(np.abs(arc - a))) for a in np.linspace(4, 25, 6)]
+    follower = ref[take]
+    straight = traj(25, 0)
+    out = select(np.stack([straight, follower]), route, cfg=CFG)
+    assert out.terms["progress"][1] >= out.terms["progress"][0] - 1e-9, (
+        f"follower must not score less progress: {out.terms['progress']}"
+    )
+    assert out.terms["route"][1] > out.terms["route"][0], (
+        f"follower must score better on route agreement: {out.terms['route']}"
+    )
+    assert out.index == 1, f"the follower should win outright, got {out.index}"

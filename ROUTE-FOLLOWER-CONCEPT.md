@@ -92,6 +92,10 @@ with `keep`/`curvature cap` (the follower does not need the model); path lost (r
 | F3 400 scenes | confirm gate: ≥ 5 fewer at-fault than `confirm400-mup-g100` (13), progress ≥ 0.97 × baseline, no city regression, Drive ≈ 103 ms |
 | ship | bake into `Dockerfile.submit-mup` → candidate #3; explicit go only |
 
+**Sizing rule (from S1's identity control):** a 4 mm per-call numeric difference moved at-fault by 2 on 100 scenes, and a seed change by 4.
+So F0/F1 are judged on the *continuous* path metrics (dist_to_gt, lateral dist, corridor exits, wrong-lane — expected effects 1–2 m and
+5–8 events, far above the floor), never on a 1–2 incident at-fault delta; at-fault is read only at F3 (400 scenes, gate ≥ 5).
+
 Cheap pre-check before any GPU time: replay captured Drive requests (`capture/captured/*/requests.jsonl`) through `route_map.py` and
 plot the accumulated path against the ego trace — the frames must line up to < 0.5 m or nothing downstream is meaningful.
 

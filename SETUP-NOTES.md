@@ -1450,3 +1450,18 @@ candidates, and **re-raises** ("refusing to serve") so a broken inference path k
 **Rule from now on:** every run's early check = `docker logs local-driver | grep -c "inference failed"` must be 0 and the policy's own
 per-call log line count must be > 0 once scenes complete; an aggregate is not evidence that the policy ran. Also note the
 `pgrep -f` self-match trap (EVAL-RUNBOOK "Is the GPU free?").
+
+## 6.19 S0 screen result + Defect 9 (seed not reproducible)  [2026-09-01 14:29–14:55]
+
+`screen-s0-k5` (k=5, seed 1234, 100 scenes, dev_fast2): 100/100, 604 s, 0 inference failures, warm-up logged "(k=5 verified)".
+Aggregate vs `screen-mup-g100`: at-fault 3 vs 3 (2 swaps), progress 1.0472 vs 1.0484, dist_to_gt 2.75 vs 2.71, corridor 7 vs 7,
+wrong-lane 31 vs 33, Drive 126 vs 103 ms. Per-scene: 0/100 bit-identical, |ddist| median 0.52 m (unchanged stock-B reruns: 0.26–0.30),
+at-fault flips 2/100 (reruns: 10–12/300). S0 log (1000 lines): spread median 1.742 / mean 1.824 / p90 2.915 m; argmin≠0 0.60;
+reasons tie_progress 608, guard_route_implausible 270, selected 106, no_safe 11, no_route 5; infer_ms mean 113 / p95 138.
+**Defect 9:** `_seed_for` offsets by `hash(session_uuid)`; PYTHONHASHSEED unset → different noise every launch even with VAVAM_SEED set, and
+session_uuid is fresh per run anyway. Fix: key on `scene_id` (present locally, stripped officially → fall back to session_uuid) with
+`zlib.crc32`. Until fixed no A/B is paired. Offline check (in-container, same process/seed): row 0 of k=5 vs k=1 max diff 0.0044 m; k=5
+bit-deterministic. Verdict: k path sound; S0 PASS; identity vs the old baseline unreachable by design (schedule changed).
+`guard_route_implausible` (|y|>12 m or x<5 m on route[0]) fires on 27 % of ticks — at 40 m lookahead any turn > ~40° exceeds 12 m, so it
+disables selection exactly on turns; loosen/curvature-based. Review of selection.py (heading term not in scores; progress = x_end;
+no_safe ranks all; drivable≡route) sent to the selector session for S1.

@@ -64,6 +64,17 @@ public leaderboard closes **2026-10-31**, final results **2026-11-15**. No quota
 
 ## 6. Next after candidate #2 is decided
 
+**S0 diagnostic — done 2026-09-01 14:39, PASS (`screen-s0-k5`: k=5, seed 1234, `navtest_local100`, `dev_fast2`, image `local-mup-k` 6854e313).**
+Selection not applied (row 0 driven). Aggregate vs candidate #2 (`screen-mup-g100`): at-fault **3 vs 3** (2 scenes swapped — inside the
+10–12/300 flip rate of unchanged-driver reruns), progress 1.047 vs 1.048, dist_to_gt 2.75 vs 2.71 m, corridor 7 vs 7, wrong-lane 31 vs 33.
+Not bit-identical per scene (0/100) because the peer's `predict_k` changed the seed schedule (per-session, and `hash()`-salted → not
+reproducible across launches — bug, fix = key on scene_id with crc32); offline in-process check shows row 0 of k=5 = k=1 within 4 mm, so
+batching is sound. **Kill switch cleared:** end-point spread median **1.74 m** (p90 2.9) vs 0.5 m threshold; route-argmin ≠ 0 on **60 %**
+of ticks; reasons: tie_progress 61 %, guard_route_implausible **27 %** (guard too tight on turns — fix), selected 11 %, no_safe 1 %.
+Cost: Drive mean **126 ms** (k=1: 103) = +22 %/call ≈ +0.5 % official wall; driver VRAM 3.1 GiB. Next: fix seeding + guard + review items
+(ROUTE-SELECTION-PLAN §2 review), rebuild, then S1 = k=1 vs k=5 identity control, then selection-on vs off on the same 100.
+
+
 **Route-aware sample selection (B1+B4) + conditional slow-down (B2), never early termination (B7)** — full plan with staged gates in
 `ROUTE-SELECTION-PLAN.md` (written 2026-08-31 16:40, not implemented). Each stage through the same ladder, compared to **candidate #2**
 as the baseline. Three exploration findings that reshape it: the route the driver gets starts **40 m ahead** (`route_start_offset_m: 40`),

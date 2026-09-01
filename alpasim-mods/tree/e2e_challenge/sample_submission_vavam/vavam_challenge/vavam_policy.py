@@ -176,8 +176,14 @@ class VavamPolicy:
             with autocast_ctx:
                 tokens = self._tokenizer(tensor)
                 batched_tokens = tokens.unsqueeze(1)
-                if k > 1:  # (1,1,N) -> (k,1,N); trunk runs once, KV-cached
-                    batched_tokens = batched_tokens.expand(k, -1, -1)
+                if k > 1:
+                    # Tokens are 4-D: (1, 1, 18, 32) = (batch, context, Hgrid, Wgrid).
+                    # `expand` needs one size per dimension, so build the arg from ndim
+                    # rather than hardcoding a rank - an earlier hardcoded (k,-1,-1)
+                    # raised on every call and silently fell back to the stale plan.
+                    batched_tokens = batched_tokens.expand(
+                        k, *([-1] * (batched_tokens.dim() - 1))
+                    )
                 batched_command = torch.full(
                     (k, 1), command, device=self._device, dtype=torch.long
                 )

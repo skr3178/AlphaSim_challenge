@@ -1436,3 +1436,17 @@ So the announced Aug 31 – Sep 6 downtime closes the whole submission API. Cand
 | `METRICS.md` | What does this term/metric mean? |
 | `ROUTE-SELECTION-PLAN.md` | How is the in-flight B1/B2/B4 change designed? (retire on ship) |
 | `SETUP-NOTES.md` | What happened, and what broke? |
+
+## 6.18 Defect 8 — silent inference fallback manufactured a complete, wrong run  [2026-09-01 14:10–14:30, peer session]
+
+First S0 launch (`screen-s0-k5`, k=5) ran 32 scenes with **zero** policy calls succeeding: `predict_k` did
+`tokens.expand(k, -1, -1)` on a 4-D token tensor (1, 1, 18, 32) → `RuntimeError` on every call. `driver._maybe_run_inference`
+catches all exceptions (`LOGGER.exception; return`) and keeps serving the stale plan — which, before the first successful inference,
+is the ≥ 2 m/s straight-line fallback. The wizard saw healthy sessions; the aggregate would have looked plausible. Detected only
+because the "S0 k=" log count stayed at 0 while scenes completed. 447 failures in the container log.
+Fixes (in `local-mup-k` 6854e313): expand sizes built from `ndim`; warm-up now runs `predict_k` at the configured k, asserts k
+candidates, and **re-raises** ("refusing to serve") so a broken inference path kills the container at start-up; regression test added
+(29 tests). Aborted run parked at `runs/screen-s0-k5-ABORTED-broken-expand` — do not read metrics from it.
+**Rule from now on:** every run's early check = `docker logs local-driver | grep -c "inference failed"` must be 0 and the policy's own
+per-call log line count must be > 0 once scenes complete; an aggregate is not evidence that the policy ran. Also note the
+`pgrep -f` self-match trap (EVAL-RUNBOOK "Is the GPU free?").

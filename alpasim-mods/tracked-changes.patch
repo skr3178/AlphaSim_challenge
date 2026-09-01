@@ -1,5 +1,5 @@
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-index ef88c88..c10deef 100644
+index ef88c88..97b42ff 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 @@ -29,6 +29,7 @@ from .rectification import (
@@ -19,7 +19,7 @@ index ef88c88..c10deef 100644
      camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
          field(default_factory=dict)
      )
-@@ -133,6 +136,21 @@ class VavamPolicyHandle:
+@@ -133,6 +136,35 @@ class VavamPolicyHandle:
              LOGGER.exception("VAVAM policy load failed")
              return
  
@@ -31,17 +31,31 @@ index ef88c88..c10deef 100644
 +                dummy = _np.full((1080, 1920, 3), 96, dtype=_np.uint8)
 +                t0 = _time.time()
 +                for _ in range(n_warm):
-+                    policy.predict(dummy, command=2)
-+                if hasattr(policy, "_n_calls"):
-+                    policy._n_calls = 0  # keep the seeded noise sequence independent of warm-up
-+                LOGGER.info("VAVAM warm-up: %d inferences in %.1fs", n_warm, _time.time() - t0)
++                    warm = policy.predict_k(dummy, command=2, session_uuid="__warmup__")
++                if hasattr(policy, "_session_calls"):
++                    policy._session_calls.clear()  # keep the seeded noise independent of warm-up
++                k_cfg = getattr(policy, "_num_samples", 1)
++                got = 1 if warm.candidates_xy is None else len(warm.candidates_xy)
++                if got != k_cfg:
++                    raise RuntimeError(
++                        f"warm-up produced {got} candidates, expected k={k_cfg}"
++                    )
++                LOGGER.info(
++                    "VAVAM warm-up: %d inferences in %.1fs (k=%d verified)",
++                    n_warm, _time.time() - t0, got,
++                )
 +            except Exception:
-+                LOGGER.exception("VAVAM warm-up failed (continuing)")
++                # FAIL FAST. A broken k>1 path used to raise on every Drive call while the
++                # driver quietly served stale plans - 447 failures across 32 "completed"
++                # scenes, with a plausible-looking aggregate. Warm-up exercises the exact
++                # configured path, so a rank/shape bug stops the container instead.
++                LOGGER.exception("VAVAM warm-up failed - refusing to serve")
++                raise
 +
          with self._lock:
              self._policy = policy
          LOGGER.info("VAVAM policy load complete")
-@@ -200,6 +218,7 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -200,6 +232,7 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          with self._lock:
              self._sessions[request.session_uuid] = SessionState(
@@ -49,7 +63,7 @@ index ef88c88..c10deef 100644
                  camera_id=camera_id,
                  camera_specs=camera_specs,
              )
-@@ -276,8 +295,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -276,8 +309,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
      ) -> common_pb2.Empty:
          session = self._get_session(request.session_uuid, context)
          command = _command_from_route(request.route)
@@ -65,7 +79,7 @@ index ef88c88..c10deef 100644
          return common_pb2.Empty()
  
      def submit_recording_ground_truth(
-@@ -380,11 +406,32 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -380,11 +420,32 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          with self._inference_lock:
              try:
@@ -100,7 +114,7 @@ index ef88c88..c10deef 100644
              created_time_us=time_now_us,
              anchor_pose=anchor_pose,
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
-index 0d57dda..2184b5b 100644
+index 0d57dda..0c6df6f 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
 @@ -6,6 +6,7 @@
@@ -212,7 +226,7 @@ index 0d57dda..2184b5b 100644
  
          image = self._resize_and_center_crop(
              image_hwc,
-@@ -103,21 +171,32 @@ class VavamPolicy:
+@@ -103,21 +171,38 @@ class VavamPolicy:
              else nullcontext()
          )
  
@@ -225,8 +239,14 @@ index 0d57dda..2184b5b 100644
 -                    [[command]],
 -                    device=self._device,
 -                    dtype=torch.long,
-+                if k > 1:  # (1,1,N) -> (k,1,N); trunk runs once, KV-cached
-+                    batched_tokens = batched_tokens.expand(k, -1, -1)
++                if k > 1:
++                    # Tokens are 4-D: (1, 1, 18, 32) = (batch, context, Hgrid, Wgrid).
++                    # `expand` needs one size per dimension, so build the arg from ndim
++                    # rather than hardcoding a rank - an earlier hardcoded (k,-1,-1)
++                    # raised on every call and silently fell back to the stale plan.
++                    batched_tokens = batched_tokens.expand(
++                        k, *([-1] * (batched_tokens.dim() - 1))
++                    )
 +                batched_command = torch.full(
 +                    (k, 1), command, device=self._device, dtype=torch.long
                  )
@@ -251,7 +271,7 @@ index 0d57dda..2184b5b 100644
          )
  
      @staticmethod
-@@ -146,6 +225,23 @@ class VavamPolicy:
+@@ -146,6 +231,23 @@ class VavamPolicy:
          return np.array(pil_img)
  
  

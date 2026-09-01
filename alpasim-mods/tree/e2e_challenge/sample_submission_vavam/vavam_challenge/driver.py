@@ -144,12 +144,26 @@ class VavamPolicyHandle:
                 dummy = _np.full((1080, 1920, 3), 96, dtype=_np.uint8)
                 t0 = _time.time()
                 for _ in range(n_warm):
-                    policy.predict(dummy, command=2)
-                if hasattr(policy, "_n_calls"):
-                    policy._n_calls = 0  # keep the seeded noise sequence independent of warm-up
-                LOGGER.info("VAVAM warm-up: %d inferences in %.1fs", n_warm, _time.time() - t0)
+                    warm = policy.predict_k(dummy, command=2, session_uuid="__warmup__")
+                if hasattr(policy, "_session_calls"):
+                    policy._session_calls.clear()  # keep the seeded noise independent of warm-up
+                k_cfg = getattr(policy, "_num_samples", 1)
+                got = 1 if warm.candidates_xy is None else len(warm.candidates_xy)
+                if got != k_cfg:
+                    raise RuntimeError(
+                        f"warm-up produced {got} candidates, expected k={k_cfg}"
+                    )
+                LOGGER.info(
+                    "VAVAM warm-up: %d inferences in %.1fs (k=%d verified)",
+                    n_warm, _time.time() - t0, got,
+                )
             except Exception:
-                LOGGER.exception("VAVAM warm-up failed (continuing)")
+                # FAIL FAST. A broken k>1 path used to raise on every Drive call while the
+                # driver quietly served stale plans - 447 failures across 32 "completed"
+                # scenes, with a plausible-looking aggregate. Warm-up exercises the exact
+                # configured path, so a rank/shape bug stops the container instead.
+                LOGGER.exception("VAVAM warm-up failed - refusing to serve")
+                raise
 
         with self._lock:
             self._policy = policy

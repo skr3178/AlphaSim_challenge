@@ -239,3 +239,14 @@ comparability. **From the next round on, every eval uses `navtest_local400` (4 c
 - **Equal allocation ≠ the benchmark.** The 400 are 25 % per city; navtest is Vegas 32 / Boston 31 /
   Pittsburgh 22 / Singapore 15. Reweight for a go/no-go number:
   `0.32·Vegas + 0.31·Boston + 0.22·Pittsburgh + 0.15·Singapore`.
+
+## Is the GPU free? (check before every launch — two sim stacks OOM the 24 GB card)
+
+```bash
+docker ps --format '{{.Names}}'                                   # must print nothing
+nvidia-smi --query-gpu=memory.used --format=csv,noheader          # ~480 MiB when idle
+ps -eo pid,cmd --no-headers | grep -E 'alpasim_wizard|run-eval\.sh' | grep -vE 'bash -c|/bin/sh|grep' | wc -l   # must be 0
+```
+Do **not** use `pgrep -f alpasim_wizard` / `pgrep -af` for this: it matches the shell that contains the pattern, so the guard
+always self-triggers (burned two sessions on 2026-09-01). When several Claude sessions are open, also announce the launch to the
+others (cross-session message) — the agreement since 2026-09-01 is that every session declares before touching the GPU.

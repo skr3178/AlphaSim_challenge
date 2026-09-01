@@ -268,3 +268,23 @@ def test_returns_the_dataclass_contract():
     assert isinstance(out, Selection)
     assert isinstance(out.index, int) and 0 <= out.index < 2
     assert out.reference is not None and out.reference.shape[1] == 2
+
+
+# ------------------------------------------------- regression: predict_k tensor ranks
+
+
+def test_expand_arg_is_built_from_ndim_not_hardcoded():
+    """Regression for the k>1 crash that cost a whole 100-scene run.
+
+    Visual tokens are 4-D — (1, 1, 18, 32) = (batch, context, Hgrid, Wgrid) — but the
+    first version of `predict_k` wrote `expand(k, -1, -1)`, a 3-size arg. That raises on
+    every call; the driver caught it, served the stale plan, and 32 scenes "completed"
+    with a plausible aggregate produced by a policy that never ran. Build the arg from
+    `dim()` so it is rank-agnostic.
+    """
+    import torch
+
+    for shape in [(1, 1, 18, 32), (1, 1, 576), (1, 1, 24, 24), (1, 1, 4, 8, 8)]:
+        t = torch.zeros(shape, dtype=torch.long)
+        out = t.expand(5, *([-1] * (t.dim() - 1)))
+        assert out.shape[0] == 5 and out.shape[1:] == t.shape[1:], shape

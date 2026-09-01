@@ -24,12 +24,12 @@ cp -p "$LOGS"/*.sh "$REPO/tools/" 2>/dev/null || true; cp -p "$LOGS"/*.py "$REPO
 
 # ---- guards: no big files, no tokens
 cd "$REPO"; git add -A
+git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
 big=$(git diff --cached --name-only --diff-filter=AM | xargs -r -I{} find {} -size +5M 2>/dev/null || true)
 [ -n "$big" ] && { echo "REFUSING: files > 5 MB staged:"; echo "$big"; git reset -q; exit 1; }
-if git diff --cached --name-only --diff-filter=AM | xargs -r /bin/grep -l -E 'AKIA[0-9A-Z]{12}|hf_[A-Za-z0-9]{30,}|"token": *"[A-Za-z0-9_-]{40,}' 2>/dev/null; then
-  echo "REFUSING: token-like string in the staged files above"; git reset -q; exit 1; fi
+leak=$(git diff --cached --name-only --diff-filter=AM | xargs -r /bin/grep -l -E 'AKIA[0-9A-Z]{12}|hf_[A-Za-z0-9]{30,}|"token": *"[A-Za-z0-9_-]{40,}' 2>/dev/null || true)
+[ -n "$leak" ] && { echo "REFUSING: token-like string in:"; echo "$leak"; git reset -q; exit 1; }
 
-git diff --cached --quiet && { echo "nothing to commit"; exit 0; }
 git commit -q -m "$MSG" -m "Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 git log -1 --format='committed %h  %s'
 if [ "$PUSH" = 1 ]; then git push -q origin HEAD && echo "pushed to $(git remote get-url origin)"; fi

@@ -15,6 +15,7 @@ from vavam_challenge.selection import (
     Selection,
     _discontinuity,
     reference_path,
+    discontinuity_reference,
     rebase_to_current_frame,
     select,
 )
@@ -402,12 +403,39 @@ def test_discontinuity_after_rebasing_does_not_favour_the_slower_candidate():
     # Two candidates: one continues the previous plan, one brakes hard. Driving forward 5 m
     # and rebasing must rank the continuing one as MORE continuous. Without the rebase the
     # stale plan sits 5 m behind, and the braking candidate wins.
-    prev = _straight(n=10, dx=2.0)                       # 2 m/step
-    keep = _straight(n=10, dx=2.0)                       # same plan, re-issued
-    brake = _straight(n=10, dx=0.4)                      # much shorter
+    # 2 m per plan step; one step elapses between replans, so the ego advanced 2 m.
+    prev = _straight(n=10, dx=2.0)
+    keep = _straight(n=10, dx=2.0)                       # same trajectory, re-issued
+    brake = _straight(n=10, dx=0.4)                      # brakes hard
     cands = np.stack([keep, brake])
-    rebased = rebase_to_current_frame(prev, (0.0, 0.0, 0.0), (5.0, 0.0, 0.0))
-    good = _discontinuity(cands, rebased + np.array([5.0, 0.0]), 1.0)
+    ref = discontinuity_reference(prev, (0.0, 0.0, 0.0), (2.0, 0.0, 0.0), shift=1)
+    good = _discontinuity(cands, ref, 1.0)
+    assert good[0] == pytest.approx(0.0, abs=1e-9), "re-issuing the same plan is zero change"
     assert good[0] < good[1], "the continuing candidate must be the continuous one"
+
+
+def test_naive_discontinuity_picked_the_wrong_candidate_on_a_turn():
+    """The defect had teeth on turns, where the frame error is a rotation.
+
+    Ego is mid-turn: it advanced 2 m and rotated +30 deg since the plan was made. Candidate A
+    is that plan continued - the same world path, which in the new ego frame runs off at
+    -30 deg. Candidate B goes straight ahead in the new frame, i.e. it abandons the planned
+    path and commits to the new heading. The corrected reference scores A as perfectly
+    continuous. The old comparison, which held the stored plan in a stale frame, scored B as
+    perfectly continuous instead - so w_disc > 0 would have pushed the planner to keep
+    turning rather than to hold its line.
+    """
+    prev = _straight(n=10, dx=2.0)                       # world: (0,0) .. (18,0)
+    cur = (2.0, 0.0, np.pi / 6)
+    cont = discontinuity_reference(prev, (0.0, 0.0, 0.0), cur, shift=1)
+    a = np.concatenate([cont, cont[-1:] + (cont[-1] - cont[-2])])   # A: pad back to 10
+    b = _straight(n=10, dx=2.0)                                     # B: straight in new frame
+    cands = np.stack([a, b])
+    good = _discontinuity(cands, cont, 1.0)
+    assert good[0] < good[1], "corrected: continuing the planned path is the continuous one"
     naive = _discontinuity(cands, prev, 1.0)
-    assert naive[1] < naive[0], "documents the old behaviour: braking looked continuous"
+    assert naive[1] < naive[0], "old behaviour: abandoning the path looked continuous"
+
+
+def test_discontinuity_reference_declines_when_the_shift_eats_the_plan():
+    assert discontinuity_reference(_straight(n=3), (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 3) is None

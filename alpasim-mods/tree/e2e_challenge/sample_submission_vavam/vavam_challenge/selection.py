@@ -252,10 +252,43 @@ def rebase_to_current_frame(
 
 
 def _discontinuity(c: np.ndarray, previous: np.ndarray | None, scale: float) -> np.ndarray:
-    """Mean point distance from the previously chosen plan, normalised."""
-    if previous is None or previous.shape != c.shape[1:]:
+    """Mean point distance from the previously chosen plan, normalised.
+
+    `previous` must be a discontinuity REFERENCE built by `discontinuity_reference`, not the
+    raw stored plan: rebased into the current ego frame and advanced by the number of plan
+    steps that elapsed. It is therefore shorter than a candidate, so the comparison runs over
+    the overlapping prefix.
+    """
+    if previous is None or previous.ndim != 2 or previous.shape[1] != c.shape[2]:
         return np.zeros(len(c))
-    return np.linalg.norm(c - previous[None], axis=2).mean(axis=1) / max(scale, 1e-6)
+    m = min(c.shape[1], previous.shape[0])
+    if m == 0:
+        return np.zeros(len(c))
+    return np.linalg.norm(c[:, :m] - previous[None, :m], axis=2).mean(axis=1) / max(scale, 1e-6)
+
+
+def discontinuity_reference(
+    prev_xy: np.ndarray,
+    prev_pose: tuple[float, float, float],
+    cur_pose: tuple[float, float, float],
+    shift: int,
+) -> np.ndarray | None:
+    """The previous plan, made directly comparable to a fresh candidate.
+
+    Two corrections, both needed. `rebase_to_current_frame` removes the ego's translation and
+    rotation since the plan was made. `shift` then removes the receding horizon: the planner
+    emits points at a fixed rate, so after `shift` plan steps have elapsed, index i of a new
+    candidate describes the same instant as index i + shift of the old plan.
+
+    Without the shift the term still prefers slow candidates even in the right frame, because
+    a plan that keeps driving is displaced by one step from the stored one while a plan that
+    brakes stays near it. With both corrections, re-issuing the same trajectory scores exactly
+    zero discontinuity, which is the property the term is supposed to have.
+    """
+    if prev_xy is None or shift < 0 or shift >= len(prev_xy):
+        return None
+    out = rebase_to_current_frame(prev_xy, prev_pose, cur_pose)
+    return out[shift:] if shift else out
 
 
 # ----------------------------------------------------------------------------- main

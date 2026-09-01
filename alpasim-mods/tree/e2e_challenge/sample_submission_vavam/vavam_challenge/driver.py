@@ -30,7 +30,7 @@ from .rectification import (
     RectificationTargetConfig,
     build_ftheta_rectifier_for_resolution,
 )
-from .selection import SelectConfig, rebase_to_current_frame, select
+from .selection import SelectConfig, discontinuity_reference, select
 
 # LOCAL PATCH (opt-in, inert by default): route-aware selection among the k sampled candidates.
 _ROUTE_SELECT = os.environ.get("VAVAM_ROUTE_SELECT", "0") == "1"
@@ -490,7 +490,13 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
             cur_pose = _pose_xy_yaw(anchor_pose)
             prev_xy, prev_pose = session.last_selected_xy, session.last_selected_pose
             if prev_xy is not None and prev_pose is not None and cur_pose is not None:
-                prev_xy = rebase_to_current_frame(prev_xy, prev_pose, cur_pose)
+                # One replan interval elapsed; the plan emits at output_frequency_hz, so that
+                # is `shift` plan steps of receding horizon to skip. At the defaults (500 ms,
+                # 2 Hz) this is exactly 1.
+                shift = int(round(
+                    self._inference_interval_us / 1e6 * policy.output_frequency_hz
+                ))
+                prev_xy = discontinuity_reference(prev_xy, prev_pose, cur_pose, shift)
             elif prev_xy is not None:
                 prev_xy = None  # no pose pair: no comparison is better than a wrong one
             sel = select(
@@ -514,8 +520,9 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
             # (negative x, magnitude ~ speed x 0.5 s). It is a live check on the pose
             # convention; a positive or wildly large base_x means the transform is wrong.
             d_end, base_x = float("nan"), float("nan")
-            if prev_xy is not None:
-                d_end = float(np.linalg.norm(chosen_xy[-1] - prev_xy[-1]))
+            if prev_xy is not None and len(prev_xy):
+                m = min(len(chosen_xy), len(prev_xy))
+                d_end = float(np.linalg.norm(chosen_xy[m - 1] - prev_xy[m - 1]))
                 base_x = float(prev_xy[0, 0])
             LOGGER.info(
                 "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s "

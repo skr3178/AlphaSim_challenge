@@ -1516,3 +1516,32 @@ meaningless — with fresh noise each tick index i has no identity across ticks;
 persistent noise vectors so candidates are persistent modes — would make the index meaningful; parked, not rejected.)
 Next candidates: w_disc = 1.0 at seed 1234 (does the trend continue or does progress start paying?), then the best weight + its control at
 seed 5678; then S3 on 400 if two seeds agree.
+
+## 6.22 Leaderboard forensics 2 — what the top nuPlan entries most likely did  [2026-09-01 17:30]
+
+Sources: `leaderboard/nuplan-20260901.json` (tags + metrics), `leaderboard/pai.json`, NVIDIA forum thread 380855 (route accumulation),
+NVlabs/alpasim issues #133 / #138 / #166, `route_generator.py` (`RouteGeneratorMap`).
+
+| entry | PCS | at-fault km | dist_to_gt | profile → inferred approach |
+|---|---|---|---|---|
+| NaLa `sub1` | 1715 | 3.36 | **0.98** | 2× stock's safety **and** 3× tighter path than any VaVAM entry, while keeping progress. Only consistent with a driver that **follows the route/GT path directly** (route = recorded trajectory snapped to lane centres, `route_generator.py:355-377`), i.e. a path-follower with a speed policy, not a camera policy with knobs |
+| 메타몽 `vavam-route-cudagraph-v5` | 1715 | 3.09 | 2.65 | VaVAM **plus real route conditioning** (halved incidents vs stock, path a bit tighter) + CUDA graphs for speed. The same score as NaLa via a different route |
+| SymPhi `gain1075` | 1691 | 1.75 | 3.72 | stock VaVAM × 1.075 — pure speed; same safety as stock |
+| stock VaVAM (us, foxhihi b1, Host) | 1590–1600 | 1.5–1.7 | 3.05 | baseline cluster |
+| foxhihi `c*`, Cothlory, vf-team | 1095–1478 | 3.9–12.8 | 0.6–1.6 | cautious path-huggers: safe, slow → punished on progress |
+
+**Key facts that make the path-follower reading plausible:** (1) the challenge route is the *recorded ego trajectory projected onto lane
+centre-lines*, extended along the lane after the recording ends — it is the GT path to within a lane-centre offset; (2) the driver may
+**accumulate `submit_route` observations over time** (organizer, forum 380855, 2026-08-24: "you can use all the information provided over
+the interface") — successive 40–80 m windows, ego-motion-compensated, reconstruct the path *through and behind* the ego, closing the
+40 m gap; (3) a driver that tracks that path at roughly the recorded speed gets dist_to_gt ≈ lane-centre offset (~1 m), avoids the
+drift-induced lateral/corridor failures that dominate VaVAM's incidents, and keeps progress ≥ 0.8 → full progress score on most scenes.
+Its residual failures are front collisions (no perception), which is why NaLa is 3.4 km, not 10.
+**PAI-board tags corroborate the toolbox:** `baseline-k5-medoid` / `v1-k5medoid` (k-sample medoid — what we built), `v1-leadguard` (#1 PAI:
+lead-vehicle guard = B2), `p9-apf-cg` (potential field + CUDA graphs), `ors10-context-risk`. The PAI spread is tiny (1580–1650); the
+nuPlan spread is where structure (route following) pays.
+**Organizer clarifications (issue #166, 08-28/31):** rank = posterior rank-interval upper bound (ties → at-fault km); scene score is
+"the most important aspect", not its plain mean (IRT weighting); "a policy can get a very high distance-between-at-fault-incidents by
+simply braking hard … this will not result in a very high scene score"; final = rerun of the top ~5 on a private set.
+**Where we went wrong:** we optimised VaVAM's sampling around a 3-way command and never used the route *geometry* for control. The two
+1715 entries both put the route into the loop — one as the trajectory itself, one as conditioning.

@@ -88,66 +88,76 @@ d. **Never latch:** every factor is recomputed per inference; a full stop is onl
 Expected side effect to measure explicitly: **rear collisions** (not at-fault, but they truncate progress) and `dist_to_gt_location`
 (timing lag). The screen compares at-fault count, rear count, progress, dist_to_gt together.
 
-## 2c. Selector calibration — the decision margin  [measured 2026-09-01, `disc-d00-s1234`, 1000 ticks]
+## 2c. Selector calibration — the decision margin  [measured 2026-09-01]
 
-**Any weight in the scorer must be sized against the margin between candidates, not against
-the size of the terms.** This was measured once and should not need re-deriving.
+**Size a weight against how much its term separates the TOP-TWO candidates — not against the
+term's absolute value, and not against its spread across all candidates.** Getting this wrong
+cost three mis-sized `w_disc` arms (~35 min GPU) before it was measured properly.
 
-What decides a selection is the *difference* between candidates, and the k=5 samples are
-similar to each other, so every term's difference is small even where its absolute value is
-order 1. Measured margin between winner and runner-up:
+### The two numbers that matter
 
-| | value |
-|---|---|
-| median | **0.043** |
-| mean | 0.063 |
-| p90 | 0.146 |
+From `disc-d00-s1234` and `disc-d005-s1234`, 1000 ticks each:
 
-Which term does the deciding — mean |weighted (winner − runner-up)| per term:
+| quantity | value | how obtained |
+|---|---|---|
+| decision margin (winner − runner-up), median | **0.0453** | `gap` in the S0 line |
+| `disc` separation of the top-two, per unit `w_disc` | **0.246** | `attrib` in the S0 line |
+
+A weight `w` therefore shifts the decision by `0.246·w`, and flips it when that exceeds the
+margin. **`w_disc ≈ 0.18` is the tipping point.**
+
+| `w_disc` | `disc` contribution | vs median margin | measured outcome |
+|---|---|---|---|
+| 0.02 | 0.005 | 11 % | not run (predicted no-op) |
+| **0.05** | 0.012 | 27 % | ✅ **confirmed no-op** — 98/100 scenes identical to control, 1 up 1 down |
+| **0.2** | 0.049 | 108 % | running |
+| **0.4** | 0.098 | 217 % | running |
+
+### Term attribution — mean |weighted (winner − runner-up)|
 
 | term | contribution | | term | contribution |
 |---|---|---|---|---|
-| `route` | 0.0618 | | `progress` | 0.0261 |
-| `comfort` | 0.0445 | | `drivable` | 0.0031 |
-| `consensus` | 0.0363 | | `disc` | 0.0000 (weight was 0) |
+| `route` | 0.0626 | | `progress` | 0.0258 |
+| `comfort` | 0.0447 | | `disc` | 0.0123 (at `w_disc`=0.05) |
+| `consensus` | 0.0359 | | `drivable` | 0.0033 |
 
-**No term dominates.** `route` leads but `comfort` and `consensus` are within 2×, so decisions
-are close and multi-term, and a small weight has outsized leverage.
+**No term dominates** — `route` leads but `comfort` and `consensus` are within 2×.
 
-### What this means for `w_disc`
+### ⚠️ Two estimates that were wrong, and why
 
-`disc` varies ~0.85 across candidates (endpoint spread ~1.7 m ÷ `consensus_scale_m` 2.0), so a
-weight `w` moves scores by ~0.85·w. Against a 0.043 median margin:
+Recorded so the same mistake is not repeated for `w_mode`, `w_heading` or any other weight.
 
-| `w_disc` | fraction of decisions it flips | reads as |
-|---|---|---|
-| 0.02 | ~25 % | gentle tiebreak |
-| **0.05** | ~50 % | comparable to the median margin |
-| 0.1 | **75 %** | strong |
-| 0.3 | **97 %** | policy replacement — `route` stops mattering |
-| 1.0 | 100 % | total override |
+1. **From absolute term magnitudes** (`disc ≈ 1.0` vs `w_route = 1.0`) → predicted `w_disc=0.1`
+   would be a no-op. Wrong: absolute size says nothing about *ranking*.
+2. **From endpoint spread across all 5 candidates** (~1.7 m ÷ 2.0 = 0.85) → predicted
+   `w_disc=0.3` would override 97 % of decisions. Wrong by 3.5×: the five candidates spread
+   widely, but **the two that compete for the win sit close together**, so `disc` separates
+   them far less than the population spread suggests.
 
-⚠️ **Do not restore the `{0.1, 0.3, 1.0}` bracket.** It was derived from absolute term
-magnitudes (`disc ≈ 1.0` vs `w_route = 1.0`), which is the wrong scale — that reasoning
-predicted 0.1 would be a no-op when it flips three decisions in four. The swept values are
-`{0.02, 0.05}` against the `w_disc=0` control.
+The only reliable route is the `attrib` measurement. An earlier version of this section
+carried estimate (2) and told the reader not to use `{0.1, 0.3, 1.0}`; that advice was wrong —
+those values are approximately the right zone.
 
 ### Why this was invisible before
 
 All six terms were computed every tick and discarded; only `argmin` and `reason` were logged.
-The S0 line now carries `gap` (winner − runner-up) and `attrib` (the weighted per-term
-differences, which sum to `gap`). Adding them cost ~12 min of rebuild and saved a 73-minute
-sweep across three values that were all, unknowingly, "disc wins".
+The S0 line now carries `gap` (winner − runner-up) and `attrib` (weighted per-term differences,
+summing to `gap`).
 
-### `base_x`, and a check that fired on correct code
+### `base_x` — a check that fired on correct code
 
 `base_x` (the rebased previous plan's first point) **must be positive**, ~one step of travel
-ahead. `make_cached_plan` times the model's offsets at `arange(1, n+1) * step_s`, so a plan's
-point 0 is one step *ahead* of the ego — the ego's own position is prepended separately as the
-t=0 entry. An earlier check demanding a *negative* `base_x` aborted a correct run. The
-transform is confirmed sound by `trajectory.py`'s own `rig_offsets_to_local_positions`
-(`offsets @ rot.T + origin`, the conventional `world = R·p + t`) and by `d_end` averaging
-1.99 m rather than the ~5 m a broken frame would give. Valid range: `[-2, 40]` m.
+ahead. `make_cached_plan` times offsets at `arange(1, n+1) * step_s`, so a plan's point 0 is one
+step *ahead* of the ego; the ego's own position is prepended separately as the t=0 entry. A
+check demanding a *negative* `base_x` aborted a correct run. The transform is confirmed by
+`trajectory.py`'s own `rig_offsets_to_local_positions` (`offsets @ rot.T + origin`) and by
+`d_end` averaging 1.99 m rather than the ~5 m a broken frame would give. Valid range `[-2, 40]` m.
+
+### Image equivalence (checked, passed)
+
+`disc-d00-s1234` (v5 image, `w_disc`=0) reproduced `s1c-k5-on` (v3 image) **exactly** on every
+metric — at-fault 0.0600, progress 1.0575, `d2gt` 2.6920, corridor 0.0600, rear 0.0000. The
+rebase/logging changes are inert at `w_disc`=0, as intended.
 
 ## 3b. Stage tracker  (update this — it is the durable status)
 
@@ -158,7 +168,7 @@ _Last updated 2026-09-01 ~16:40. Conversation state is not a record; this table 
 | **S0** diagnose | ✅ **PASSED** | `screen-s0-k5` (100 scenes, k=5, selection off) | spread median **1.74 m** vs 0.5 m kill switch · argmin≠0 **60 %** · Drive +22 %/call · VRAM 3.1/16 GiB · aggregate within noise of candidate #2. **Machinery works and candidates are diverse — says continue, not "it helps".** |
 | — | ⚠️ **3 defects found and fixed** | — | (1) salted `hash()` seeding → runs not reproducible; (2) `session_uuid` key → pairing impossible (uuid v1, fresh per run); (3) `\|y\|>12 m` guard fired on **27 %** of ticks, disabling selection on turns. Also: heading term never reached `scores`; progress used `x_end` not arc length. |
 | **S1** select on | ✅ **DONE 09-01 15:35 — NEUTRAL safety, +2.7 % progress** | `s1a-k1` / `s1b-k5-off` (rerun after CUDA-timeout) / `s1c-k5-on` | s1c vs s1b: at-fault 5→6, rear 1→0, corridor 8→6, progress 1.030→1.058 (45↑/7↓), dist_to_gt +0.13 m, score proxy +0.019. Identity control alone moved at-fault 7→5 → numerics floor ±2/100, seed floor ±4/100. Switch rate 78 % → w_disc is the lever. |
-| **S1b** `w_disc` | 🔄 **running 09-01 16:40** | `disc-d00-s1234` (control, done) · `disc-d005-s1234` · `disc-d002-s1234` | Control gave the calibration in **§2c**: median decision margin **0.043**, so the original `{0.1, 0.3, 1.0}` bracket was 6-50× too large (0.3 overrides 97 % of decisions). Re-centred on `{0.02, 0.05}`. |
+| **S1b** `w_disc` | 🔄 **running 09-01 16:40** | `disc-d00-s1234` (control, done) · `disc-d005-s1234` · `disc-d002-s1234` | Control gave the calibration in **§2c**: median decision margin **0.043**, so the original `{0.1, 0.3, 1.0}` bracket was 6-50× too large (0.3 overrides 97 % of decisions). First pass: 0.05 is a **confirmed no-op** (98/100 scenes identical). Re-sized on the *measured* 0.246/unit separation → 0.2 and 0.4 running. See **§2c**. |
 | **S1b** other variants | ☐ | — | chord vs hermite ref, `w_mode` sweep (0.3 inherited from a *learned* score — unvalidated for consensus), `w_disc`, safety mask on/off, k=3 vs 5 vs 8 |
 | **S2** slow-down | ☐ | — | B2 conditional slow-down + B8 decelerating fallback. Gate: at-fault ↓ ≥2 **and** rear collisions not up by more than the gain |
 | **S3** confirm | ☐ | — | `navtest_local400`, paired vs the S1 winner |

@@ -1576,3 +1576,11 @@ wrong-lane 20). **Residual exactly as predicted:** the new at-fault scenes are f
 still < 0.8 progress (stopped starts crawling at v_min). The 6 corridor exits are new scenes (baseline's 6 all fixed) — likely
 end-of-path/fallback cases (62 remaining "straight" fallbacks besides tick-1 no_path). Next: **F1 = SPEED_SRC=min** (VaVAM speed cue
 brakes for what the camera sees, route keeps the path); diagnostics enabled by the log-cadence fix.
+
+**F1 (`f1-follow-min`, route path + min(keep, curv, vavam)) [23:54–00:05]:** 100/100, 618 s, Drive 106 ms. vs the fair baseline
+`s1a-k1`: score proxy **0.874 vs 0.858**, corridor **3 vs 6**, wrong-lane **19 vs 27**, dist_to_gt **1.49 vs 2.66**, lateral **0.93 vs
+1.39** (the NaLa-profile numbers), at-fault 7 = 7 (4 new — still the veh-48 09.09 front-collision scenes — 4 removed), rear 2 vs 1,
+progress **0.951 vs 1.031**. vs candidate #2's lucky-seed screen (3 at-fault, 0.907): not yet ahead. Diagnosis from 930 per-tick lines:
+`keep` (which holds the *initial* speed) was the binding limit on **61 %** of ticks — as a min() term it forbids accelerating for the
+whole horizon; that is the progress leak. `vavam` limited 31 % (the brake works), `curv` 1 %. Fallbacks 70 (to the model plan — fine).
+Next arm: **F1b `SPEED_SRC=cv`** = min(curv, vavam) without the keep cap.

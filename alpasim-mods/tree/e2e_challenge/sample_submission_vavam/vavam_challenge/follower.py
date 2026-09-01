@@ -147,12 +147,20 @@ def build_follow_plan(
     kappa = _curvature(ref, cfg.ds_m, cfg.curv_window_m)
     v_curv = np.minimum(np.sqrt(cfg.a_lat_max / np.maximum(kappa, 1e-4)), cfg.v_max)
     v_keep = np.full(len(ref), float(np.clip(max(v0, cfg.v_min), 0.0, cfg.v_max)))
-    sources = {"keep": v_keep}
-    if cfg.speed_src in ("min", "curv"):
+    # "keep" holds the INITIAL speed, so as a min() term it forbids accelerating for the whole
+    # horizon - it capped 61 % of F1 ticks and cost ~8 % progress. In "cv" mode the camera model's
+    # own speed profile (which does accelerate) plus the curvature cap set the pace, and "keep"
+    # only serves as the fallback when no model output exists yet.
+    sources = {}
+    if cfg.speed_src in ("min", "keep") or vavam_traj_rig is None and cfg.speed_src != "curv":
+        sources["keep"] = v_keep
+    if cfg.speed_src in ("min", "curv", "cv"):
         sources["curv"] = v_curv
-    if cfg.speed_src in ("min", "vavam") and vavam_traj_rig is not None:
+    if cfg.speed_src in ("min", "vavam", "cv") and vavam_traj_rig is not None:
         sv, vv = speed_profile_from_trajectory(vavam_traj_rig)
         sources["vavam"] = np.interp(s_ref, sv, vv, right=float(vv[-1]))
+    if not sources:
+        sources["keep"] = v_keep
     stack = np.vstack(list(sources.values()))
     v_tgt = stack.min(axis=0)
     limiting = list(sources.keys())[int(np.bincount(stack.argmin(axis=0), minlength=len(sources)).argmax())]

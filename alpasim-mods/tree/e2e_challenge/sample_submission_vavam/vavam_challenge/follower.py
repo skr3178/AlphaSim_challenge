@@ -115,12 +115,15 @@ def build_follow_plan(
         if q.dist > cfg.max_offset_m:
             return None  # interior projection but far from the path: not our lane
     else:
-        # ego is before the path start (cold start: the first windows begin 40 m ahead). Accept only
-        # if the start lies ahead of the ego and within a lane-ish lateral band.
+        # ego is before the path start (cold start: the first windows begin 40 m ahead). The start
+        # of a route that turns within those 40 m sits far off-axis (a 90 deg turn puts it ~25 m
+        # to the side), so a lateral band is the WRONG test - it rejected every turn scene in F0
+        # and the driver fell back to a straight line. Reject only a start behind the ego or
+        # implausibly far away; the Hermite join handles any bearing ahead.
         c, s_ = np.cos(pose_xy_yaw[2]), np.sin(pose_xy_yaw[2])
         rel = route_map.path[0] - np.array([pose_xy_yaw[0], pose_xy_yaw[1]])
         fwd, lat = c * rel[0] + s_ * rel[1], -s_ * rel[0] + c * rel[1]
-        if fwd < -5.0 or abs(lat) > cfg.max_offset_m or fwd > 90.0:
+        if fwd < -5.0 or np.hypot(fwd, lat) > 90.0 or abs(np.arctan2(lat, max(fwd, 1e-6))) > np.deg2rad(100.0):
             return None
     v0 = float(np.clip(speed_mps if np.isfinite(speed_mps) else 0.0, 0.0, cfg.v_max))
     horizon_m = max(cfg.horizon_s * max(v0, cfg.v_min) * 1.5, 40.0)

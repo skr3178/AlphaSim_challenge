@@ -448,8 +448,13 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
                         float(route_map.s[-1]) if route_map.s is not None else -1.0,
                         route_map.n_updates, n_fb,
                     )
-            elif _FOLLOW_LOG_EVERY > 0 and n_tick % _FOLLOW_LOG_EVERY == 1:
-                LOGGER.info("FOLLOW tick=%d fallback=model upd=%d fb=%d", n_tick, route_map.n_updates, n_fb)
+            else:
+                q = route_map.query(_pose_xy_yaw(pose)) if route_map.ready() else None
+                LOGGER.info(
+                    "FOLLOW tick=%d fallback=%s upd=%d fb=%d q=%s", n_tick,
+                    "model" if plan is not None else "straight", route_map.n_updates, n_fb,
+                    f"s_ego={q.s_ego:.1f} dist={q.dist:.1f} on_path={q.on_path}" if q else "no_path",
+                )
 
         trajectory = build_trajectory_from_plan(
             plan,

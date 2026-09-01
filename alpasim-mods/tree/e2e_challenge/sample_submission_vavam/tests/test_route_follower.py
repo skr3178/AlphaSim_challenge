@@ -91,6 +91,17 @@ def test_accumulated_path_matches_lane_after_driving(kind):
     assert np.percentile(d, 95) < 0.15, f"p95 path error {np.percentile(d, 95):.2f} m"
 
 
+def test_cold_start_accepts_a_turn_ahead():
+    """F0 regression: the route start of a left turn sits ~35 m ahead and ~20 m left; must be followed."""
+    L = lane("left90")
+    rm = RouteMap()
+    pose = pose_on_lane(L, 30.0)          # 30 m before the turn; route start = 70 m along = into the arc
+    rm.update(route_window(L, pose), pose)
+    r = build_follow_plan(rm, pose, 10.0, 0)
+    assert r is not None, "turn ahead must not be rejected as off-lane"
+    assert r.plan.positions_xy[-1, 1] > 2.0, "the plan bends left toward the route"
+
+
 def test_cold_start_bridges_to_the_route_start():
     L = lane("straight")
     rm = RouteMap()
@@ -195,7 +206,9 @@ def test_unusable_route_returns_none():
     for s in np.arange(0, 60, 1.0):
         p = pose_on_lane(L, s)
         rm.update(route_window(L, p), p)
-    assert build_follow_plan(rm, (30.0, 40.0, 0.0), 10.0, 0) is None  # 40 m off the path
+    assert build_follow_plan(rm, (30.0, 40.0, 0.0), 10.0, 0) is not None  # start 10 m ahead, 40 m left: a sharp turn ahead - follow it
+    assert build_follow_plan(rm, (20.0, 0.0, np.pi), 10.0, 0) is None  # path start 20 m BEHIND the ego (heading away)
+    assert build_follow_plan(rm, (80.0, 40.0, 0.0), 10.0, 0) is None  # interior projection 40 m off the path
 
 
 def test_hermite_join_endpoints_and_tangents():

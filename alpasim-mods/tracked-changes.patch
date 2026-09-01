@@ -1,5 +1,5 @@
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-index ef88c88..139e63a 100644
+index ef88c88..0b91ef1 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 @@ -7,6 +7,7 @@
@@ -10,12 +10,29 @@ index ef88c88..139e63a 100644
  import os
  import signal
  import threading
-@@ -29,7 +30,35 @@ from .rectification import (
+@@ -29,7 +30,52 @@ from .rectification import (
      RectificationTargetConfig,
      build_ftheta_rectifier_for_resolution,
  )
 -from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
 +from .selection import SelectConfig, discontinuity_reference, select
++from .route_map import RouteMap
++from .follower import FollowConfig, build_follow_plan
++
++# LOCAL PATCH (opt-in, inert by default): route follower - the accumulated route sets the lateral
++# path, the camera model only supplies a speed cue. ROUTE-FOLLOWER-CONCEPT.md.
++_FOLLOW = os.environ.get("VAVAM_FOLLOW_ROUTE", "0") == "1"
++_FOLLOW_NO_MODEL = os.environ.get("VAVAM_FOLLOW_NO_MODEL", "0") == "1"
++_FOLLOW_CFG = FollowConfig(
++    speed_src=os.environ.get("VAVAM_FOLLOW_SPEED_SRC", "min"),
++    a_lat_max=float(os.environ.get("VAVAM_FOLLOW_ALAT_MAX", "3.0")),
++    a_max=float(os.environ.get("VAVAM_FOLLOW_A_MAX", "2.0")),
++    d_max=float(os.environ.get("VAVAM_FOLLOW_D_MAX", "3.0")),
++    v_min=float(os.environ.get("VAVAM_FOLLOW_V_MIN", "3.0")),
++    v_max=float(os.environ.get("VAVAM_FOLLOW_V_MAX", "20.0")),
++    join_time_s=float(os.environ.get("VAVAM_FOLLOW_JOIN_TIME_S", "2.0")),
++)
++_FOLLOW_LOG_EVERY = int(os.environ.get("VAVAM_FOLLOW_LOG_EVERY", "10"))
 +
 +# LOCAL PATCH (opt-in, inert by default): route-aware selection among the k sampled candidates.
 +_ROUTE_SELECT = os.environ.get("VAVAM_ROUTE_SELECT", "0") == "1"
@@ -47,7 +64,7 @@ index ef88c88..139e63a 100644
  
  _RUNTIME_WRITE_DIR_DEFAULTS = {
      "XDG_CACHE_HOME": "/tmp/.cache",
-@@ -71,6 +100,11 @@ class SessionState:
+@@ -71,6 +117,16 @@ class SessionState:
      )
      command: int = 2
      cached_plan: CachedPlan | None = None
@@ -56,10 +73,15 @@ index ef88c88..139e63a 100644
 +    scene_id: str = ""
 +    last_selected_xy: np.ndarray | None = None
 +    last_selected_pose: tuple[float, float, float] | None = None
++    route_map: RouteMap = field(default_factory=RouteMap)
++    route_timestamp_us: int = 0
++    last_vavam_xy: np.ndarray | None = None
++    follow_ticks: int = 0
++    follow_fallbacks: int = 0
      camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
          field(default_factory=dict)
      )
-@@ -133,6 +167,35 @@ class VavamPolicyHandle:
+@@ -133,6 +189,35 @@ class VavamPolicyHandle:
              LOGGER.exception("VAVAM policy load failed")
              return
  
@@ -95,7 +117,7 @@ index ef88c88..139e63a 100644
          with self._lock:
              self._policy = policy
          LOGGER.info("VAVAM policy load complete")
-@@ -198,8 +261,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -198,8 +283,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          camera_id = self._select_camera_id(camera_specs)
  
@@ -114,7 +136,7 @@ index ef88c88..139e63a 100644
                  camera_id=camera_id,
                  camera_specs=camera_specs,
              )
-@@ -276,8 +349,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -276,8 +371,31 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
      ) -> common_pb2.Empty:
          session = self._get_session(request.session_uuid, context)
          command = _command_from_route(request.route)
@@ -127,10 +149,72 @@ index ef88c88..139e63a 100644
          with self._lock:
              session.command = command
 +            session.route_xy = route_xy
++            session.route_timestamp_us = int(request.route.timestamp_us)
++            if _FOLLOW and route_xy is not None:
++                # The route is in the rig frame at route.timestamp_us; the egomotion for that tick
++                # arrives before the route (runtime drains before drive), so the matching pose is
++                # normally session.poses[-1]. Search by timestamp anyway; skip rather than guess.
++                pose = None
++                for p in reversed(session.poses):
++                    if int(p.timestamp_us) == int(request.route.timestamp_us):
++                        pose = p
++                        break
++                if pose is None and session.latest_pose is not None and abs(
++                    int(session.latest_pose.timestamp_us) - int(request.route.timestamp_us)
++                ) <= 60_000:
++                    pose = session.latest_pose
++                if pose is not None:
++                    session.route_map.update(route_xy, _pose_xy_yaw(pose))
          return common_pb2.Empty()
  
      def submit_recording_ground_truth(
-@@ -380,16 +460,108 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -294,12 +412,44 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+     ) -> egodriver_pb2.DriveResponse:
+         session = self._get_session(request.session_uuid, context)
+         time_now_us = int(request.time_now_us)
+-        self._maybe_run_inference(session, time_now_us)
++        if not (_FOLLOW and _FOLLOW_NO_MODEL):
++            self._maybe_run_inference(session, time_now_us)
+ 
+         with self._lock:
+             pose = session.latest_pose
+             plan = session.cached_plan
+             speed = _estimate_speed_mps(session)
++            vavam_xy = session.last_vavam_xy
++            route_map = session.route_map
++
++        if _FOLLOW and pose is not None:
++            res = None
++            try:
++                res = build_follow_plan(
++                    route_map, _pose_xy_yaw(pose), speed, time_now_us, _FOLLOW_CFG,
++                    vavam_traj_rig=vavam_xy if _FOLLOW_CFG.speed_src in ("min", "vavam") else None,
++                )
++            except Exception:
++                LOGGER.exception("route follower failed; falling back to the model plan")
++            with self._lock:
++                session.follow_ticks += 1
++                n_tick = session.follow_ticks
++                if res is None:
++                    session.follow_fallbacks += 1
++                n_fb = session.follow_fallbacks
++            if res is not None:
++                plan = res.plan
++                if _FOLLOW_LOG_EVERY > 0 and n_tick % _FOLLOW_LOG_EVERY == 1:
++                    LOGGER.info(
++                        "FOLLOW tick=%d s_ego=%.1f e_y=%+.2f e_psi=%+.1fdeg dist=%.2f join=%.0f v0=%.1f "
++                        "v_end=%.1f kmax=%.4f lim=%s path_len=%.0f upd=%d fb=%d",
++                        n_tick, res.s_ego, res.e_y, math.degrees(res.e_psi), res.dist, res.join_m,
++                        res.v0, res.v_end, res.kappa_max, res.limiting,
++                        float(route_map.s[-1]) if route_map.s is not None else -1.0,
++                        route_map.n_updates, n_fb,
++                    )
++            elif _FOLLOW_LOG_EVERY > 0 and n_tick % _FOLLOW_LOG_EVERY == 1:
++                LOGGER.info("FOLLOW tick=%d fallback=model upd=%d fb=%d", n_tick, route_map.n_updates, n_fb)
+ 
+         trajectory = build_trajectory_from_plan(
+             plan,
+@@ -380,21 +530,114 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          with self._inference_lock:
              try:
@@ -242,6 +326,12 @@ index ef88c88..139e63a 100644
              source_frequency_hz=policy.output_frequency_hz,
          )
          if plan is not None:
+             with self._lock:
+                 session.cached_plan = plan
++                session.last_vavam_xy = np.asarray(chosen_xy, dtype=float).reshape(-1, 2)
+ 
+     def _get_or_build_rectifier_locked(
+         self,
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
 index 0d57dda..afe5d13 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py

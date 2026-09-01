@@ -14,8 +14,11 @@ e2e_challenge/sample_submission_vavam/Dockerfile.submit-l-mup
 e2e_challenge/sample_submission_vavam/Dockerfile.submit-l-mup.dockerignore
 e2e_challenge/sample_submission_vavam/Dockerfile.submit-mup
 e2e_challenge/sample_submission_vavam/Dockerfile.submit-mup.dockerignore
+e2e_challenge/sample_submission_vavam/tests/test_route_follower.py
 e2e_challenge/sample_submission_vavam/tests/test_selection.py
 e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
+e2e_challenge/sample_submission_vavam/vavam_challenge/follower.py
+e2e_challenge/sample_submission_vavam/vavam_challenge/route_map.py
 e2e_challenge/sample_submission_vavam/vavam_challenge/selection.py
 e2e_challenge/sample_submission_vavam/vavam_challenge/vavam_policy.py
 src/controller/pyproject.toml

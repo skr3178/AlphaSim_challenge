@@ -10,7 +10,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from vavam_challenge.selection import SelectConfig, Selection, reference_path, select
+from vavam_challenge.selection import (
+    SelectConfig,
+    Selection,
+    _discontinuity,
+    reference_path,
+    rebase_to_current_frame,
+    select,
+)
 
 CFG = SelectConfig()
 
@@ -338,3 +345,69 @@ def test_progress_is_arc_length_along_the_reference_not_forward_x():
         f"follower must score better on route agreement: {out.terms['route']}"
     )
     assert out.index == 1, f"the follower should win outright, got {out.index}"
+
+
+# --------------------------------------------------------------- frame rebasing
+# Regression: `_discontinuity` compared a stored plan (previous tick's ego frame) against
+# fresh candidates (current ego frame) with no transform. The driver re-plans every 500 ms
+# of sim time, so the two frames differ by 2.5-7.5 m of travel plus any rotation. The term
+# therefore measured ego motion, and biased selection toward short/slow candidates. Found
+# 2026-09-01 before the w_disc sweep, so no run was ever scored with w_disc > 0.
+
+
+def _straight(n=8, dx=1.0):
+    return np.stack([np.arange(n) * dx, np.zeros(n)], axis=1)
+
+
+def test_rebase_is_identity_when_the_ego_has_not_moved():
+    xy = _straight()
+    out = rebase_to_current_frame(xy, (10.0, -3.0, 0.7), (10.0, -3.0, 0.7))
+    assert np.allclose(out, xy, atol=1e-9)
+
+
+def test_rebase_puts_the_old_plan_behind_the_ego_after_driving_forward():
+    # Ego drove 5 m along +x (global) with no rotation; the old plan must shift 5 m back.
+    xy = _straight()
+    out = rebase_to_current_frame(xy, (0.0, 0.0, 0.0), (5.0, 0.0, 0.0))
+    assert np.allclose(out, xy - np.array([5.0, 0.0]), atol=1e-9)
+    assert out[0, 0] < 0.0  # the sign the driver's base_x check watches for
+
+
+def test_rebase_handles_rotation():
+    # Ego turned +90 deg in place: a plan pointing +x becomes a plan pointing -y.
+    xy = _straight(n=3)
+    out = rebase_to_current_frame(xy, (0.0, 0.0, 0.0), (0.0, 0.0, np.pi / 2))
+    assert np.allclose(out, [[0.0, 0.0], [0.0, -1.0], [0.0, -2.0]], atol=1e-9)
+
+
+def test_rebase_round_trips():
+    rng = np.random.default_rng(0)
+    xy = rng.normal(size=(12, 2)) * 5.0
+    a, b = (3.0, -1.0, 0.4), (9.0, 2.5, -1.1)
+    assert np.allclose(rebase_to_current_frame(rebase_to_current_frame(xy, a, b), b, a), xy, atol=1e-9)
+
+
+def test_rebase_preserves_shape_so_only_pose_differences_show_up():
+    # A rigid transform cannot change intra-plan distances; discontinuity must reflect plan
+    # change only. This is the property the untransformed comparison violated.
+    rng = np.random.default_rng(1)
+    xy = rng.normal(size=(10, 2)) * 4.0
+    out = rebase_to_current_frame(xy, (1.0, 2.0, 0.3), (7.0, -4.0, 1.9))
+    d_in = np.linalg.norm(np.diff(xy, axis=0), axis=1)
+    d_out = np.linalg.norm(np.diff(out, axis=0), axis=1)
+    assert np.allclose(d_in, d_out, atol=1e-9)
+
+
+def test_discontinuity_after_rebasing_does_not_favour_the_slower_candidate():
+    # Two candidates: one continues the previous plan, one brakes hard. Driving forward 5 m
+    # and rebasing must rank the continuing one as MORE continuous. Without the rebase the
+    # stale plan sits 5 m behind, and the braking candidate wins.
+    prev = _straight(n=10, dx=2.0)                       # 2 m/step
+    keep = _straight(n=10, dx=2.0)                       # same plan, re-issued
+    brake = _straight(n=10, dx=0.4)                      # much shorter
+    cands = np.stack([keep, brake])
+    rebased = rebase_to_current_frame(prev, (0.0, 0.0, 0.0), (5.0, 0.0, 0.0))
+    good = _discontinuity(cands, rebased + np.array([5.0, 0.0]), 1.0)
+    assert good[0] < good[1], "the continuing candidate must be the continuous one"
+    naive = _discontinuity(cands, prev, 1.0)
+    assert naive[1] < naive[0], "documents the old behaviour: braking looked continuous"

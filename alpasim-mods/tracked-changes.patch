@@ -1,12 +1,20 @@
 diff --git a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-index ef88c88..9911ffd 100644
+index ef88c88..e2f06a3 100644
 --- a/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
 +++ b/e2e_challenge/sample_submission_vavam/vavam_challenge/driver.py
-@@ -29,6 +29,25 @@ from .rectification import (
+@@ -7,6 +7,7 @@
+ from __future__ import annotations
+ 
+ import logging
++import math
+ import os
+ import signal
+ import threading
+@@ -29,6 +30,38 @@ from .rectification import (
      RectificationTargetConfig,
      build_ftheta_rectifier_for_resolution,
  )
-+from .selection import SelectConfig, select
++from .selection import SelectConfig, rebase_to_current_frame, select
 +
 +# LOCAL PATCH (opt-in, inert by default): route-aware selection among the k sampled candidates.
 +_ROUTE_SELECT = os.environ.get("VAVAM_ROUTE_SELECT", "0") == "1"
@@ -20,6 +28,19 @@ index ef88c88..9911ffd 100644
 +)
 +
 +
++def _pose_xy_yaw(pose) -> tuple[float, float, float] | None:
++    """(x, y, yaw) in the global frame from a PoseAtTime, or None if unusable."""
++    if pose is None:
++        return None
++    v, q = pose.pose.vec, pose.pose.quat
++    yaw = math.atan2(
++        2.0 * (q.w * q.z + q.x * q.y),
++        1.0 - 2.0 * (q.y * q.y + q.z * q.z),
++    )
++    out = (float(v.x), float(v.y), float(yaw))
++    return out if all(math.isfinite(c) for c in out) else None
++
++
 +def _headings_from_xy(xy: np.ndarray) -> np.ndarray:
 +    prev = np.zeros_like(xy)
 +    prev[1:, :] = xy[:-1, :]
@@ -28,7 +49,7 @@ index ef88c88..9911ffd 100644
  from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
  
  _RUNTIME_WRITE_DIR_DEFAULTS = {
-@@ -71,6 +90,10 @@ class SessionState:
+@@ -71,6 +104,11 @@ class SessionState:
      )
      command: int = 2
      cached_plan: CachedPlan | None = None
@@ -36,10 +57,11 @@ index ef88c88..9911ffd 100644
 +    session_uuid: str = ""
 +    scene_id: str = ""
 +    last_selected_xy: np.ndarray | None = None
++    last_selected_pose: tuple[float, float, float] | None = None
      camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
          field(default_factory=dict)
      )
-@@ -133,6 +156,35 @@ class VavamPolicyHandle:
+@@ -133,6 +171,35 @@ class VavamPolicyHandle:
              LOGGER.exception("VAVAM policy load failed")
              return
  
@@ -75,7 +97,7 @@ index ef88c88..9911ffd 100644
          with self._lock:
              self._policy = policy
          LOGGER.info("VAVAM policy load complete")
-@@ -198,8 +250,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -198,8 +265,18 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          camera_id = self._select_camera_id(camera_specs)
  
@@ -94,7 +116,7 @@ index ef88c88..9911ffd 100644
                  camera_id=camera_id,
                  camera_specs=camera_specs,
              )
-@@ -276,8 +338,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -276,8 +353,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
      ) -> common_pb2.Empty:
          session = self._get_session(request.session_uuid, context)
          command = _command_from_route(request.route)
@@ -110,7 +132,7 @@ index ef88c88..9911ffd 100644
          return common_pb2.Empty()
  
      def submit_recording_ground_truth(
-@@ -380,16 +449,51 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
+@@ -380,16 +464,72 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
  
          with self._inference_lock:
              try:
@@ -135,9 +157,18 @@ index ef88c88..9911ffd 100644
 +            medoid_d = np.linalg.norm(ends - np.median(ends, axis=0), axis=1)
 +            with self._lock:
 +                route_xy = session.route_xy
++            # The stored plan is in the ego frame of the tick that produced it, which is
++            # 2.5-7.5 m and possibly a rotation behind the current one. Rebase it, or the
++            # discontinuity term measures ego motion and favours slow candidates.
++            cur_pose = _pose_xy_yaw(anchor_pose)
++            prev_xy, prev_pose = session.last_selected_xy, session.last_selected_pose
++            if prev_xy is not None and prev_pose is not None and cur_pose is not None:
++                prev_xy = rebase_to_current_frame(prev_xy, prev_pose, cur_pose)
++            elif prev_xy is not None:
++                prev_xy = None  # no pose pair: no comparison is better than a wrong one
 +            sel = select(
 +                cands, route_xy, cfg=_SELECT_CFG,
-+                previous_xy=session.last_selected_xy,
++                previous_xy=prev_xy,
 +            ) if route_xy is not None else None
 +            # Apply it only when explicitly enabled. Off (default) the driver keeps row 0, so
 +            # the same binary reproduces the selection-off arm exactly - that is the identity
@@ -148,11 +179,23 @@ index ef88c88..9911ffd 100644
 +            if _ROUTE_SELECT:
 +                with self._lock:
 +                    session.last_selected_xy = chosen_xy
++                    session.last_selected_pose = cur_pose
++            # d_end: how far the chosen END POINT moved from the previous tick's chosen end
++            # point, in a common frame. This separates "committed to a different plan" from
++            # "chasing a target that moves every tick" - ego motion is already removed.
++            # base_x: the rebased previous plan's first point, which must sit BEHIND the ego
++            # (negative x, magnitude ~ speed x 0.5 s). It is a live check on the pose
++            # convention; a positive or wildly large base_x means the transform is wrong.
++            d_end, base_x = float("nan"), float("nan")
++            if prev_xy is not None:
++                d_end = float(np.linalg.norm(chosen_xy[-1] - prev_xy[-1]))
++                base_x = float(prev_xy[0, 0])
 +            LOGGER.info(
-+                "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s infer_ms=%.1f",
++                "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s "
++                "infer_ms=%.1f d_end=%.2f base_x=%.2f",
 +                len(cands), spread, float(medoid_d.min()), float(medoid_d.max()),
 +                sel.index if sel else "n/a", sel.reason if sel else "no_route",
-+                infer_s * 1e3,
++                infer_s * 1e3, d_end, base_x,
 +            )
 +
          plan = make_cached_plan(

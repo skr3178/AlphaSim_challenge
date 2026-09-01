@@ -1480,3 +1480,19 @@ almost every tick → `w_disc` is the first S1b arm.
 **Seed-variance finding:** `s1a-k1` (7 at-fault) vs `screen-mup-g100` (3) — same config, same 100 scenes, only the noise draw differs.
 The 100-scene at-fault count therefore carries **±4 seed noise, not ±2**; earlier `screen-*` numbers were single draws and may have been
 optimistic. Consequence for the eval standard: read arms on 400 scenes, or on two seeds, before believing a ≤ 4-incident delta.
+
+**S1 formal tables (s1b rerun 15:27–15:35, 100/100, 481 s, Drive 129 ms, peak GPU 22.1 GiB):**
+
+| pairing (100 scenes) | at-fault | rear | corridor | wrong-lane | progress | dist_to_gt | scene-score proxy |
+|---|---|---|---|---|---|---|---|
+| **identity** `s1a-k1` → `s1b-k5-off` (same seeds; only batched-fp16 numerics differ) | 7 → **5** (0 new, 2 removed) | 1→1 | 6→8 | 27→30 | 1.031→1.030 | 2.66→2.56 | 0.858→0.859, fails 13→13 |
+| **experiment** `s1b-k5-off` → `s1c-k5-on` (proper control) | 5 → **6** (1 new, 0 removed) | 1→**0** | 8→**6** | 30→29 | 1.030→**1.058** (+0.027; 45 up / 7 down) | 2.56→2.69 (+0.13; 42 worse / 46 better) | 0.859→**0.878**, fails 13→12 |
+
+Identity control per scene: 0/100 within 1 mm, |ddist| median 0.14 m, max 3.0 m — a 4 mm per-call numeric difference (batch-5 vs batch-1
+fp16 kernels) is amplified by the closed loop into a **2-incident change in at-fault count with zero policy change**. The numerics-only
+noise floor on 100 scenes is therefore ±2 at-fault; with seed variation it is ±4 (`screen-mup-g100` 3 vs `s1a-k1` 7). No 100-scene delta
+below that is evidence.
+**S1 verdict: NEUTRAL on safety (+1 at-fault, −1 rear, −2 corridor — all inside the floor), POSITIVE on progress (+2.7 %, 45 up / 7 down,
+scene-score proxy +0.019), slightly worse path (+0.13 m dist_to_gt).** Selector applied 87 % of ticks, switches plan on ≈ 78 % of
+consecutive ticks (w_disc = 0). Per plan §7 → "neutral" branch: S1b = `w_disc` sweep {0.1, 0.3} (+ consensus gate) on **two seeds × 100**,
+then B3 temporal context.

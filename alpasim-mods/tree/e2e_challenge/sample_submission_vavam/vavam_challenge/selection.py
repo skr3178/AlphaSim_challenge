@@ -223,6 +223,34 @@ def _consensus(c: np.ndarray, scale: float) -> np.ndarray:
     return e / e.sum()
 
 
+def rebase_to_current_frame(
+    prev_xy: np.ndarray,
+    prev_pose: tuple[float, float, float],
+    cur_pose: tuple[float, float, float],
+) -> np.ndarray:
+    """Re-express a plan from a past ego frame in the current ego frame.
+
+    Both frames are ego-local: origin at the ego, +x along its heading. `prev_pose` and
+    `cur_pose` are the two ego poses in the global frame as (x, y, yaw).
+
+    This exists because the driver re-plans every `VAVAM_INFERENCE_INTERVAL_US` (500 ms of
+    sim time), during which the ego travels 2.5-7.5 m and, on a turn, rotates. Comparing a
+    stored plan against fresh candidates without this transform does not measure "how much
+    did the plan change" - it mostly measures how far the ego drove, and it does so with a
+    direction bias: the stale plan sits behind the new origin, so short/slow candidates look
+    artificially continuous. See `_discontinuity`.
+    """
+    px, py, pyaw = prev_pose
+    cx, cy, cyaw = cur_pose
+    d = pyaw - cyaw
+    cos_d, sin_d = np.cos(d), np.sin(d)
+    rot = np.array([[cos_d, -sin_d], [sin_d, cos_d]])
+    cos_c, sin_c = np.cos(cyaw), np.sin(cyaw)
+    inv_cur = np.array([[cos_c, sin_c], [-sin_c, cos_c]])
+    offset = inv_cur @ np.array([px - cx, py - cy])
+    return prev_xy @ rot.T + offset[None]
+
+
 def _discontinuity(c: np.ndarray, previous: np.ndarray | None, scale: float) -> np.ndarray:
     """Mean point distance from the previously chosen plan, normalised."""
     if previous is None or previous.shape != c.shape[1:]:
@@ -257,6 +285,9 @@ def select(
         speed_mps: current speed. Unused today; kept so callers need not change.
         cfg: knobs.
         previous_xy: (p,2) previously selected trajectory, for the discontinuity term.
+            MUST already be expressed in the CURRENT ego frame - pass it through
+            `rebase_to_current_frame` first. Passing the raw stored plan silently
+            biases selection toward slower candidates.
 
     Returns:
         A `Selection`. **Index 0 whenever anything is off** - an unusable route must

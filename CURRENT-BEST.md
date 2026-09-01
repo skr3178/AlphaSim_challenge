@@ -64,6 +64,13 @@ public leaderboard closes **2026-10-31**, final results **2026-11-15**. No quota
 
 ## 6. Next after candidate #2 is decided
 
+**S1 (selection ON, first run where the selector steers) — done 09-01 15:35: NEUTRAL safety / +2.7 % progress / +0.13 m path.** Proper
+control `s1b-k5-off` → `s1c-k5-on` on 100 scenes: at-fault 5 → 6, rear 1 → 0, corridor 8 → 6, progress 1.030 → 1.058 (45 up / 7 down),
+dist_to_gt 2.56 → 2.69, scene-score proxy 0.859 → 0.878. Identity control (`s1a-k1` → `s1b-k5-off`, numerics only) moved at-fault 7 → 5
+by itself → **±2/100 is the numerics floor, ±4/100 the seed floor**. Next (needs go): S1b `w_disc` {0.1, 0.3} on two seeds × 100
+(selector switches plan on 78 % of ticks), then B3 temporal context. Tables: SETUP-NOTES §6.20.
+
+
 **S0 diagnostic — done 2026-09-01 14:39, PASS (`screen-s0-k5`: k=5, seed 1234, `navtest_local100`, `dev_fast2`, image `local-mup-k` 6854e313).**
 Selection not applied (row 0 driven). Aggregate vs candidate #2 (`screen-mup-g100`): at-fault **3 vs 3** (2 scenes swapped — inside the
 10–12/300 flip rate of unchanged-driver reruns), progress 1.047 vs 1.048, dist_to_gt 2.75 vs 2.71 m, corridor 7 vs 7, wrong-lane 31 vs 33.

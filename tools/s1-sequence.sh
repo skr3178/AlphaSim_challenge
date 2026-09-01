@@ -13,6 +13,17 @@ run () {
     > "$L/$name.log" 2>&1
   echo "--- $name finished rc=$? ---"
   grep -E 'wizard exit|^TIMING|^DRIVER' "$L/$name.log" | tail -3
+  # GATE: the wizard exits 0 even when the renderer dies and 98/100 rollouts fail, writing a
+  # junk aggregate and printing RUN DONE. s1b-k5-off did exactly that on 2026-09-01. Never let
+  # the sequence move on unless the expected number of scenes actually completed.
+  local got; got=$(grep -c 'Session COMPLETED' "$L/$name.log")
+  if [ "$got" -lt "${EXPECT:-100}" ]; then
+    echo "!!! ABORT: $name completed $got/${EXPECT:-100} scenes — aggregate is invalid"
+    grep -m2 -E 'CUDA error|failed rollout row|AcceleratorError' "$L/$name.log" | sed 's/^/    /'
+    mv "$HOME/alpasim-challenge/alpasim/runs/$name" \
+       "$HOME/alpasim-challenge/alpasim/runs/$name-FAILED-$(date +%H%M%S)" 2>/dev/null
+    return 1
+  fi
 }
 capture () {   # S0-style diagnostics for the k=5 arms
   local name="$1"

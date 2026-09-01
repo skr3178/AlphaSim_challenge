@@ -33,6 +33,13 @@ torch.serialization.add_safe_globals(
 class VavamPrediction:
     trajectory_xy: np.ndarray
     headings: np.ndarray
+    candidates_xy: np.ndarray | None = None
+    """(k,T,2) all sampled candidates, gain-scaled. None when k == 1.
+
+    Row 0 is byte-identical to what `predict()` would have returned with the same
+    seed - the k-sample path must reproduce candidate #2 exactly when selection is
+    off. S0 relies on this.
+    """
 
 
 class VavamPolicy:
@@ -92,20 +99,65 @@ class VavamPolicy:
         # per-call seeding of the flow-matching sampler (torch.randn start noise). VAVAM_SEED=-1 -> unseeded.
         self._output_gain = float(os.environ.get("VAVAM_OUTPUT_GAIN", "1.0"))
         self._seed = int(os.environ.get("VAVAM_SEED", "-1"))
-        self._n_calls = 0
-        if self._output_gain != 1.0 or self._seed >= 0:
-            LOGGER.info("Policy options: output_gain=%.3f seed=%d", self._output_gain, self._seed)
+        self._num_samples = max(1, int(os.environ.get("VAVAM_NUM_SAMPLES", "1")))
+        self._euler_steps = int(os.environ.get("VAVAM_EULER_STEPS", "0")) or None
+        # Per-session call counters. The old code used one global counter, so with two
+        # concurrent rollouts sharing this policy the *order* in which they reached the
+        # inference lock decided which noise each got - serialised is not ordered, and
+        # A/B pairs silently stopped being paired. Keying on session_uuid makes each
+        # rollout's noise sequence independent of scheduling.
+        self._session_calls: dict[str, int] = {}
+        if self._output_gain != 1.0 or self._seed >= 0 or self._num_samples > 1:
+            LOGGER.info(
+                "Policy options: output_gain=%.3f seed=%d k=%d euler_steps=%s",
+                self._output_gain, self._seed, self._num_samples, self._euler_steps,
+            )
         self._use_autocast = (
             resolved_device.type == "cuda" and platform.machine() != "aarch64"
         )
 
-    def predict(self, image_hwc: np.ndarray, command: int) -> VavamPrediction:
-        """Predict a trajectory from the latest RGB frame.
+    def _seed_for(self, session_uuid: str | None) -> None:
+        """Seed the sampler deterministically per session, not per global call."""
+        if self._seed < 0:
+            return
+        key = session_uuid or ""
+        n = self._session_calls.get(key, 0)
+        self._session_calls[key] = n + 1
+        # stable 32-bit offset per session; independent of arrival order
+        offset = 0 if not key else (hash(key) & 0xFFFF) * 100_003
+        torch.manual_seed((self._seed + offset + n) % (2**31 - 1))
+
+    def predict(
+        self, image_hwc: np.ndarray, command: int, session_uuid: str | None = None
+    ) -> VavamPrediction:
+        """Predict a single trajectory. Equivalent to `predict_k(..., k=1)`."""
+        return self.predict_k(image_hwc, command, k=1, session_uuid=session_uuid)
+
+    def predict_k(
+        self,
+        image_hwc: np.ndarray,
+        command: int,
+        k: int | None = None,
+        session_uuid: str | None = None,
+    ) -> VavamPrediction:
+        """Draw k trajectories from one forward pass and return them all.
+
+        `forward_inference` reads batch size from the visual tokens and draws
+        `randn((bsz,1,6,2))`, so k i.i.d. samples cost **one** call: the GPT trunk runs
+        once and is KV-cached, and only the small action-expert Euler steps scale with k.
+
+        Row 0 of a seeded `randn((k,...))` equals the seeded `randn((1,...))` draw, so
+        with the same seed `predict_k(k=5).trajectory_xy == predict(k=1).trajectory_xy`.
+        That identity is what makes S0 behaviour-identical to candidate #2.
 
         Args:
             image_hwc: uint8 RGB image in HWC layout.
             command: VAVAM command id, where 0=right, 1=left, 2=straight.
+            k: number of samples. Defaults to `VAVAM_NUM_SAMPLES` (1).
+            session_uuid: rollout id; scopes the RNG so concurrent rollouts do not
+                steal each other's noise.
         """
+        k = self._num_samples if k is None else max(1, int(k))
 
         image = self._resize_and_center_crop(
             image_hwc,
@@ -119,26 +171,32 @@ class VavamPolicy:
             else nullcontext()
         )
 
-        if self._seed >= 0:  # reproducible noise sequence; predict() is serialised by the driver's inference lock
-            torch.manual_seed(self._seed + self._n_calls)
-        self._n_calls += 1
+        self._seed_for(session_uuid)
         with torch.no_grad():
             with autocast_ctx:
                 tokens = self._tokenizer(tensor)
                 batched_tokens = tokens.unsqueeze(1)
-                batched_command = torch.tensor(
-                    [[command]],
-                    device=self._device,
-                    dtype=torch.long,
+                if k > 1:  # (1,1,N) -> (k,1,N); trunk runs once, KV-cached
+                    batched_tokens = batched_tokens.expand(k, -1, -1)
+                batched_command = torch.full(
+                    (k, 1), command, device=self._device, dtype=torch.long
                 )
-                trajectory = self._vam(batched_tokens, batched_command, self.dtype)
+                if self._euler_steps:
+                    trajectory = self._vam(
+                        batched_tokens, batched_command, self.dtype,
+                        num_inference_steps=self._euler_steps,
+                    )
+                else:
+                    trajectory = self._vam(batched_tokens, batched_command, self.dtype)
 
-        trajectory_xy = _format_trajectory(trajectory)
+        candidates = _format_trajectories(trajectory, k)
         if self._output_gain != 1.0:
-            trajectory_xy = trajectory_xy * self._output_gain
+            candidates = candidates * self._output_gain
+        trajectory_xy = candidates[0]
         return VavamPrediction(
             trajectory_xy=trajectory_xy,
             headings=_compute_headings(trajectory_xy),
+            candidates_xy=candidates if k > 1 else None,
         )
 
     @staticmethod
@@ -165,6 +223,23 @@ class VavamPolicy:
             )
 
         return np.array(pil_img)
+
+
+def _format_trajectories(trajectory: torch.Tensor, k: int) -> np.ndarray:
+    """(k,T,2) from whatever shape the model returns. k == 1 matches `_format_trajectory`."""
+    array = trajectory.detach().float().cpu().numpy()
+    # squeeze any singleton axes that are not the k axis or the (T,2) tail
+    while array.ndim > 3 and array.shape[0] == 1:
+        array = array.squeeze(0)
+    if array.ndim == 2:
+        array = array[None, ...]
+    if array.ndim == 4 and array.shape[1] == 1:
+        array = array.squeeze(1)
+    if array.ndim != 3 or array.shape[0] != k or array.shape[2] != 2:
+        raise ValueError(
+            f"Unexpected VAVAM trajectory shape {tuple(array.shape)} for k={k}"
+        )
+    return array
 
 
 def _format_trajectory(trajectory: torch.Tensor) -> np.ndarray:

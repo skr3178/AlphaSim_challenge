@@ -84,12 +84,79 @@ def test_curve_beyond_the_horizon_correctly_does_nothing():
     assert out.index == 0, "should keep going straight; the turn is past the horizon"
 
 
-def test_ties_resolve_to_the_further_candidate():
-    """Equal agreement with the route -> take the one that gets further along it."""
+def test_equal_route_agreement_resolves_to_the_further_candidate():
+    """Equal agreement with the route -> take the one that gets further along it.
+
+    Since the CarPlanner port, progress is a *scored* term (w_progress 0.5), so the longer
+    candidate usually wins outright rather than through the tie-break. Either route to the
+    right answer is fine; the index is what matters.
+    """
     short, long_ = traj(15, 0), traj(30, 0)
     out = select(np.stack([short, long_]), route_straight(), cfg=CFG)
     assert out.index == 1, f"expected the longer candidate, got {out.index} ({out.costs})"
-    assert out.reason == "tie_progress"
+    assert out.reason in {"selected", "tie_progress"}
+    assert out.terms["progress"][1] > out.terms["progress"][0]
+
+
+# ------------------------------------------------------- the CarPlanner-derived terms
+
+
+def test_safety_mask_excludes_violators_and_ranks_the_rest():
+    """Candidates with any point beyond lane_max_dist are not ranked at all."""
+    route = route_straight()
+    good, ok, wild = traj(25, 0), traj(25, 1.5), traj(25, 20)
+    out = select(np.stack([wild, good, ok]), route, cfg=CFG)
+    assert out.index != 0, "the violator must never be chosen while safe candidates exist"
+    assert out.n_safe == 2, f"expected 2 safe candidates, got {out.n_safe}"
+    assert out.reason != "no_safe"
+
+
+def test_all_unsafe_reports_no_safe_for_the_b8_fallback():
+    """CarPlanner emergency-stops here; we surface the signal and B8 decelerates."""
+    route = route_straight()
+    out = select(np.stack([traj(25, 18), traj(25, -20)]), route, cfg=CFG)
+    assert out.reason == "no_safe" and out.n_safe == 0
+    assert 0 <= out.index < 2, "must still return a usable index"
+
+
+def test_consensus_prefers_the_typical_draw():
+    """Sample consensus stands in for CarPlanner's learned mode score."""
+    cluster = [traj(25, 0), traj(25, 0.2), traj(25, -0.2)]
+    outlier = traj(25, 7)
+    out = select(np.stack(cluster + [outlier]), route_straight(), cfg=CFG)
+    con = out.terms["consensus"]
+    assert con[3] < con[:3].min(), f"outlier should be least typical: {con}"
+    assert np.isclose(con.sum(), 1.0), "consensus is a distribution"
+
+
+def test_comfort_penalises_jerk():
+    smooth = traj(25, 0)
+    jerky = smooth.copy()
+    jerky[1::2, 1] += 2.0                      # zig-zag
+    out = select(np.stack([smooth, jerky]), route_straight(), cfg=CFG)
+    assert out.terms["comfort"][0] > out.terms["comfort"][1]
+
+
+def test_progress_is_normalised_not_raw_metres():
+    """CarPlanner's recorded bug: unnormalised progress dominates every other term ~60x."""
+    out = select(np.stack([traj(25, 0), traj(10, 0)]), route_straight(), cfg=CFG)
+    assert np.all(np.abs(out.terms["progress"]) <= 1.5), out.terms["progress"]
+
+
+def test_discontinuity_penalises_switching_away_from_the_last_plan():
+    route, a, b = route_straight(), traj(25, 0), traj(25, 2)
+    without = select(np.stack([a, b]), route, cfg=CFG)
+    with_prev = select(np.stack([a, b]), route,
+                       cfg=SelectConfig(w_disc=5.0), previous_xy=b)
+    assert without.terms["disc"].sum() == 0.0, "no previous plan -> no penalty"
+    assert with_prev.terms["disc"][1] < with_prev.terms["disc"][0], "b was the last pick"
+
+
+def test_weights_are_carplanners():
+    c = SelectConfig()
+    assert (c.w_rule, c.w_mode) == (1.0, 0.3), "paper SS A rule:mode ratio"
+    assert (c.w_comfort, c.w_progress, c.w_drivable) == (0.1, 0.5, 0.3)
+    assert c.lane_max_dist_m == 3.0
 
 
 # ----------------------------------------------------------------------- the guards

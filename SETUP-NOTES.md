@@ -1245,7 +1245,7 @@ shapes + warm-up 3; gain 1.0 / seed off by default), 8.35 GiB; CPU check: `Appli
 
 ## 7. Next steps, in order
 
-> **The forward plan now lives in `LOCAL-PLAN.md`** (fixes needed to compete locally, policy work in
+> **The forward plan now lives in `strategy.md` §8** (fixes needed to compete locally, policy work in
 > evidence-ranked order, submission strategy). This section is kept for history.
 
 
@@ -1406,3 +1406,33 @@ succeeded on cached ECR credentials (only the app layer uploaded; digest `sha256
 `buildx imagetools inspect`). But the API's `ecr-login` and `POST /submissions` both returned **HTTP 403
 `Competition status is CLOSED; expected one of OPEN`**; `limits`: status CLOSED, 4/5 August remaining; `me`: token fine until 17:11 UTC.
 So the announced Aug 31 – Sep 6 downtime closes the whole submission API. Candidate #2 is staged in ECR; submit when `limits` says OPEN.
+
+---
+
+## §7 Doc consolidation (2026-09-01)
+
+`LOCAL-PLAN.md` and `SHARDS-RUNBOOK.md` retired; content redistributed. Backup of every file touched:
+`.doc-backup-20260901/`.
+
+| Was in LOCAL-PLAN | Now |
+|---|---|
+| Fix 1 (representative scene set) | **Done** — 400 scenes, 4 cities. Inventory + download in `EVAL-RUNBOOK.md` §1 |
+| Fix 2 (repeatable runs) | **Done** — `VAVAM_SEED` shipped in the A1 patch (2026-08-31 15:15) |
+| Fix 3 (per-scene official metrics) | **Blocked** — artifacts in a private S3 bucket; tracked as C4 in `strategy.md` §8 |
+| Fast eval loop findings + exact YAML | `EVAL-RUNBOOK.md` §2-3 |
+| Policy work (P-series) | `strategy.md` §8 (as A/B/C/D + N + X rows) |
+| Submission strategy | `strategy.md` §6 |
+| Housekeeping | `strategy.md` §8 D-rows; practices in `EVAL-RUNBOOK.md` §4 |
+| Next round after candidate #2 | `ROUTE-SELECTION-PLAN.md` |
+
+**Doc set after consolidation** — one file per question:
+
+| File | Question it answers |
+|---|---|
+| `CURRENT-BEST.md` | What are we submitting, and against what baseline? |
+| `strategy.md` | What do we do next, and how do we decide? |
+| `EVAL-RUNBOOK.md` | How do I run a local evaluation? |
+| `RANKING.md` | Why does the score behave this way? |
+| `METRICS.md` | What does this term/metric mean? |
+| `ROUTE-SELECTION-PLAN.md` | How is the in-flight B1/B2/B4 change designed? (retire on ship) |
+| `SETUP-NOTES.md` | What happened, and what broke? |

@@ -29,6 +29,7 @@ from .rectification import (
     RectificationTargetConfig,
     build_ftheta_rectifier_for_resolution,
 )
+from .selection import select
 from .trajectory import CachedPlan, build_trajectory_from_plan, make_cached_plan
 
 _RUNTIME_WRITE_DIR_DEFAULTS = {
@@ -71,6 +72,8 @@ class SessionState:
     )
     command: int = 2
     cached_plan: CachedPlan | None = None
+    route_xy: np.ndarray | None = None
+    session_uuid: str = ""
     camera_specs: dict[str, sensorsim_pb2.AvailableCamerasReturn.AvailableCamera] = (
         field(default_factory=dict)
     )
@@ -215,6 +218,7 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
 
         with self._lock:
             self._sessions[request.session_uuid] = SessionState(
+                session_uuid=request.session_uuid,
                 camera_id=camera_id,
                 camera_specs=camera_specs,
             )
@@ -291,8 +295,15 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
     ) -> common_pb2.Empty:
         session = self._get_session(request.session_uuid, context)
         command = _command_from_route(request.route)
+        pts = [(wp.x, wp.y) for wp in request.route.waypoints]
+        route_xy = np.asarray(pts, dtype=float).reshape(-1, 2) if pts else None
+        if route_xy is not None:
+            route_xy = route_xy[np.isfinite(route_xy).all(axis=1)]
+            if len(route_xy) < 2:
+                route_xy = None
         with self._lock:
             session.command = command
+            session.route_xy = route_xy
         return common_pb2.Empty()
 
     def submit_recording_ground_truth(
@@ -395,10 +406,31 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
 
         with self._inference_lock:
             try:
-                prediction = policy.predict(image, command)
+                t_infer = time.perf_counter()
+                prediction = policy.predict_k(
+                    image, command, session_uuid=session.session_uuid
+                )
+                infer_s = time.perf_counter() - t_infer
             except Exception:
                 LOGGER.exception("VAVAM inference failed")
                 return
+
+        # S0 diagnostics. Selection is not applied — `prediction.trajectory_xy` is row 0,
+        # which on CUDA is the same draw k=1 would have produced, so driving is unchanged.
+        cands = prediction.candidates_xy
+        if cands is not None:
+            ends = cands[:, -1, :]
+            spread = float(np.sqrt(np.mean(np.sum((ends - ends.mean(axis=0)) ** 2, axis=1))))
+            medoid_d = np.linalg.norm(ends - np.median(ends, axis=0), axis=1)
+            with self._lock:
+                route_xy = session.route_xy
+            sel = select(cands, route_xy) if route_xy is not None else None
+            LOGGER.info(
+                "S0 k=%d spread=%.3f medoid_d=[%.2f..%.2f] argmin=%s reason=%s infer_ms=%.1f",
+                len(cands), spread, float(medoid_d.min()), float(medoid_d.max()),
+                sel.index if sel else "n/a", sel.reason if sel else "no_route",
+                infer_s * 1e3,
+            )
 
         plan = make_cached_plan(
             created_time_us=time_now_us,

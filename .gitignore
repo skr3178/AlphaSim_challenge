@@ -55,3 +55,7 @@ viz/
 navhard-docs/
 STATUS.md.bak
 workdir
+
+# ---- peer-session extras
+reference/
+.doc-backup-*/

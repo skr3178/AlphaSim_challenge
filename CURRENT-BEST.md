@@ -1,7 +1,7 @@
 # CURRENT BEST — single source of truth for "what are we submitting / comparing against"
 
 Update this file whenever the candidate, the baseline, or the eval standard changes. Everything else
-(SETUP-NOTES, LOCAL-PLAN, strategy) is history or method; this is the *state*.
+(SETUP-NOTES, strategy, EVAL-RUNBOOK) is history or method; this is the *state*.
 
 _Last updated: 2026-08-31 16:00 IST_
 

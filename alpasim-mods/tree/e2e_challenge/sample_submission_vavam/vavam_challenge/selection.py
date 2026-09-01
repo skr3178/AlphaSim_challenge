@@ -30,20 +30,51 @@ __all__ = ["SelectConfig", "Selection", "select", "reference_path"]
 
 @dataclass(frozen=True)
 class SelectConfig:
-    """Knobs, all surfaced as env vars by the driver. Defaults reproduce the plan."""
+    """Knobs, all surfaced as env vars by the driver.
 
+    Weights are CarPlanner's (CVPR 2025, `RuleAugmentedSelector`, paper SS A: rule:mode = 1:0.3),
+    ported in ROUTE-SELECTION-PLAN.md SS 2b. They were tuned for a *learned* mode score;
+    ours substitutes sample consensus, so `w_mode` is inherited-but-unvalidated - sweep it.
+
+    Every term is normalised to roughly [-1, 1] before weighting. CarPlanner records the
+    bug that motivates this: without normalising progress, it "dominates mode_scores by ~60x".
+    """
+
+    # --- combination (CarPlanner SS A) ---
+    w_rule: float = 1.0
+    w_mode: float = 0.3
+    """Weight on consensus. Inherited from a learned mode score - validate at S0/S1."""
+    w_disc: float = 0.0
+    """Discontinuity penalty. No CarPlanner analogue (they fix the mode across the rollout);
+    start at 0 and set it from the measured tick-to-tick switching rate."""
+
+    # --- rule terms (CarPlanner weights) ---
+    w_comfort: float = 0.1
+    w_progress: float = 0.5
+    w_drivable: float = 0.3
+    w_route: float = 1.0
+    """Fine-grained route alignment. Ours - CarPlanner has no analogue because their
+    candidates already follow enumerated lane routes."""
+
+    # --- scales, so the weights above mean something ---
+    lane_max_dist_m: float = 3.0
+    """Beyond this from the reference a point counts as a violation (CarPlanner: 3.0)."""
+    max_progress_m: float = 30.0
+    """Normaliser for progress: ~max reachable in the 3 s horizon."""
+    jerk_scale_m: float = 1.0
+    consensus_scale_m: float = 2.0
+
+    # --- behaviour ---
+    use_safety_mask: bool = True
+    """Rank only among candidates with zero violations; if none, report `no_safe`."""
+    min_progress_frac: float = 0.0
+    """Reject candidates below this fraction of the best candidate's progress."""
     tie_eps_m: float = 0.25
-    """Candidates within this of the best cost are considered tied, then ranked by progress."""
     heading_w: float = 2.0
-    """Weight on terminal heading error, metres per radian."""
     ref: str = "hermite"
-    """`hermite` (default) or `chord` — the straight-line variant, kept for the A/B."""
     sample_step_m: float = 1.0
-    """Arc-length spacing of the sampled reference path."""
     min_route_x_m: float = 5.0
-    """Route start closer than this (or behind) is implausible -> fall back to index 0."""
     max_route_y_m: float = 12.0
-    """Route start further off-axis than this is implausible -> fall back to index 0."""
 
 
 @dataclass(frozen=True)
@@ -51,13 +82,19 @@ class Selection:
     index: int
     """Chosen candidate. Always 0 when a guard fires, so behaviour matches the baseline."""
     costs: np.ndarray
-    """(k,) cost per candidate. All-zero when a guard fired."""
+    """(k,) route cost per candidate, lower is better. All-zero when a guard fired."""
     spread_m: float
-    """RMS distance of the k end points from their mean — the disagreement signal B2 keys on."""
+    """RMS distance of the k end points from their mean - the disagreement signal B2 keys on."""
     reason: str
-    """Why this index: `selected`, `tie_progress`, or a guard name. For logging."""
+    """`selected`, `tie_progress`, `no_safe`, or a guard name. For logging."""
     reference: np.ndarray | None = field(default=None, repr=False)
-    """(m,2) sampled reference path, or None when a guard fired. For visualisation."""
+    """(m,2) sampled reference path, or None when a guard fired."""
+    scores: np.ndarray | None = field(default=None, repr=False)
+    """(k,) combined score, higher is better. This is what selection ranks on."""
+    terms: dict[str, np.ndarray] | None = field(default=None, repr=False)
+    """Per-candidate breakdown: comfort, progress, drivable, route, consensus, disc."""
+    n_safe: int = -1
+    """Candidates passing the safety mask. -1 when a guard fired or the mask is off."""
 
 
 # --------------------------------------------------------------------------- helpers
@@ -152,6 +189,41 @@ def _spread(candidates: np.ndarray) -> float:
     return float(np.sqrt(np.mean(np.sum((ends - ends.mean(axis=0)) ** 2, axis=1))))
 
 
+def _comfort(c: np.ndarray, scale: float) -> np.ndarray:
+    """-mean |jerk|, normalised. CarPlanner `model.py`: 3rd finite difference on xy."""
+    if c.shape[1] < 4:                       # need >= 4 points for a jerk estimate
+        return np.zeros(len(c))
+    vel = np.diff(c, axis=1)
+    acc = np.diff(vel, axis=1)
+    jerk = np.diff(acc, axis=1)
+    return -np.linalg.norm(jerk, axis=2).mean(axis=1) / max(scale, 1e-6)
+
+
+def _progress(c: np.ndarray, max_m: float) -> np.ndarray:
+    """Final forward displacement, normalised. Unnormalised it swamps every other term."""
+    return c[:, -1, 0] / max(max_m, 1e-6)
+
+
+def _consensus(c: np.ndarray, scale: float) -> np.ndarray:
+    """Softmax over -distance-from-medoid: how typical each draw is.
+
+    Stands in for CarPlanner's *learned* mode score. VaVAM's sampler is already a learned
+    prior, so the density of k draws is its confidence - no training needed. Uses the
+    coordinate-wise median (robust) rather than the mean as the consensus point.
+    """
+    ends = c[:, -1, :]
+    d = np.linalg.norm(ends - np.median(ends, axis=0), axis=1) / max(scale, 1e-6)
+    e = np.exp(-(d - d.min()))
+    return e / e.sum()
+
+
+def _discontinuity(c: np.ndarray, previous: np.ndarray | None, scale: float) -> np.ndarray:
+    """Mean point distance from the previously chosen plan, normalised."""
+    if previous is None or previous.shape != c.shape[1:]:
+        return np.zeros(len(c))
+    return np.linalg.norm(c - previous[None], axis=2).mean(axis=1) / max(scale, 1e-6)
+
+
 # ----------------------------------------------------------------------------- main
 
 
@@ -160,18 +232,28 @@ def select(
     route_xy: np.ndarray | None,
     speed_mps: float | None = None,
     cfg: SelectConfig = SelectConfig(),
+    previous_xy: np.ndarray | None = None,
 ) -> Selection:
-    """Pick the candidate that best agrees with the map route.
+    """Pick the candidate that best follows the route, among those the model believes in.
+
+    Ports CarPlanner's `RuleAugmentedSelector` (ROUTE-SELECTION-PLAN.md SS 2b):
+
+        rule  = w_comfort*comfort + w_progress*progress + w_drivable*drivable + w_route*route
+        score = w_rule*rule + w_mode*consensus - w_disc*discontinuity
+        safe  = zero violations                      <- HARD gate, ranked among survivors only
+
+    Their `collision` term has no equivalent: no actor data reaches the driver. Their learned
+    `mode_scores` is replaced by sample consensus, which needs no training.
 
     Args:
         candidates: (k,p,2) rig-frame trajectories, p points each (6 at 0.5..3.0 s).
         route_xy: (n,2) route waypoints, possibly NaN-padded. May be None.
-        speed_mps: current speed. Unused today; kept so callers need not change when
-            a speed-aware term is added.
+        speed_mps: current speed. Unused today; kept so callers need not change.
         cfg: knobs.
+        previous_xy: (p,2) previously selected trajectory, for the discontinuity term.
 
     Returns:
-        A `Selection`. **Index 0 whenever anything is off** — an unusable route must
+        A `Selection`. **Index 0 whenever anything is off** - an unusable route must
         reproduce baseline behaviour exactly, never guess.
     """
     c = np.asarray(candidates, dtype=float)
@@ -197,29 +279,63 @@ def select(
     if len(ref) < 2:
         return Selection(0, zero, spread, "guard_short_reference")
 
+    # --- route cost (unchanged, still reported as `costs`) and violation rate --------
     costs = np.empty(k, dtype=float)
     end_arclen = np.empty(k, dtype=float)
+    violation = np.empty(k, dtype=float)
+    mean_lat = np.empty(k, dtype=float)
     for i in range(k):
-        d, s = _project(c[i], ref)
-        lateral = float(np.mean(d))
-        tangent = _tangent_at(ref, float(s[-1]))
+        d, arc = _project(c[i], ref)
+        mean_lat[i] = float(np.mean(d))
+        violation[i] = float(np.mean(d > cfg.lane_max_dist_m))
+        tangent = _tangent_at(ref, float(arc[-1]))
         last = c[i, -1] - c[i, -2]
         n = float(np.linalg.norm(last))
         if n > 1e-9:
             last = last / n
-            # signed angle between the candidate's final heading and the reference tangent
             dh = abs(np.arctan2(
                 last[0] * tangent[1] - last[1] * tangent[0],
                 float(np.dot(last, tangent)),
             ))
         else:
             dh = 0.0
-        costs[i] = lateral + cfg.heading_w * dh
-        end_arclen[i] = s[-1]
+        costs[i] = mean_lat[i] + cfg.heading_w * dh
+        end_arclen[i] = arc[-1]
 
-    best = float(costs.min())
-    tied = np.flatnonzero(costs <= best + cfg.tie_eps_m)
-    # follow the route first, then go further: among ties, the one that gets furthest along it
+    # --- CarPlanner terms, each normalised to roughly [-1, 1] -----------------------
+    terms = {
+        "comfort": _comfort(c, cfg.jerk_scale_m),
+        "progress": _progress(c, cfg.max_progress_m),
+        "drivable": -violation,
+        "route": -np.clip(mean_lat / max(cfg.lane_max_dist_m, 1e-6), 0.0, 2.0),
+        "consensus": _consensus(c, cfg.consensus_scale_m),
+        "disc": _discontinuity(c, previous_xy, cfg.consensus_scale_m),
+    }
+    rule = (cfg.w_comfort * terms["comfort"]
+            + cfg.w_progress * terms["progress"]
+            + cfg.w_drivable * terms["drivable"]
+            + cfg.w_route * terms["route"])
+    scores = cfg.w_rule * rule + cfg.w_mode * terms["consensus"] - cfg.w_disc * terms["disc"]
+
+    # --- hard safety mask: rank only among candidates with zero violations ----------
+    eligible = np.ones(k, dtype=bool)
+    if cfg.use_safety_mask:
+        eligible = violation == 0.0
+    if cfg.min_progress_frac > 0.0:
+        best_prog = terms["progress"].max()
+        eligible &= terms["progress"] >= cfg.min_progress_frac * best_prog
+    n_safe = int(eligible.sum())
+
+    reason = "selected"
+    if not eligible.any():
+        # CarPlanner emergency-stops here; we hand the signal up and B8 decelerates.
+        eligible = np.ones(k, dtype=bool)
+        reason = "no_safe"
+
+    masked = np.where(eligible, scores, -np.inf)
+    best = float(masked.max())
+    tied = np.flatnonzero(masked >= best - cfg.tie_eps_m * cfg.w_route / max(cfg.lane_max_dist_m, 1e-6))
     idx = int(tied[np.argmax(end_arclen[tied])])
-    reason = "selected" if len(tied) == 1 else "tie_progress"
-    return Selection(idx, costs, spread, reason, ref)
+    if reason == "selected" and len(tied) > 1:
+        reason = "tie_progress"
+    return Selection(idx, costs, spread, reason, ref, scores, terms, n_safe)

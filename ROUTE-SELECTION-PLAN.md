@@ -1,8 +1,12 @@
 # Plan — route-aware sample selection (B1+B4) with a conditional slow-down fallback (B2), no early termination (B7)
 
-Written 2026-08-31 after code exploration of the driver, runtime, controller and scorer. Companion to `LOCAL-PLAN.md`
+Written 2026-08-31 after code exploration of the driver, runtime, controller and scorer. Companion to `strategy.md` §8
 ("Next round after candidate #2") and `strategy.md` §8. Baseline for every comparison: **candidate #2 = VaVAM-B + μP, gain ×1.00**
-(`alpasim-e2e-vavam-driver:local-mup`, seed 1234, `dev_fast2`). Nothing here is implemented yet.
+(`alpasim-e2e-vavam-driver:local-mup`, seed 1234, `dev_fast2`).
+
+**Status 2026-09-01:** `selection.py` (225 lines) + `tests/test_selection.py` (21 tests, passing) exist.
+`predict_k`, `slowdown.py`, the failure fallback and the driver wiring do **not**. No GPU stage has run.
+§2 below is superseded by **§2b**, which ports the CarPlanner scorer.
 
 ## 0. What the exploration changed (read first — three assumptions were wrong)
 
@@ -124,3 +128,101 @@ S1b 3 × 10 min; S2 10 min; S3 31 min. Whole ladder ≈ 2 h of GPU if nothing su
 - Rear-end exposure from slow-downs is the known B2 cost; it is measured, not assumed, at S2.
 - Official evaluator runs 2 rollouts per replica through one `_inference_lock`; k=5 must stay < 250 ms mean or the driver becomes the
   wall-clock bottleneck — S0 measures it on our GPU (H100 is faster, so this is conservative).
+
+
+---
+
+## 2b. Revised selector — port of CarPlanner's rule-augmented scorer  (2026-09-01)
+
+Supersedes §2. Source: Zhang et al., *CarPlanner* (CVPR 2025) — PDF and our own implementation in
+`reference/CarPlanner/`; the selector is `model.py:1381-1530`. Their paper won on nuPlan with a
+**generation-selection** framework, and its selection half is structurally what B1+B4 needs.
+
+### What their scorer does
+
+```python
+rule_score  = w_comfort·comfort + w_progress·progress + w_collision·collision + w_drivable·drivable
+score       = w_rule·rule_score + w_mode·mode_scores          # 1 : 0.3, paper §A
+safety_mask = (collision == 0) & (drivable == 0)              # HARD gate
+selected    = argmax(score | safety_mask)                     # rank only among safe
+if no safe candidate: emergency stop
+```
+
+Two structural points that neither our §2 nor the codex proposal had:
+
+1. **Safety terms are used twice** — softly in the score *and* as a hard mask. Ranking happens
+   only among candidates with zero violations. This is a stronger version of codex's "reject
+   outliers from consensus": reject the *unsafe*, then rank the rest on preference.
+2. **Progress must be normalised.** Their comment records the bug: without dividing by the max
+   achievable horizon distance, *"progress dominates mode_scores by ~60×"*. Every term of ours
+   must be scale-normalised or the weights below are meaningless.
+
+### Term-by-term mapping
+
+| CarPlanner | w | Ours | Available? |
+|---|---|---|---|
+| `mode_scores` — learned softmax over modes | 0.3 | **consensus** = `softmax(−dist_from_medoid)` | ✅ derived from the k samples; **no training** |
+| `collision` — proximity to predicted agents | 1.0 | — | ❌ **no agent data reaches the driver** |
+| `drivable` — distance to lane centrelines | 0.3 | **route agreement** — distance to the bridged reference (§2) | ✅ our proxy for the same idea |
+| `comfort` — −mean jerk, finite differences | 0.1 | identical formula on our (k,6,2) | ✅ **port verbatim** |
+| `progress` — final x ÷ max achievable | 0.5 | identical, normalised the same way | ✅ **port verbatim** |
+| `safety_mask` — zero violations | hard | `route_violation == 0` (no point beyond `lane_max_dist` of the reference) | ✅ partial |
+| emergency stop | — | **B8 decelerating fallback** | ✅ already planned |
+
+**The substitution that keeps this training-free:** their `mode_scores` come from a learned
+Transformer decoder. Ours come from the *agreement of k stochastic draws* — VaVAM's sampler is
+already a learned prior, so measuring how tightly the draws cluster extracts its confidence
+without training anything. Same role in the sum, no gradients.
+
+**What we lose:** `collision`, their highest-weighted rule (1.0). Nothing in the driver-facing
+protos carries actors. Our only substitute is sample disagreement (B2's slow-down trigger), which
+is weaker and unproven — codex is right to flag that spread is *not* established as a collision
+predictor. Do not claim otherwise until S2 measures it.
+
+### Our scoring function
+
+```
+plausible   = finite ∧ within dynamic limits
+route_viol  = fraction of the 6 points further than lane_max_dist from the reference
+safe        = plausible ∧ (route_viol == 0)
+
+rule_score  = w_comfort·comfort + w_progress·progress + w_drivable·(−route_viol)
+score       = w_rule·rule_score + w_mode·consensus − w_disc·discontinuity_from_last
+selected    = argmax(score | safe);  if none safe → B8 decelerating fallback
+```
+
+Starting weights — **theirs, not invented**: `w_rule 1.0`, `w_mode 0.3`, `w_comfort 0.1`,
+`w_progress 0.5`, `w_drivable 0.3`, `lane_max_dist 3.0 m`. `w_disc` has no CarPlanner analogue
+(they enforce consistency by construction, holding the mode fixed across the rollout) — start at
+0 and set it from the S0 switching rate.
+
+### What this changes about S0
+
+S0 was going to *discover* the weighting. It now **validates a published one**, which is a
+cheaper and better-grounded experiment. From one k=5 capture with selection off:
+
+| Measure | Decides |
+|---|---|
+| median endpoint spread | **kill switch** — under 0.5 m there is nothing to select |
+| spread of `dist_from_medoid` | whether the consensus term has any dynamic range |
+| does route-argmin coincide with a medoid outlier? | whether the safety mask is load-bearing or inert |
+| jerk distribution across candidates | whether `w_comfort 0.1` is too small to matter here |
+| tick-to-tick argmin switching rate | `w_disc` |
+| p50/p95 latency and VRAM at k=1/3/5/8 | k, and whether adaptive k is needed |
+
+### Implementation order
+
+1. `predict_k` in `vavam_policy.py`, **per-session RNG** (a global call counter breaks
+   reproducibility when 2 rollouts share `_inference_lock`)
+2. Extend `selection.py`: `comfort`, normalised `progress`, `consensus`, `safe` mask,
+   `discontinuity`; keep every guard returning index 0
+3. Extend `tests/test_selection.py`: each new term monotone and bounded; safety mask excludes
+   violators; all-unsafe returns the fallback signal; weights at defaults reproduce the §2 ranking
+   on the existing synthetic cases
+4. Driver wiring, inert defaults
+5. S0 → the table above → set `w_disc`, confirm or adjust the ported weights
+6. S1 on `navtest_local_boston` (62 % wrong-lane), then the 100
+
+Offline first: `reference/CarPlanner/diag_rule_selector.py` ("*diagnose whether the rule-augmented
+selector is overriding correct mode choices*") is the diagnostic we want, already written for the
+same question; adapt it rather than starting fresh.

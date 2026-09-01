@@ -1,7 +1,7 @@
 # Metrics & abbreviations — AlpaSim nuPlan track
 
 Reference sheet. What decides the score, what is only diagnostic, and what every piece of
-shorthand in `strategy.md` / `RANKING.md` / `LOCAL-PLAN.md` / `SETUP-NOTES.md` means.
+shorthand in `strategy.md` / `RANKING.md` / `EVAL-RUNBOOK.md` / `SETUP-NOTES.md` means.
 
 Written 2026-08-31. Sources: `scene_score.py` and the proto (repo), DriveIRT docs
 (`navhard-docs/`), and the live leaderboard (`leaderboard/`).

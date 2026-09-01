@@ -1,6 +1,7 @@
 # Strategy — fast local iteration for the AlpaSim nuPlan track
 
-Written 2026-08-31. Companion to `LOCAL-PLAN.md` (what to build) and `SETUP-NOTES.md` (what happened).
+Written 2026-08-31. Companion to `EVAL-RUNBOOK.md` (how to run), `RANKING.md` (why the score behaves this way),
+`CURRENT-BEST.md` (live state) and `SETUP-NOTES.md` (what happened).
 This file is the *operating strategy*: how we decide, how we measure, and how we spend submissions.
 
 ## 1. The constraint that shapes everything
@@ -33,6 +34,8 @@ Rules of the ladder:
    variant that improves safety by driving slower can *lose* officially (SymPhi's μP+g1.20: 1560 < stock 1588).
 
 ## 3. The fast preset — what it is and what it is not
+
+> Exact YAML, timing/fidelity tables, launcher and scene-group inventory: **`EVAL-RUNBOOK.md`**.
 
 `+e2e_challenge_nuplan=dev_fast` = `dev` + only `CAM_F0` requested + eval video off.
 - Measured: **10.9 → 6.9 s/scene (1.58×)**, metrics code untouched, run dirs 7× smaller.
@@ -83,6 +86,9 @@ Rules of the ladder:
 - Always: specific tag, push (free) → `submit --track nuplan`. The CLI's `docker manifest inspect`
   pre-check is broken on Docker 28.1.x; POST via its `ChallengeClient` after `buildx imagetools inspect`.
 - Month boundary is UTC (evidence: all API timestamps `+00:00`); unused quota does not carry over.
+- **The board only knows submitted images.** The final entry (2026-10-31) is chosen from what has been
+  submitted, and the organizers **re-run it on the final scene set** — so a submission is a durable
+  artefact, not a probe. Minimum to compete = 1 (done). Realistically 2-4 more over the competition.
 
 ## 7. Current position and next moves
 
@@ -120,7 +126,7 @@ Evidence: **[M]** official board · **[L]** measured locally · **[D]** DriveIRT
 | **B · active work** | B2 | ⬅ **S2** | **Conditional slow-down** — keyed on **sample disagreement / curvature / inference failure** | [S] ⚠ driver receives **no obstacle data**; a "closing obstacle" brake is impossible | med | med — rear-end exposure, measured at S2 | in the same patch |
 | **B · active work** | B8 | ⬅ **S2** | **Decelerating failure fallback** — replaces the 2 m/s straight line | [S] on inference failure the driver serves a stale plan then a 2 m/s straight line — **it cannot stop** | removes a floor-scoring path | low | `trajectory.py` §3c |
 | **B · later** | B3 | ☐ | Temporal context 1 → 2–8 frames | [I] backbone trained on 8; sample uses 1 | potentially large | high — needs `@738050e` pin | days |
-| **B · later** | B5 | ☐ | 8 cameras instead of 1 | [S] all 8 arrive via `logical_id`; sample discards 7 · render cost already paid | large | high | week+ |
+| **B · dropped** | B5 | ⛔ | ~~8 cameras instead of 1~~ | needs a fusion module + **retraining** — VaVAM's encoder takes one frame and the GPT trunk expects that token distribution. Out of scope: one 24 GB GPU, ~2 months, 3-5 submissions | — | — | — |
 | **B · dropped** | B6 | ⛔ | ~~Sim-domain fine-tune on rendered frames~~ | only **navtest** assets are distributed → training on the eval set; and the dataset is being **replaced** | — | — | — |
 | **B · dropped** | B7 | ⛔ **INVARIANT** | ~~`terminate_session` early exit~~ | [S] code zeroes on 3 conditions, incompletion not among them · ⚠ [D] DriveIRT §10 says it *is* — **unresolved**. B8 gets the same safety with no failure mode | — | not worth it | — |
 | **C · tooling** | C1 | ✅ | `dev_fast2`, 20/100/400 groups, seeded launcher | 4.2 s/scene, 286–291/300 identical vs slow | — | — | — |
@@ -144,6 +150,23 @@ Evidence: **[M]** official board · **[L]** measured locally · **[D]** DriveIRT
 | **🚫 OFF LIMITS** | X3 | 🚫 | ~~CarPlanner / vector planners~~ | [S] no map, no agent tracks in the API | — | — | — |
 | **🚫 OFF LIMITS** | X4 | 🚫 | ~~Base image / arch bump~~ | [M] `8.9;9.0+PTX` JITs fine on sm_120 | — | — | — |
 | **🚫 OFF LIMITS** | X5 | 🚫 | ~~Unverified submission~~ | [D] adds a row, teaches nothing | — | — | — |
+
+### The selection criterion that now orders group B
+
+**Does it need training?** With one 24 GB GPU, ~2 months and 3-5 submissions, levers that touch
+only inference are worth disproportionately more than their raw upside suggests — they are
+testable offline, reversible, and cost no GPU-days.
+
+| Lever | Training? | Status |
+|---|---|---|
+| B1+B4 selection, B2 slow-down, B8 fallback | ❌ none — frozen checkpoint, ~250 lines of numpy | **active** |
+| B3 temporal context | ❌ none — the backbone was *trained* on 8-frame context; the sample feeds 1 | later |
+| B5 eight cameras | ✅ fusion module + retraining | **dropped** |
+| B6 sim-domain fine-tune | ✅ and it would train on the eval set | **dropped** |
+
+This is also why the CarPlanner scorer transfers but its *generator* does not: their learned mode
+selector needs training, so we substitute sample-consensus for it — VaVAM's sampler already is a
+learned prior, and measuring the agreement of k draws extracts its confidence for free.
 
 ### Three ratings this revision corrects
 

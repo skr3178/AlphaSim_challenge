@@ -64,6 +64,12 @@ public leaderboard closes **2026-10-31**, final results **2026-11-15**. No quota
 
 ## 6. Next after candidate #2 is decided
 
+**Route-follower line (09-01/09-02):** implemented per `ROUTE-FOLLOWER-CONCEPT.md` (route_map v2 + follower + VaVAM speed cue).
+Screens: F0 route-only = path thesis holds, no brake → front collisions; F1 min() = brake works, keep-cap cost 8 % progress;
+F1c cv = **best fair-seeded run: score proxy 0.893, at-fault 6, rear 0, corridor 4, wrong-lane 21, lateral 0.98 m, progress 1.011** —
+ties candidate #2's 0.858–0.907 seed bracket on the proxy, beats it on every path metric. 400-scene confirm running (`f3-follow-cv-400`).
+
+
 **Pivot 09-01 17:50 (user):** selection work parked (S1/S1b neutral on safety). Next line = **route-follower hybrid** — route geometry
 (accumulated over ticks, = recorded path on lane centres) fixes the lateral path; VaVAM only supplies the speed cue. Concept, references
 and validation ladder: `ROUTE-FOLLOWER-CONCEPT.md`. No training. First run F0 = route path + curvature-capped speed, no camera.

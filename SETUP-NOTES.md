@@ -1591,3 +1591,10 @@ progress recovered to **1.001** (keep no longer bound by the min with vavam) but
 past the GT end inflates the clamped metric at higher speed; lateral stayed 0.99). Confirms both mechanisms: the vavam cue is what brakes
 (F1: 7 front), and the keep-cap was the progress leak. Driver fixed (one line), rerun as `f1c-follow-cv`. route_map v2 (no persistent arc
 labels) was in this build; 54 tests incl. the 300 m collapse regression.
+
+**F1c (`f1c-follow-cv`, cv with the cue connected) [09-02 16:45–16:55]:** 100/100, Drive 109 ms, vavam limited **91 %** of ticks.
+at-fault **6** (all front; the 3 stubborn veh-48 stopped-traffic scenes remain), rear **0**, corridor 4, wrong-lane 21, progress **1.011**,
+d2gt 2.16, lateral **0.98**, score proxy **0.893**, fails 10. Reading vs candidate #2: its two same-config draws bracket 0.858–0.907, so
+F1c is a **statistical tie on the proxy** at n=100 — decisively better on path (lat 0.98 vs ~1.4, wrong-lane 21 vs 27–33, corridor 4),
+~2 % slower. Vs the *uploaded* stock entry: +0.023 proxy, d2gt better in 77/100. F3 = F1c on `navtest_local400` launched 17:04
+(`f3-follow-cv-400`) with the Codex gate vs `confirm400-mup-g100`.

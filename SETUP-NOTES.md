@@ -1584,3 +1584,10 @@ progress **0.951 vs 1.031**. vs candidate #2's lucky-seed screen (3 at-fault, 0.
 `keep` (which holds the *initial* speed) was the binding limit on **61 %** of ticks — as a min() term it forbids accelerating for the
 whole horizon; that is the progress leak. `vavam` limited 31 % (the brake works), `curv` 1 %. Fallbacks 70 (to the model plan — fine).
 Next arm: **F1b `SPEED_SRC=cv`** = min(curv, vavam) without the keep cap.
+
+**F1b (`f1b-follow-cv`) [09-02 16:36–16:44] — INVALID as a cv test:** the driver's pass-through tuple lacked "cv", so the VaVAM speed
+cue was never handed over (lim: keep 901 / curv 27 / vavam 0). What it accidentally measured = route path + keep/curv without a brake:
+progress recovered to **1.001** (keep no longer bound by the min with vavam) but front collisions rose to 9 and d2gt mean 2.21 (overshoot
+past the GT end inflates the clamped metric at higher speed; lateral stayed 0.99). Confirms both mechanisms: the vavam cue is what brakes
+(F1: 7 front), and the keep-cap was the progress leak. Driver fixed (one line), rerun as `f1c-follow-cv`. route_map v2 (no persistent arc
+labels) was in this build; 54 tests incl. the 300 m collapse regression.

@@ -427,7 +427,7 @@ class VavamChallengeDriver(egodriver_pb2_grpc.EgodriverServiceServicer):
             try:
                 res = build_follow_plan(
                     route_map, _pose_xy_yaw(pose), speed, time_now_us, _FOLLOW_CFG,
-                    vavam_traj_rig=vavam_xy if _FOLLOW_CFG.speed_src in ("min", "vavam") else None,
+                    vavam_traj_rig=vavam_xy if _FOLLOW_CFG.speed_src in ("min", "vavam", "cv") else None,
                 )
             except Exception:
                 LOGGER.exception("route follower failed; falling back to the model plan")

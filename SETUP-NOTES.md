@@ -1598,3 +1598,21 @@ d2gt 2.16, lateral **0.98**, score proxy **0.893**, fails 10. Reading vs candida
 F1c is a **statistical tie on the proxy** at n=100 — decisively better on path (lat 0.98 vs ~1.4, wrong-lane 21 vs 27–33, corridor 4),
 ~2 % slower. Vs the *uploaded* stock entry: +0.023 proxy, d2gt better in 77/100. F3 = F1c on `navtest_local400` launched 17:04
 (`f3-follow-cv-400`) with the Codex gate vs `confirm400-mup-g100`.
+
+## 6.24 F3 — F1c on the 400-scene confirm (`f3-follow-cv-400`)  [09-02 17:04–17:35] — **GATE FAILED**
+
+| n=400, seed 1234 | at-fault | rear | corridor | wrong-lane | progress | d2gt | lateral | score proxy | fails |
+|---|---|---|---|---|---|---|---|---|---|
+| stock (uploaded, PCS 1592) | 20 (f18/l2) | 5 | 40 | 134 | 1.053 | 3.50 | 1.83 | 0.8496 | 60 |
+| cand#2 μP (`confirm400-mup-g100`) | **13** (f11/l2) | 1 | 33 | 113 | **1.020** | 2.35 | 1.37 | 0.8813 | 46 |
+| F1c follower | 18 (f17/l1) | 1 | **23** | **98** | 0.988 | **2.07** | **1.20** | **0.8896** | **41** |
+
+Paired vs cand#2: at-fault **+5** (12 new / 7 removed — the reruns' flip noise was ~±2 net, so this is a real regression), progress
+−3.1 % (at the gate limit), score proxy +0.008 (fewer corridor zeros outweigh the extra at-fault zeros *in our proxy*). Per city:
+Vegas 3→2 (score 0.899→0.933), **Boston 4→8** (the regression concentrates here), Pittsburgh 6→7, Singapore 0→1.
+**Codex gate (≥5 fewer at-fault, progress ≥ −3 %, no city regression): FAILED on all three.** The official zoib scorer weights the
+zero branch sharply, so +5 at-fault likely costs more than 10 fewer corridor exits earn, despite the proxy's +0.008.
+**Verdict: candidate #2 remains the submission. F1c is not candidate #3.** The follower's path advantage is real and stable
+(lat 1.20, corridor 23, wrong-lane 98 — all best-ever at n=400) but its front-collision cost at scale (f17) shows the VaVAM speed cue
+alone under-brakes, most visibly in Boston. If this line continues, the lever is longitudinal: a more conservative cue (min over the
+k sampled speed profiles instead of row 0, or a scaled-down vavam profile, or an explicit lead guard) — not more lateral work.

@@ -1616,3 +1616,13 @@ zero branch sharply, so +5 at-fault likely costs more than 10 fewer corridor exi
 (lat 1.20, corridor 23, wrong-lane 98 — all best-ever at n=400) but its front-collision cost at scale (f17) shows the VaVAM speed cue
 alone under-brakes, most visibly in Boston. If this line continues, the lever is longitudinal: a more conservative cue (min over the
 k sampled speed profiles instead of row 0, or a scaled-down vavam profile, or an explicit lead guard) — not more lateral work.
+
+**Mechanism of F1c's 12 new at-fault scenes (per-timestep, 09-02 18:00):** all low-speed, dense-traffic events — speed at collision
+median **3.1 m/s** (0.9–8.6), 1.5–5 s into the scene; F1c's speed at 1 s equals candidate #2's (4.7 vs 5.2 m/s; slower in only 2/12) →
+**not under-braking**. Candidate #2 threads the same scenes with a median closest approach of **0.86 m** (0.45–2.0) while hugging the GT
+line (dist_to_gt 0.1–0.6 m at the same instant in 7/12); F1c was **1.48 m median off the human line** when it hit. So the route —
+the human path *snapped to lane centres* — is not the human line where the human squeezed past parked/stopped vehicles, and the
+follower has no perception to correct it. The correct earlier reading "speed cue under-brakes" is withdrawn: the missing piece is
+**lateral arbitration in tight traffic** (defer to the camera model's path when it deviates from the route), a new design, not a tune.
+Decision: park the follower code (kept, env-gated, inert), no further speed-cue arms; revisit only as a route/VaVAM lateral
+arbitration after B3.

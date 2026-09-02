@@ -216,3 +216,41 @@ def test_hermite_join_endpoints_and_tangents():
     assert np.allclose(j[0], [0, 0]) and np.allclose(j[-1], [20, 4])
     d0, d1 = j[1] - j[0], j[-1] - j[-2]
     assert abs(np.arctan2(d0[1], d0[0])) < np.deg2rad(3) and abs(np.arctan2(d1[1], d1[0])) < np.deg2rad(3)
+
+
+def lane_long(n_m: int = 400) -> np.ndarray:
+    """A 400 m S-course: straight, left 90 (r=40), straight, right 90 (r=35), straight."""
+    pts = [np.column_stack([np.arange(0, 80, 1.0), np.zeros(80)])]
+    th = np.linspace(0, np.pi / 2, 70)[1:]
+    pts.append(np.column_stack([80 + 40 * np.sin(th), 40 - 40 * np.cos(th)]))
+    y0 = np.arange(1, 81, 1.0)
+    pts.append(np.column_stack([120 + 0 * y0, 40 + y0]))
+    th2 = np.linspace(0, np.pi / 2, 60)[1:]
+    pts.append(np.column_stack([120 + 35 - 35 * np.cos(th2), 120 + 35 * np.sin(th2)]))
+    x0 = np.arange(1, 120, 1.0)
+    pts.append(np.column_stack([155 + x0, 155 + 0 * x0]))
+    return np.vstack(pts)
+
+
+def test_long_drive_no_collapse():
+    """Regression for the arc-frame collapse (selector session's 320 m repro): after the
+    behind-the-ego prune starts, the path must keep extending and stay on the lane."""
+    L = lane_long()
+    rm = RouteMap()
+    cl = cumlen(L)
+    from vavam_challenge.route_map import _project
+    prev_ahead = None
+    for s in np.arange(0, 300, 5.0):
+        pose = pose_on_lane(L, s)
+        rm.update(route_window(L, pose), pose)
+        q = rm.query(pose)
+        ahead = float(rm.s[-1] - (q.s_ego if q else 0.0))
+        if s >= 45:  # window reaches s+80; path must always look >= ~35 m ahead
+            assert ahead >= 35.0, f"lookahead collapsed to {ahead:.1f} m at ego_s={s:.0f}"
+        if s >= 45:
+            assert q is not None and q.dist < 0.5, f"ego {q.dist if q else 'n/a'} m off path at s={s:.0f}"
+        d, _, _ = _project(rm.path, L)
+        assert np.percentile(d, 95) < 0.3, f"path error p95 {np.percentile(d,95):.2f} at ego_s={s:.0f}"
+        total = float(rm.s[-1] - rm.s[0])
+        assert total < rm.keep_behind_m + 85.0 + 5.0, f"path grew geometrically wrong: {total:.0f} m"
+        prev_ahead = ahead

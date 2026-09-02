@@ -85,20 +85,27 @@ class PathQuery:
 
 @dataclass
 class RouteMap:
-    """Persistent lane-centre path built from route observations (local frame)."""
+    """Persistent lane-centre path built from route observations (local frame).
+
+    Design (v2, after the arc-frame collapse bug): the path is a plain polyline that only
+    EXTENDS at its end and PRUNES at its front. Arc labels (`self.s`) are recomputed from
+    the geometry on every change and are never stored across updates, so no bookkeeping
+    frame exists to drift. Interior points are not refined: successive windows overlap by
+    ~35 m and agree to ~1 cm (measured), so the first window to cover a stretch fixes it.
+
+    The v1 implementation kept an observation cloud labelled by arc length while
+    `_rebuild` re-based the path arc to zero; after the first behind-the-ego prune the two
+    frames mixed, the same road carried two labels, and the path collapsed to a ~20 m stub
+    once the ego had driven ~100 m (found by the selector session with a 320 m repro).
+    """
 
     bin_m: float = 1.0
     keep_behind_m: float = 30.0
-    max_len_m: float = 200.0
-    recency: float = 0.3
-    """Weight of a new observation against the accumulated estimate in an overlapping bin."""
-    merge_tol_m: float = 6.0
-    """A new window whose first point is further than this from the path is treated as a new segment."""
-    _obs_s: list = field(default_factory=list)   # arc length per observed point
-    _obs_xy: list = field(default_factory=list)  # local xy per observed point
-    _obs_w: list = field(default_factory=list)   # weight per observed point
-    path: np.ndarray | None = None               # (N,2) resampled path
-    s: np.ndarray | None = None                  # (N,) arc length
+    max_len_m: float = 250.0
+    merge_tol_m: float = 8.0
+    """First appended point of a window must project within this of the current path end."""
+    path: np.ndarray | None = None               # (N,2) local-frame polyline, ~bin_m spacing
+    s: np.ndarray | None = None                  # (N,) arc length, 0-based, fresh each change
     n_updates: int = 0
 
     # ----------------------------------------------------------------- update
@@ -111,59 +118,57 @@ class RouteMap:
         if len(r) < 2:
             return False
         pts = rig_to_local(r, pose_xy_yaw)
-        u = _cumlen(pts)
-        if self.path is None or len(self.path) < 2:
-            s0 = 0.0
-        else:
-            d, arc, _ = _project(pts[:1], self.path)
-            if d[0] > self.merge_tol_m:
-                # the window does not overlap what we have; anchor it at its own distance past the end
-                s0 = float(self.s[-1]) + float(np.linalg.norm(pts[0] - self.path[-1]))
-            else:
-                s0 = float(arc[0])
-        # new observations get full weight; older ones decay through the bin average
-        self._obs_s.extend((s0 + u).tolist())
-        self._obs_xy.extend(pts.tolist())
-        self._obs_w.extend([1.0] * len(pts))
         self.n_updates += 1
-        self._rebuild(pose_xy_yaw)
-        return True
+        if self.path is None or len(self.path) < 2:
+            self._set_path(pts)
+            self._prune(pose_xy_yaw)
+            return True
+        # points that reach past the current end: their clamped projection lands on the last
+        # 25 cm of the path. Window points are ordered and ~4.2 m apart, and successive
+        # windows overlap the path by ~35 m, so the first such point sits near the end.
+        d, arc, _ = _project(pts, self.path)
+        end = float(self.s[-1])
+        beyond = np.flatnonzero(arc >= end - 0.25)
+        changed = False
+        if len(beyond):
+            k = int(beyond[0])
+            if d[k] <= self.merge_tol_m:
+                ext = [self.path[-1]]
+                for pnt in pts[k:]:
+                    if np.linalg.norm(pnt - ext[-1]) > 0.3:
+                        ext.append(pnt)
+                if len(ext) > 1:
+                    self._set_path(np.vstack([self.path, np.array(ext[1:])]))
+                    changed = True
+        if self._prune(pose_xy_yaw):
+            changed = True
+        return changed
 
-    def _rebuild(self, pose_xy_yaw: tuple[float, float, float]) -> None:
-        s = np.asarray(self._obs_s)
-        xy = np.asarray(self._obs_xy)
-        w = np.asarray(self._obs_w)
-        # forget what is far behind the ego
-        if self.path is not None and len(self.path) >= 2:
-            _, arc_e, _ = _project(np.array([[pose_xy_yaw[0], pose_xy_yaw[1]]]), self.path)
-            keep = s >= float(arc_e[0]) - self.keep_behind_m - 5.0
-            if keep.sum() >= 2 and keep.sum() < len(s):
-                s, xy, w = s[keep], xy[keep], w[keep]
-                self._obs_s, self._obs_xy, self._obs_w = s.tolist(), xy.tolist(), w.tolist()
-        # older observations weigh less: recency^(age in updates) approximated by order
-        order_w = w * (1.0 - self.recency) ** (np.arange(len(w))[::-1] // 20)
-        bins = np.floor((s - s.min()) / self.bin_m).astype(int)
-        nb = bins.max() + 1
-        sw = np.bincount(bins, weights=order_w, minlength=nb)
-        sx = np.bincount(bins, weights=order_w * xy[:, 0], minlength=nb)
-        sy = np.bincount(bins, weights=order_w * xy[:, 1], minlength=nb)
-        filled = sw > 0
-        centers = s.min() + (np.arange(nb) + 0.5) * self.bin_m
-        bx = np.interp(centers, centers[filled], sx[filled] / sw[filled])
-        by = np.interp(centers, centers[filled], sy[filled] / sw[filled])
-        path = np.column_stack([bx, by])
-        # drop consecutive duplicates, then resample at bin_m along actual arc length
-        keep = np.concatenate([[True], np.linalg.norm(np.diff(path, axis=0), axis=1) > 1e-6])
-        path = path[keep]
-        cl = _cumlen(path)
-        if cl[-1] > self.max_len_m:
-            start = cl[-1] - self.max_len_m
-            sel = cl >= start
-            path, cl = path[sel], cl[sel] - cl[sel][0]
+    def _set_path(self, poly: np.ndarray) -> None:
+        keep = np.concatenate([[True], np.linalg.norm(np.diff(poly, axis=0), axis=1) > 1e-6])
+        poly = poly[keep]
+        cl = _cumlen(poly)
+        if cl[-1] > self.max_len_m:                      # cap total length from the front
+            sel = cl >= cl[-1] - self.max_len_m
+            poly, cl = poly[sel], cl[sel] - cl[sel][0]
         n = max(2, int(np.floor(cl[-1] / self.bin_m)) + 1)
         target = np.linspace(0.0, cl[-1], n)
-        self.path = np.column_stack([np.interp(target, cl, path[:, 0]), np.interp(target, cl, path[:, 1])])
+        self.path = np.column_stack([np.interp(target, cl, poly[:, 0]), np.interp(target, cl, poly[:, 1])])
         self.s = target
+
+    def _prune(self, pose_xy_yaw: tuple[float, float, float]) -> bool:
+        """Drop path vertices more than keep_behind_m behind the ego's projection."""
+        if self.path is None or len(self.path) < 3:
+            return False
+        _, arc_e, _ = _project(np.array([[pose_xy_yaw[0], pose_xy_yaw[1]]]), self.path)
+        cut = float(arc_e[0]) - self.keep_behind_m
+        if cut <= self.s[0] + self.bin_m:
+            return False
+        sel = self.s >= cut
+        if sel.sum() < 3:
+            return False
+        self._set_path(self.path[sel])
+        return True
 
     # ----------------------------------------------------------------- queries
     def ready(self) -> bool:

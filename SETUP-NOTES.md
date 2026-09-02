@@ -1626,3 +1626,35 @@ follower has no perception to correct it. The correct earlier reading "speed cue
 **lateral arbitration in tight traffic** (defer to the camera model's path when it deviates from the route), a new design, not a tune.
 Decision: park the follower code (kept, env-gated, inert), no further speed-cue arms; revisit only as a route/VaVAM lateral
 arbitration after B3.
+
+## 6.25 Offline diagnostics on the F3 failure — route-vs-human-line gap and hit-actor census  [09-02 18:20, no GPU]
+
+Tools (new, ASL-only, no simulator): `capture/route_vs_gt_gap.py`, `capture/collision_actors.py`.
+
+**(a) Route-vs-human-line gap** — the recorded GT path (`rollout_metadata.ego_rig_recorded_ground_truth_trajectory`) vs the route as the
+driver saw it (all `route_request` windows put into the local frame with that tick's pose), signed lateral, per scene. Computable in
+95/400 scenes (the route starts 40 m ahead and short scenes never overlap it — itself a finding: **the route can only be checked against
+the human line in ~24 % of scenes**).
+
+| group | n | gap mean (median of scenes) | p90 | % of GT points > 0.75 m off route |
+|---|---|---|---|---|
+| **NEW at-fault (follower collides, cand#2 does not)** | 3 | **2.74 m** | 2.77 | **100 %** |
+| REMOVED at-fault (cand#2 collides, follower does not) | 2 | 0.23 | 0.23 | 0 % |
+| corridor exit fixed by the follower | 4 | 0.21 | 0.35 | 0 % |
+| all other scenes | 86 | 0.27 | 0.30 | 0 % |
+
+Whole set: gap median **0.27 m**, p90 2.52 m; 15/95 scenes have >50 % of the human path more than 1 m off the route; correlation with the
+follower's dist_to_gt +0.35. **So the lane-centre route is an excellent proxy for the human line in ~85 % of scenes (27 cm) and badly
+wrong in a thin tail — and the follower's new collisions live entirely in that tail (2.74 m, 100 % of points off).** A gap this large is
+detectable *online* without perception (the ego's own offset from the accumulated route), which makes "trust the route only while the gap
+is small" a concrete, testable rule rather than a hunch.
+
+**(b) Hit-actor census (all 12 new at-fault scenes):** actor speed at impact ~0.1–0.3 m/s in 11 of 12 (**stationary**), one moving
+(12 m/s). Lateral offset of the hit actor from the lane-centre route: **> 2.2 m in 10 of 12** (2.2–3.3 m typical, two >24 m = cross-street
+actors). The recorded human passed those actors with **2.9–9.8 m clearance** (median 3.2 m). Ego-to-human-line distance at impact 0.7–5.9 m.
+**Reading: these are not "the route drives into a car parked in our lane".** The obstacles sit *beside* the lane centre and the human had
+metres of room; the follower still hit them, i.e. its lateral error at that moment (and in two cases a route that had drifted onto a
+cross-street) put the car where the human never was. Combined with (a): the failure is the thin tail where the route itself is the wrong
+line, plus follower lateral error on top — **not** under-braking (confirmed) and **not** simple lane-centre-vs-parked-car geometry.
+Implication for any revival: a route-trust gate keyed on the *measurable* ego-vs-route offset would have disabled the follower in exactly
+the scenes it fails, at zero perception cost. That is the one untried lateral idea the data actually supports.

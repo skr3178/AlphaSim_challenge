@@ -2306,3 +2306,32 @@ not stability. That is the distinction the control was built to make.
 **Where this leaves the claim.** The 400-scene mean-score margin (+0.0434, and now +0.0320 for μP over stock, paired) remains the
 **better-grounded** claim than any local ability estimate — peer a5's pre-registered reading (§6.39), now the operative one. The
 6×400 fit is still worth completing for ability precision, but on this evidence expect it to narrow the interval, not to separate.
+
+## 6.42 Why the s4 run completed 0 scenes — and the silent-failure trap it re-exposed (09-03 22:00)
+
+**Cause: my error, one wrong preset argument.** The WA-JEPA driver requires four cameras —
+`preprocessing.py:14  CAMERA_IDS = ("CAM_L0","CAM_F0","CAM_R0","CAM_B0")`, enforced at `driver.py:378`. Our `dev_fast2` preset sends
+**CAM_F0 only** (the speed optimisation from the fast-eval work: it cuts 7× JPEG encode, gRPC payload and ASL writes; fine for VaVAM,
+which is front-camera-only). The peer had built `dev_fast2_wajepa` with all four, and `wajepa-s2-400` used it. I launched s4 on plain
+`dev_fast2`, so **every rollout was rejected at the precondition check** before a single tick was driven:
+`FAILED_PRECONDITION: missing required cameras: ['CAM_B0','CAM_L0','CAM_R0']`.
+
+**The dangerous part is not the failure — it is the artifact it left behind (Defect 8, confirmed live).** The wizard **exited 0** and
+wrote `aggregate/results-summary.json` containing **400 rollouts, all with valid numeric `score: 0.0`**, `scene_score_enabled: true`,
+and the gRPC error text stuffed into `failure_reason`. That file is **indistinguishable, to `evaluate.py`, from a legitimate 400-scene
+subject that drove every scene and failed all of them**: it passes the score-range check (`0.0 ≤ s ≤ 1`), matches the canonical scene
+set exactly, and would have entered the IRT as a real policy sitting at the floor — stretching the ability scale, shifting every
+scene-difficulty estimate, and corrupting the anchor affine. Exit code, file presence and rollout count all say "fine".
+
+**What caught it: the VALIDITY gate** added to `run-eval.sh` earlier today (`grep -c "Session COMPLETED"` vs the scene count in the
+group YAML) — it printed `VALIDITY wajepa-s4-400: completed 0` and `RUN INVALID`. Without that line the run would have looked
+successful in every other respect. Directory set aside as `wajepa-s4-400-FAILED-wrong-preset`; relaunched 22:40 on
+`dev_fast2_wajepa`, no camera errors.
+
+**Safety sweep of every run in `runs/` for the same pathology** (mean ≈ 0, or >10 % of rollouts carrying RPC/precondition errors):
+exactly **two** hits, both already quarantined by name — `s1b-k5-off-FAILED-cuda-timeout` (98/100 RPC) and this one. **None of the 22
+subjects in the anchored fit is contaminated, and neither anchor is.** §6.38/§6.41 stand.
+
+**Rule:** a run is valid only if `completed == expected`; never infer validity from exit code, file presence, or rollout count — the
+failure mode writes a full-length, schema-valid, all-zero result. Cross-check any new subject's mean against its driver log before it
+enters a fit.

@@ -2000,3 +2000,40 @@ existing runs remain valid.
 **When to actually adopt `54952f4` for evaluation:** only alongside a re-baseline — i.e. re-run candidate #2 on `navtest_local400`
 under the new commit before comparing anything new against it. Until then, run new arms on `f012862` for comparability, and use the
 worktree for tooling only.
+
+## 6.35 What the local Drive-IRT tool can and cannot give us (09-03, code review of `evaluate.py`, nothing run)
+
+**Cannot: a leaderboard-scale PCS (the "1592" kind).** Two ingredients are missing and both live in the reference bundle that is
+"intentionally empty":
+1. **The affine scale.** `policy_capability_score = offset + scale × raw` where scale/offset come *only* from the manifest's
+   `score_scale` block (two anchor subjects → 1000/1600). Without it `score_scale()` returns `applied: False` and the column is
+   just the **raw IRT ability**, a latent number (≈1–4 in the unit test) with no relation to 1600.
+2. **The reference population.** IRT ability is relative: scene difficulty/discrimination are fitted *jointly* with the subjects in
+   the matrix. Three of our arms alone define a different quantity from a fit over the board's ~25 entries. The bundle's precomputed
+   runs are what supply that context.
+3. **Scene-set lock.** `build_matrix` keeps only runs whose scored scene-ID set is *identical* to the canonical one (others are dropped
+   as `scenario_set_mismatch`). The README pairs the nuPlan bundle with **`navtest_full` = 1,485 scenes**; using it means running each
+   candidate on those 1,485 (~2 h/arm on dev_fast2, and the full navtest must be mounted from SeagateHub1).
+
+**Can, today: the official algorithm's *relative* ranking with posterior rank intervals among our own arms.** Sufficiency guard is
+`S×N ≥ S + 5N` ⇒ **S ≥ 6 subjects at any N** (400: 5.01; 300: 5.02; 100: 5.05). Where we stand:
+- 400-scene set: **3** subjects (`confirm400-mup-g100`, `f3-follow-cv-400`, `wajepa-s2-400`) — falls back to arithmetic average.
+- 300-scene set: **6** (stock, μP, L-μP, starter, fast, fast2) — exactly enough.
+- 100-scene screen set: **21** subjects already — zoib fits *now* with no new runs (disc×4, follower×5, selection×4, gain×3,
+  WA-JEPA×3, base, …).
+  What that answers: whether the difficulty-weighted IRT ordering agrees with the mean ordering, and whether WA-JEPA's and
+  cand#2's rank intervals separate under the *official* statistical lens. It is a check on the metric, not new evidence about the
+  board — and the README's "not leaderboard-like" caveat is exactly right.
+
+**Controller gains — local == official, so the lever is real.** `base_config.yaml:11` composes `controller: nonlinear` for
+*every* preset, with the same defaults as the example JSON (long 2.0 / lat 1.0 / heading 1.0 / accel 0.1 / steer-rate 5.0 /
+accel-rate 1.0 / `idx_start_penalty` 10). Everything we have ever run locally used exactly this gain set; there is no
+local/official controller mismatch, and `controller.gains.*=` overrides on the pinned checkout are a faithful test path.
+Submission limits: six weights in [0, 10], `idx_start_penalty` integer in [0, 19]. Notes:
+- the controller currently weights longitudinal error 2× lateral. 80 % of our lost scenes are lateral (§6.29), but the follower
+  work showed the *plan* is off the human line — whether the *tracking* of that plan also contributes is an open, cheap question
+  (ASL replay: commanded vs realised path);
+- `idx_start_penalty` = the 1.0 s tracking blind-spot from §6.24 — lowering it makes the MPC react to the near part of the plan;
+- a gains-only resubmit **consumes a submission slot**, but gains can ride *with* a driver-image submission at zero extra cost,
+  so the right use is: screen locally, attach the winner to the candidate — never a separate slot;
+- a gain set tuned for one driver's plans need not suit another's (cand#2 vs WA-JEPA screened separately).

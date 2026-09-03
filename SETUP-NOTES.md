@@ -2272,3 +2272,37 @@ Both flagged values are implausible: the follower lands *above* cand#2 despite *
 follower arm last with tight intervals, §6.38), and WA-JEPA exceeds the **~1715 ceiling** of §6.36. PCS is an IRT ability — difficulty-
 weighted, with separate 0/1 channels and an at-fault tiebreak — **not a linear function of the mean**. These numbers are exactly the
 artefact the 6-subject fit exists to replace; treat them as an ordering hint at best, and never as a projected score.
+
+## 6.41 First ANCHORED local PCS (09-03) — and it fails its own pre-registered separation test
+
+**Method.** `starter400` and `stock400-g100` re-sliced to the canonical 100 scenes (means 0.6133 / 0.8587), written as a
+**local** reference bundle with `score_scale` low→1000, high→1600, and fed to the upstream evaluator via `--reference-manifest`.
+The tool applied the affine itself (`score_scale.applied=true`), `effective_algorithm=zoib`, 22 subjects, no warnings.
+⚠️ These are **our own runs used as anchors**, not the organizer bundle.
+
+| PCS | ± | subject | mean | | PCS | ± | subject | mean |
+|---:|---:|---|---:|---|---:|---:|---|---:|
+| **1702** | 116 | `wajepa-s2-100` | 0.9499 | | 1582 | 93 | **`screen-mup-g100` (cand#2)** | 0.9067 |
+| 1660 | 115 | `wajepa-s4-100` | 0.9493 | | 1579 | 91 | `vavam-base100` (cand#2 draw C) | 0.9064 |
+| 1652 | 97 | `disc-d040` | 0.9062 | | 1551 | 88 | `wajepa-s12-100` | **0.9667** |
+| **1600** | 114 | `anchor-high` = stock VaVAM | 0.8587 | | 1377 | 72 | `f1c-follow-cv` | 0.8926 |
+| | | | | | **1000** | 20 | `anchor-low` = go-straight | 0.6133 |
+
+**Verdict against §6.39's pre-registered test: NOT SEPARATED.** WA-JEPA − cand#2 = **120 PCS**, but pooled posterior std is
+√(116²+93²) = **149** ⇒ **0.81 σ**. Well short of anything decisive. The pre-registration is what makes this reportable rather than
+disappointing: the criterion was fixed before the number existed.
+
+**Two internal contradictions confirm the fit is underpowered — do not read the ordering.**
+1. **cand#2 (1582) lands *below* the stock anchor (1600)** even though cand#2 beats stock **on these same 100 scenes** by mean
+   (0.9067 vs 0.8587) *and* beats it paired at n=400 by **+0.0320 at 1.89 σ** (§6.40). The fit contradicts a direct paired measurement.
+2. `wajepa-s12` (1551) still sits below cand#2 (1582) despite the best mean of all — the §6.38 artifact, unchanged.
+**Identification:** 80/100 scenes still have `difficulty_std` > |`difficulty`| (was 90/100 with 20 subjects — better, still bad);
+the 15-subject top group spans 201 PCS at median std 102 = **2.0 σ**, i.e. one blob, exactly as at n=100 before.
+
+**The null-distance control passes.** The two cand#2 draws land at **1582 and 1579 — 3 PCS apart** against stds of ~92. Replicates
+are reproduced tightly, so the fit is deterministic and self-consistent; what it lacks is *resolving power between different policies*,
+not stability. That is the distinction the control was built to make.
+
+**Where this leaves the claim.** The 400-scene mean-score margin (+0.0434, and now +0.0320 for μP over stock, paired) remains the
+**better-grounded** claim than any local ability estimate — peer a5's pre-registered reading (§6.39), now the operative one. The
+6×400 fit is still worth completing for ability precision, but on this evidence expect it to narrow the interval, not to separate.

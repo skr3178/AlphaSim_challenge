@@ -210,3 +210,19 @@ avgDist high + d2gt high	15	1213	1715	3
 avgDist high + d2gt low	16	1096	1715	1
 avgDist low + d2gt high	16	1152	1601	1
 avgDist low + d2gt low	15	879	1009	0
+
+
+## controller-gains
+
+
+runs/wajepa-s2-400/controller-config.yaml:
+
+field	value we used	new allowed range
+long_position_weight	2.0	0–10
+lat_position_weight	1.0	0–10
+heading_weight	1.0	0–10
+acceleration_weight	0.1	0–10
+rel_front_steering_angle_weight	5.0	0–10
+rel_acceleration_weight	1.0	0–10
+idx_start_penalty	10	0–19
+Plus mpc_implementation: nonlinear, dt_mpc: 0.1.

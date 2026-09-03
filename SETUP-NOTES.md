@@ -2125,3 +2125,41 @@ tracking is exactly what could erode it.
 **Submission rule.** Gains ride free with a driver-image submission (no extra slot), but **do not bundle an unvalidated gain set into
 WA-JEPA's first submission** — the same rule applied to cand#2 in §6.20. A clean measurement of the driver comes first; a gain set
 earns its place only by clearing the ±0.0485 seed band on the 400.
+
+## 6.38 We RAN the official Drive-IRT locally (09-03). It fits — and at n=100 it cannot separate our candidates.
+
+**Setup.** `uv venv` on the storage disk + CPU torch + the pinned `drive-irt` tarball (82ddd5a) + pandas/pyarrow; ran the upstream
+`local_evaluation/evaluate.py` from the 54952f4 worktree against our own `runs/`. Env: `/media/skr/storage/irt-venv`, output
+`/media/skr/storage/irt-out/screen100`. **20 subjects × 100 scenes** (the main `navtest_local100` set; excluded
+`s1b-k5-off-FAILED-cuda-timeout`, an infrastructure failure whose zeros are not capability). `effective_algorithm=zoib`, no warnings,
+rank intervals applied — **the real algorithm, not the average fallback.**
+
+| rk | rank_lo | rank_hi | spread | subject | ability | std | mean scene |
+|---:|---:|---:|---:|---|---:|---:|---:|
+| 1 | 1 | 13 | 12 | `wajepa-s2-100` | 3.022 | 0.451 | 0.9499 |
+| 5 | 2 | 15 | 13 | `vavam-base100` | 2.499 | 0.375 | 0.9064 |
+| 6 | 2 | 15 | 13 | `screen-mup-g100` (cand#2) | 2.523 | 0.398 | 0.9067 |
+| 14 | 3 | 16 | 13 | `wajepa-s12-100` | 2.357 | 0.359 | **0.9667** |
+| 17–20 | 16–17 | 20 | **3–4** | the four route-follower arms | 0.76–1.15 | 0.24–0.27 | 0.75–0.87 |
+
+**Headline: WA-JEPA ranks #1 by ability, but the intervals overlap almost completely** — [1,13] vs cand#2's [2,15] out of 20 subjects.
+At 100 scenes with 20 highly-correlated subjects the fit **cannot** distinguish the top group. It *can* separate the follower arms
+(spread 3–4, `rank_lo` 16+): the IRT confidently agrees they are worse, which independently vindicates parking that branch.
+
+**A real IRT-vs-mean inversion worth knowing.** `wajepa-s12-100` has the **best mean of all (0.9667)** and the fewest zeros (3 vs
+s2's 5) yet ranks **14th**. Profile: s12 = 3 zeros / 90 ones / 7 partial; s2 = 5 zeros / **93 ones** / 2 partial. The zoib likelihood
+has a separate P(1) channel, so **hitting exactly 1.0 is scored in its own right** — the mean is not what the leaderboard optimises.
+This is the first direct evidence that mean scene score and PCS ordering can disagree on our own data. Treat mean-score deltas as a
+proxy that can invert, and never rank arms by mean alone when the IRT is available.
+
+⚠️ **Two runs I mislabelled: `vavam-base100` is NOT stock.** `alpasim-e2e-vavam-driver:local-mup` **bakes
+`VAVAM_MUP_SHAPES_DIR`** into the image env, and both `vavam-base100` (09-03) and `screen-mup-g100` (08-31) used that image with
+identical extras (`VAVAM_OUTPUT_GAIN=1.00 VAVAM_SEED=1234`) and preset. So they are **two draws of candidate #2**, not stock-vs-μP —
+and their gap (0.9064 vs 0.9067, Δ 0.0003, same seed) is pure fp16-batching numerics, a tighter noise bracket than the ±0.0485 seed
+band. The main 100-scene set therefore contains **no stock VaVAM and no go-straight run**, so no anchor pair and no PCS scale.
+
+**Path to an anchored, separating number (not run; ~2 h GPU).** Put **6 subjects on the 400-scene set** — we have 3
+(`confirm400-mup-g100`, `f3-follow-cv-400`, `wajepa-s2-400`) and all images for the rest: `:local` (stock → the 1600 anchor policy),
+`alpasim-e2e-starter-driver:latest` (go-straight → the 1000 anchor), and `:local-mup-k` or `:local-follow`. 6×400 = 2400 ≥ 2006 ✓, and
+with both anchor policies present the anchor affine yields **indicative** PCS for WA-JEPA and cand#2 on the board's scale. Still not the
+board's number — a 6-subject fit on 400 scenes is not the 62-subject fit on full navtest, and the anchors only pin two points.

@@ -1983,3 +1983,20 @@ in §6.24 — it is now a *tunable submission parameter*.
 track; `e2e_challenge_nuplan*` configs are untouched by the diff. The nuPlan 8-camera contract and everything in §6.29/§6.32 stands.
 Also EC2 now runs the renderer with `--no-enable-nrend` ("the public competition evaluates the unharmonized renderer until the
 separately announced final reruns").
+
+**Local copy of the updated branch (09-03).** The new commits were fetched into the canonical clone
+(`~/alpasim-challenge/alpasim` = `Downloads/alpasim_challenge/workdir/alpasim`, the same directory via symlink), so
+`origin/e2e_challenge` = `54952f4` is present locally — **but the working tree is deliberately left pinned at `f012862`.**
+Reason: the update touches `src/runtime/.../service_base.py` and `video_model_service.py`, i.e. simulator behaviour. Checking it out
+would make every run we have (`confirm400-mup-g100`, `f3-follow-cv-400`, `wajepa-s2-400`, all the 100-scene screens) non-comparable with
+anything run afterwards, and our whole comparison ladder depends on those being paired.
+
+Instead: **`git worktree add /media/skr/storage/alpasim-upstream-54952f4 54952f4`** — a second checkout at the new commit sharing the
+same object store (282 MB, on the storage disk, no re-clone). It carries the new `local_evaluation/evaluate.py` (Drive-IRT),
+the new competitor CLI (terms + `--controller-gains`), and the new configs, while the eval environment stays pinned. Verified:
+`e2e_challenge_nuplan_common` is **byte-identical** between the two checkouts, so our scene/camera/route contract is untouched and the
+existing runs remain valid.
+
+**When to actually adopt `54952f4` for evaluation:** only alongside a re-baseline — i.e. re-run candidate #2 on `navtest_local400`
+under the new commit before comparing anything new against it. Until then, run new arms on `f012862` for comparability, and use the
+worktree for tooling only.

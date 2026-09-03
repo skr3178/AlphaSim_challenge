@@ -1903,18 +1903,48 @@ own criterion after seeing the number, which is exactly what §6.31 exists to pr
 
 **Status: decision deferred to the user**, with candidate #2 remaining the staged submission until then.
 
-**Where WA-JEPA's 6 % progress deficit actually falls (09-03, our analysis of the peer's run).** Not a uniform slowdown: per-scene
-delta vs candidate #2 across the 400 is mean −0.064 / median −0.041, with **237 slower, 81 faster, 82 tied** (p25 −0.137, p75 +0.000),
-and the worst 20 scenes carrying **30 %** of all progress lost.
+**Where WA-JEPA's progress deficit actually falls — CORRECTED (09-03; my first version was wrong by ~6×, peer-caught).**
 
-**The decisive cut: of the 237 slower scenes only 32 cost any score** — the other 205 are slower above the 0.8 threshold where it is
-arithmetically free. Those 32 cost **17.0 score points = 0.0426 on the mean**, against a total win of **+0.0434**. So WA-JEPA wins
-~+0.086 on safety and hands half of it back on 32 scenes; fixing them would put the arm near **0.967**.
+⚠️ **`progress_clipped_rel` is NOT clipped** despite its name — max 1.469, with 128 of 400 scenes above 1.0. `ground_truth.py` keeps it
+"deliberately unclipped so out-running the recording stays visible"; the **scorer** clamps to [0,1] at scoring time. A scene going
+1.30 → 1.05 reads as −0.25 raw and is worth exactly **zero**.
 
-The worst cases look like **stalls, not caution** — 1.41 → 0.09, 1.30 → 0.17, 1.20 → 0.13, 1.37 → 0.48 progress — and two of them score
-*better* anyway (a stall that avoids a collision candidate #2 had). **The fix is not an output-gain knob:** §6.16 is the precedent —
-on the μP-correct model ×1.05 bought +0.016 progress and cost 3 collisions, i.e. scaling the output trades away exactly what WA-JEPA won.
-A stall-specific fix preserves the safety and recovers the score.
+| | raw (wrong) | clipped (correct) |
+|---|---|---|
+| mean Δprogress | −0.0639 | **−0.0377** |
+| median | −0.0417 | **−0.0082** |
+| slower / faster scenes | 237 / 81 | 198 / 70 |
+
+**And the bigger error was attribution.** My "32 scenes costing 17.0 points" filtered on *progress down AND score down*, which swept in
+**14 hard-failure scenes** (collision/corridor) carrying **14.00 of those 17.03 points** — fixing progress recovers nothing there.
+Correctly separated:
+
+| measure | scenes | points | on the mean |
+|---|---|---|---|
+| my original (wrong) | 32 | 17.03 | 0.0426 |
+| genuinely progress-driven | 18 | 3.03 | **0.0076** |
+| headroom to lift every non-failing scene to progress 0.8 | 23 | 4.12 vs cand#2's 1.48 | **net 0.0066** |
+
+So the deficit costs **~0.007–0.013**, i.e. **15–30 % of the +0.0434 margin — not half**, and "fix the stalls → 0.967" was wrong;
+the ceiling is ~**0.932–0.937**. **This strengthens the WA-JEPA result**: the win is more robust than I portrayed, because almost all
+of the slowdown sits above the 0.8 threshold where the scorer discards it.
+
+**What survives:** the near-stalls are real (1.00 → 0.09, → 0.13, → 0.17) and worth watching — but the prize is small, and several
+stalls are *the safety mechanism working* (three of the worst six score better than candidate #2 did, up to +1.00, by stalling out of a
+collision it had). **Fixing stalls naively risks trading back the 13 → 2.** The output-gain knob remains the known-bad fix (§6.16).
+
+## 6.33 RULE: never compute a scoring claim from a raw metric  [09-03 — three violations in one day]
+
+The same class of error occurred **three times today**, once by each session, each time inflating a claim:
+1. **`progress_rel` (MIN-aggregated) instead of `progress_clipped_rel`** — a peer's scene-score proxy read 0.035 low (§6.28);
+2. **pre-modifier `metrics_unprocessed.parquet` instead of the post-modifier per-scene values** — inflated a tail p90 to 11.7 m
+   (true 3.2 m) and a zero count to 14 (true 9);
+3. **unclipped progress + hard-failure contamination** — inflated a recoverable deficit 6× (this section).
+
+**Rule: a scoring claim may only be computed from `rollouts[].score` / `score_metrics`, or from a quantity explicitly passed through
+the scorer's own transform** (`clip(p,0,1)/0.8`, hard-failure zeroing, post-modifier values). Raw metric columns — `progress_rel`,
+`progress_clipped_rel`, the unprocessed parquet — are diagnostics, never scores. Where an attribution is claimed ("X costs Y points"),
+**exclude hard-failure scenes explicitly**: a scene scoring 0 from a collision recovers nothing from fixing anything else.
 
 **Strategic framing (peer's, verified):** NaLa `sub1` at 3.36 km *and* 0.98 m d2gt at joint #1 is the existence proof that
 safe-and-tight is **necessary-but-not-sufficient**, not punished. The top 5 spans two routes up — `sub1` (safe+tight) and

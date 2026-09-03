@@ -2177,3 +2177,43 @@ band. The main 100-scene set therefore contains **no stock VaVAM and no go-strai
 `alpasim-e2e-starter-driver:latest` (go-straight → the 1000 anchor), and `:local-mup-k` or `:local-follow`. 6×400 = 2400 ≥ 2006 ✓, and
 with both anchor policies present the anchor affine yields **indicative** PCS for WA-JEPA and cand#2 on the board's scale. Still not the
 board's number — a 6-subject fit on 400 scenes is not the 62-subject fit on full navtest, and the anchors only pin two points.
+
+## 6.39 How to judge the 400-scene fit — decided BEFORE seeing it (09-03, with peer a5)
+
+**The 6-subject 400 fit is for exactly one thing: the pairwise ability separation of `wajepa-s2-400` vs `confirm400-mup-g100`.**
+Not a 6-way ranking — that will stay noise for the same reason the 20-way one was (§6.38). Pre-registering the read so it cannot be
+chosen after the fact:
+- **Report**: the two subjects' abilities, their posterior stds, and the **gap in units of pooled posterior std**. At n=100 the
+  ability gap was 0.50 (3.02 vs 2.52) at std 0.451. If std scales as 1/√N, n=400 gives ~0.225 ⇒ **~2.2 std of separation** for the
+  pair. That is the quantity that decides whether WA-JEPA's local win survives the official lens.
+- **Report alongside, always**: the fraction of scenes with `difficulty_std` > |`difficulty`| and the top-group spread in std. The
+  `S×N ≥ S+5N` guard passed cleanly on a fit whose difficulties were 3.5× noise, so it certifies nothing about identification.
+- **Expect difficulties to be WORSE identified, not better** — 6 subjects/scene vs 20. No choice of sixth subject fixes that, so the
+  sixth was chosen for **cost, not identification**.
+
+**Sixth subject = WA-JEPA s4, kept deliberately, and it earns its place as a near-replicate.** s4 (5 zeros/92 ones) is almost a
+duplicate of s2 (5/93) — which peer a5 correctly called weak for *widening* the fit. But that near-duplication is itself a **built-in
+reliability check nobody had proposed**: two configs with near-identical response profiles *should* land at near-identical ability.
+**If s2 and s4 come out far apart at n=400, the s2-vs-cand#2 separation cannot be trusted either** — a null-distance control for the
+very contrast we care about. s12 would have been the more informative profile (3/90, and would retest the withdrawn inversion) but
+runs ~1516 ms/call vs s4's 520 ⇒ ~90+ min instead of ~35; not worth 3× the GPU for a second-order gain.
+Cheaper distinct-profile option if ever wanted (peer a5): `VAVAM_OUTPUT_GAIN=1.05` on `:local-mup` reproduces the g105 arm
+(0.8683 vs cand#2's 0.9067 on the same 100 — same base model, genuinely different failure subset) at VaVAM speed.
+
+**Correction to my own instinct, recorded because it was wrong:** I proposed picking a sixth subject "far from the others to widen the
+spread". That is the wrong objective. A distant *low*-ability subject widens the overall range but carries no information about the
+scenes that separate cand#2 from WA-JEPA. Informativeness for a contrast comes from subjects near that contrast failing a *different*
+subset, not from range.
+
+**Optional no-GPU robustness check (data already exists):** the 100-scene set is a subset of the 400. Re-slicing the 400-runs to those
+100 scenes adds replicate subjects to the 20 we have (23 now, 26 after tonight) ⇒ **better difficulty identification (26 subjects/scene)
+but worse ability precision (100 items)** — the exact opposite trade to the 6×400 fit. If both fits agree on the s2-vs-cand#2 ordering,
+that ordering is robust to the identification regime; if they disagree, neither is usable. Costs no GPU.
+
+### The guard that would have caught all four of today's errors (peer a5's formulation)
+> **State the resolution of the measurement before interpreting the difference.**
+
+Today: (1) the score-proxy episode, (2) the progress-deficit overstatement (6×, mine), (3) the P(1) "inversion" mechanism (mine),
+(4) the raw-vs-clipped progress deltas. Common shape: **a plausible causal story fitted to a difference the data could not resolve.**
+This complements §6.33 (never compute a scoring claim from a raw metric): §6.33 governs *which quantity*, this governs *whether the
+quantity is resolved enough to carry an explanation*.

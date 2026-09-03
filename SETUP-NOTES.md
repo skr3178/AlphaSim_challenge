@@ -2037,3 +2037,43 @@ Submission limits: six weights in [0, 10], `idx_start_penalty` integer in [0, 19
 - a gains-only resubmit **consumes a submission slot**, but gains can ride *with* a driver-image submission at zero extra cost,
   so the right use is: screen locally, attach the winner to the candidate — never a separate slot;
 - a gain set tuned for one driver's plans need not suit another's (cand#2 vs WA-JEPA screened separately).
+
+## 6.36 What the published anchor scale reveals about the board (09-03; board snapshot 09-01, drive-irt source at the pinned commit)
+
+**The anchors are identified: 1000 = `Host/go_straight`, 1600 = `Host/policy1` ≈ stock VaVAM.** PCS = offset + scale × θ with the
+two Host submissions (06-16, pre-launch) pinned exactly. Two teams that submitted the starter kit (AIMM `smoke`, ZGCA
+`starter-baseline`) landed at 1000.09/1000.16 with km and d2gt identical to 13 digits → the starter kit *is* go-straight, official
+evaluation is deterministic per image, and **fit jitter for identical data is ≈0.1 PCS**. `policy1` has km 1.68 / d2gt 3.07 — the stock
+VaVAM signature (ours: 1.62 / 3.05 / 1592). So the whole 600-point span is "doing nothing → the provided baseline".
+
+**Consequences for reading the board.**
+- The 1588–1601 cluster (foxhihi b1/b1s, Host, us, Magma v4EMA, SymPhi sample-v2) is one policy: **stock ± ~7 PCS of rollout noise**.
+  Our 1592 is 8 below the organizers' own copy — noise, not a deficit.
+- Only four entries beat stock beyond noise: NaLa 1715, 메타몽 1715, SymPhi gain1075 1691, gain105 1680. Everyone else is at or below
+  the starter after 2.5 months. The competitive band is 1588→1715 = 127 PCS ≈ 21 % of one anchor span.
+- `legacy_score` (at-fault km) was the old primary. Under it foxhihi `c4` (4.66 km, d2gt 1.65) would be top-4; under zoib it is 1478,
+  below stock — the model charges stalling through the progress channels (see mechanism).
+
+**Pricing local deltas (crude, linear-in-mean; IRT is nonlinear).** Local mean `rollouts[].score`: starter 0.600 (300) / 0.608 (100);
+stock 0.826 (300) / 0.840 (100) / 0.906 (base100). ⇒ 600 PCS ≈ 0.22–0.30 mean score ⇒ **≈ 20–27 PCS per +0.01 mean score.**
+WA-JEPA's +0.0434 over cand#2 ⇒ **≈ +90–120 PCS ⇒ ~1680–1710** if cand#2 ≈ stock ≈ 1592 (paired 100: μP effect +0.0003 ⇒ cand#2 is
+in the stock cluster; the 300-set μP/stock pair is not paired — different presets/seeds — do not price from it).
+
+**The ceiling: #1 and #2 have bit-identical PCS 1715.4967382108227 from different data** (km 3.36 vs 3.09, d2gt 0.98 vs 2.65).
+In drive-irt the ability is an unbounded mean-field Normal (`NormalGammaGuide`, no clamp), so a converged fit cannot tie two subjects
+exactly. The only mechanism in the pinned code that yields one exact value for different data is the optimizer: per-element gradient
+clamp at ±`clip_norm`=10 with lr 0.1·0.975^t over 1000 epochs — a subject whose gradient stays saturated walks an identical path
+(Σ lr_t·10 ≈ 40 raw units from init) and lands on the same number. **Inferred, not run** — checkable locally by fitting with a
+synthetic all-1.0 subject. If right: (a) ~1715 is the maximum reachable on this fit; (b) #1 vs #2 is decided by the at-fault-km
+tiebreak (NaLa 3.36 > 메타몽 3.09), exactly the `ranking_policy` in evaluate.py; (c) at the ceiling nothing but at-fault km matters.
+Note 메타몽 reached the ceiling with d2gt 2.65 and SymPhi 1691 with d2gt 3.72 — **tracking tightness is not what the top requires**;
+hard-failure avoidance and progress are.
+
+**Rank ≠ PCS.** 24 of 1,891 pairs are inverted; SymPhi `vavam-mup-g120-v1` at 1560 ranks 6th above five entries up to 1601 (us
+included). Ranking is by the 97.5 % quantile of posterior rank, so a 41-PCS deficit was overcome by a tighter posterior std. The public
+board hides std; **the local tool exposes `policy_capability_score_std`** — the first time we can see this dimension for our own arms.
+
+**Zoib mechanism (beta_irt.py).** Per scene: P(0) = σ(g0 − a·θ), P(1) = σ(a·θ − g1), else Beta with mean σ(a·θ − b). Ability is
+pushed by avoiding zeros where others score, hitting 1.0 where others don't, and partial progress. Scenes where everyone is at 1.0
+(or 0) carry ~no information — the mechanism behind §6.32's "335 of 400 scenes are free". A zero on a discriminating scene is charged
+through its own logistic channel, which is why at-fault dominates and why "safe but stalled" still loses.

@@ -2146,11 +2146,25 @@ rank intervals applied — **the real algorithm, not the average fallback.**
 At 100 scenes with 20 highly-correlated subjects the fit **cannot** distinguish the top group. It *can* separate the follower arms
 (spread 3–4, `rank_lo` 16+): the IRT confidently agrees they are worse, which independently vindicates parking that branch.
 
-**A real IRT-vs-mean inversion worth knowing.** `wajepa-s12-100` has the **best mean of all (0.9667)** and the fewest zeros (3 vs
-s2's 5) yet ranks **14th**. Profile: s12 = 3 zeros / 90 ones / 7 partial; s2 = 5 zeros / **93 ones** / 2 partial. The zoib likelihood
-has a separate P(1) channel, so **hitting exactly 1.0 is scored in its own right** — the mean is not what the leaderboard optimises.
-This is the first direct evidence that mean scene score and PCS ordering can disagree on our own data. Treat mean-score deltas as a
-proxy that can invert, and never rank arms by mean alone when the IRT is available.
+**~~A real IRT-vs-mean inversion~~ — WITHDRAWN, it is a fit artifact (peer-caught, verified).** `wajepa-s12-100` has the best mean
+(0.9667) and fewest zeros (3) yet ranks 14th, and I attributed this to the zoib P(1) channel scoring exact-1.0 in its own right.
+**That mechanism is wrong.** It could explain s12 vs s2 (90 vs 93 ones) but *not* s12 vs cand#2, where s12 leads on **both** inflation
+channels (3 zeros vs 9, 90 ones vs 84). A monotone fit cannot rank a doubly-dominating subject lower; so the ranking, not the model,
+is what needs explaining. Two diagnostics settle it:
+- **Difficulty-weighting explanation refuted.** If s12's few failures landed on *easy* scenes it would deserve the penalty. They do
+  not: field pass-rate on s12's 3 zero-scenes is **0.48**, vs s2's 0.58 and cand#2's 0.43, against an all-scene baseline of **0.83**.
+  s12 fails *hard* scenes, which the IRT should forgive — that would push its ability up, not down.
+- **The fit is not identified on the item side.** In `fit/item_params.csv`, **90 of 100 scenes have `difficulty_std` >
+  |`difficulty`|** (median |difficulty| 0.483 vs median std **1.667**, 3.5× larger). And the 14-subject top group spans just
+  **1.9 posterior std** of ability. The point ranks inside that blob are noise.
+**Conclusion: no strategy follows.** "Maximise exact-1.0 count rather than mean" would have been a real change of objective built on
+an unstable point rank. Scene difficulty needs many *subjects per scene* (the board has 62); 20 correlated local arms cannot deliver it.
+
+⚠️ **Consequence for the 6-subject 400-scene fit now running.** It trades in both directions and the trade is not obviously
+favourable: ability precision should *improve* (each ability is estimated from 400 items instead of 100, so posterior std ~0.45 →
+~0.22 if it scales as 1/√N — which is what separating WA-JEPA from cand#2 needs), but **item difficulty gets worse, not better**:
+6 subjects per scene versus 20. The `S×N ≥ S+5N` guard is a crude sufficiency check, not an identification test. Read the
+`difficulty_std`/`|difficulty|` ratio and the top-group-spread-in-std before believing any ordering it produces.
 
 ⚠️ **Two runs I mislabelled: `vavam-base100` is NOT stock.** `alpasim-e2e-vavam-driver:local-mup` **bakes
 `VAVAM_MUP_SHAPES_DIR`** into the image env, and both `vavam-base100` (09-03) and `screen-mup-g100` (08-31) used that image with

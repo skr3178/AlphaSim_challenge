@@ -1752,3 +1752,28 @@ Effect is **+0.028** (not the +0.018 the earlier hand-rolled proxy showed) and c
 sign:** candidate #2's own two same-config draws span **0.8582 – 0.9067, a spread of 0.0485 — nearly twice the effect**. A 6-scene
 change at p = 0.69 inside a 0.049 seed band is not evidence, so the parked verdict stands; the branch failed on 400 scenes, not here.
 This is the cleanest statement of the n=100 limit: *the noise band of an unchanged config exceeds every effect we have measured on it.*
+
+## 6.29 WA-JEPA T1 screen — independently verified  [09-03, peer session's runs, our verification]
+
+Four arms on `navtest_local100` / `dev_fast2`, all 100/100 with zero driver inference failures (the new VALIDITY gate).
+Scores are the official `rollouts[].score`; candidate #2's three same-config draws bracket **0.8582–0.9067**.
+
+| arm | score | zeros | at-fault | corridor | wrong-lane | progress | lat med / p90 | Drive ms | % wall |
+|---|---|---|---|---|---|---|---|---|---|
+| cand#2 draw A / B / C | 0.9067 / 0.8582 / 0.9064 | 9/13/9 | 3/7/3 | 6/6/6 | 33/27/32 | ~1.04 | ~1.0 / ~3.2 | 103 | 17 |
+| WA-JEPA 12 steps | **0.9667** | 3 | **0** | 3 | 26 | 0.966 | 0.63 / 2.23 | **1516** | 104 |
+| WA-JEPA 4 steps | 0.9493 | 5 | **0** | 5 | 26 | 0.995 | **0.35** / 2.49 | 520 | 58 |
+| WA-JEPA 2 steps | **0.9499** | 5 | **0** | 5 | 27 | 1.003 | 0.42 / 2.51 | **295** | 39 |
+| our route follower `f1c` | 0.8926 | 10 | 6 | 4 | 21 | 1.011 | 0.67 / 2.44 | 109 | 18 |
+
+Paired, 4-step vs the three candidate-#2 draws: better 14 / 18 / 14, worse 6 / 6 / 6, Δscore +0.043 / +0.091 / +0.043 — i.e. above the
+top of candidate #2's own seed bracket, which nothing of ours has managed. **Zero at-fault collisions in all three arms** is the headline;
+collisions are the hard zeros. The **2-step arm dominates the 4-step** (identical score, 295 ms vs 520 ms), so step count buys nothing
+beyond 2 here.
+
+**Two reservations, both from our own history.** (1) *Throughput may be the binding gate:* our stock-B submission passed with only a
+**9.7 % wall-time margin** (2265 s observed vs 2485 s limit) at 103 ms/call; 295 ms is ~3×, 520 ms ~5×, 1516 ms ~15× that per-call cost,
+and throughput failure is a hard fail independent of score. Needs the official `throughput_limit` numbers before anything is called
+submittable. (2) *n=100 cannot see a 5-collision regression:* our route follower led candidate #2 on every path metric at this scale and
+then lost the 400-scene gate on collisions (18 vs 13). The required next step is `navtest_local400` paired against
+`confirm400-mup-g100`.

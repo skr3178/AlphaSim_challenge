@@ -118,3 +118,45 @@ Top-left — BEV, rotated so the ego always points up (rotate_map_to_ego: true),
 Top-right — metrics table. Agg = the value aggregated over the rollout so far with its aggregation rule in brackets (max for collisions/drift, last for progress, min for progress_rel); Per-Ts = the value at the current frame. In your screenshot collision_lateral 1.00 (max) with Per-Ts 0.00 means the contact happened at a different timestep than the frame you're paused on. N/A on collision_at_fault is because it's a derived event, computed at aggregation time, not per-timestep.
 Bottom — CAM_F0, the actual image the model saw, with the same plan projected onto the road.
 Below the table: Time: in µs of sim time.
+
+Now, untangling the confusion — these are three separate things that only collided in today's chatter:
+
+what it is	whose	status
+Candidate #2	VaVAM-B + the μP fix — our actual driver	ours	the submission, validated on 400 scenes, staged in ECR
+w_disc	a knob inside our selection branch	ours	parked
+route follower	replaces the steering with the map route	ours	parked (failed the 400-scene gate)
+WA-JEPA	a different model altogether	another session	being screened right now
+What w_disc actually is. In the selection branch, VaVAM draws 5 candidate paths per tick (it's a stochastic sampler, so each draw differs by ~1.7 m at the 3-second point) and a rule picks one. w_disc is one weight in that rule: "prefer the candidate that resembles the one you picked last tick." Plan continuity. That's the entire scope — it doesn't change the model, only which of its own noisy guesses we trust.
+
+Why it resurfaced today. Not because we're pursuing it. Two peer sessions claimed our scene-score numbers read 0.035 high, and the w_disc runs happened to be the reference runs everyone was calibrating against. It was a measurement argument (settled: the evaluator writes the official score, our numbers were exact), and w_disc was just the yardstick lying nearest to hand.
+
+Are they in the same territory? Only in the loosest sense — both aim at "follow the right path" — but they operate at completely different levels, and that's the important part:
+
+w_disc is polishing sampler noise: measured effect +0.028 on 100 scenes, inside a 0.049 band that the same unchanged config produces just by reseeding. It cannot be resolved at that scale, which is why it's parked.
+WA-JEPA is replacing the model. If its tracking claim holds, it's not a 0.028-scale knob — it's the difference between 2.35 m and 0.22 m of path error, i.e. the axis we measured as 80 % of all our lost scenes.
+Is WA-JEPA substantially better? Unknown, and I'd resist the temptation to believe it yet. The evidence so far is a 20-scene smoke test: dist_to_gt median 0.22 m and wrong-lane 10 %, against candidate #2's 2.35 m and 28 % on 400 scenes. That's striking — but 20 scenes is below every noise floor we've measured, and the comparison isn't paired. The 100-scene paired screen is running now (~30 min).
+
+And we have a specific reason for caution from our own work: the route follower also produced excellent path metrics (lateral 1.20 m, best we'd ever seen) and still failed the 400-scene gate because it traded drift for collisions. Better tracking does not automatically convert into score. So the honest bar I gave that session is: WA-JEPA needs lateral error below our follower's (median 0.67 / p90 2.44 m) with at-fault no worse, and then it needs to survive 400 scenes. Until then it's a promising lead, not a better solution.
+
+
+# Results 12-arm 
+
+On the frozen 300 (stock vs μP, paired):
+
+config	scene score	avgDist	at-fault	corridor
+vavam-stock	0.8264	0.513 km	19	33
+vavam + μP	0.8843	1.112 km	8	24
+On navtest_local100 (μP vs WA-JEPA, paired):
+
+config	scene score	avgDist	at-fault	corridor
+vavam + μP (draw 1)	0.9067	0.936 km	3	6
+vavam + μP (draw 2)	0.9064	0.937 km	3	6
+wajepa-s12	0.9667	∞	0	3
+
+steps	ms/prediction
+12	974
+4	364
+2	215
+1	140
+encoder only (fixed floor)	59
+That works out to roughly 63 ms fixed plus ~77 ms per step.

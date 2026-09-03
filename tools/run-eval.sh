@@ -25,6 +25,7 @@ if docker ps -a --format '{{.Names}}' | grep -q '^local-driver$'; then
   [ "${FORCE:-0}" = 1 ] || exit 1
   docker rm -f local-driver >/dev/null 2>&1
 fi
+trap 'rm -f "$LOGDIR/.run-eval.owner"' EXIT
 printf 'pid %s  run %s  started %s  by %s\n' "$$" "$NAME" "$(date +%F\ %T)" "${USER:-?}" > "$LOGDIR/.run-eval.owner"
 # ----------------------------------------------------------------------------------------------
 
@@ -36,10 +37,12 @@ echo "[$(date +%H:%M:%S)] driver env extras: ${DRIVER_ENV:-none}"
 for i in $(seq 1 120); do timeout 1 bash -c 'exec 3<>/dev/tcp/127.0.0.1/6789' 2>/dev/null && break; sleep 1; done; sleep 20
 T0=$(date +%s); echo "[$(date +%H:%M:%S)] driver $IMG up; wizard preset=$PRESET group=$GROUP -> runs/$NAME"
 VR=$LOGDIR/vram-$NAME.csv; : > "$VR"; : > "$VR.gpu"
+# 9>&- : the sampler must NOT inherit the lock fd, or it keeps holding the flock after this
+# script exits and the next chained run is refused (cost a peer 3 arms of a 4-arm sequence, 09-03).
 ( while docker ps -q --no-trunc | grep -q "^$CID$"; do
     DP=$(docker top "$CID" -eo pid 2>/dev/null | tail -n +2 | tr '\n' '|' | sed 's/|$//')   # host PIDs of the driver container only
     [ -n "$DP" ] && nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader 2>/dev/null | grep -E "^($DP)," >> "$VR"
-    nvidia-smi --query-gpu=memory.used --format=csv,noheader >> "$VR.gpu" 2>/dev/null; sleep 5; done ) & SAMP=$!
+    nvidia-smi --query-gpu=memory.used --format=csv,noheader >> "$VR.gpu" 2>/dev/null; sleep 5; done ) 9>&- & SAMP=$!
 ALPASIM_NUPLAN_ROOT=/home/skr/alpasim-challenge/nuplan-track ALPASIM_DRIVER_HOST=localhost ALPASIM_DRIVER_PORT=6789 \
 uv run --no-sync alpasim_wizard +e2e_challenge_nuplan=$PRESET nuplan_scenes=$GROUP scenes.limit_to_first_n=0 wizard.log_dir=./runs/$NAME
 RC=$?; T1=$(date +%s)

@@ -1771,7 +1771,24 @@ top of candidate #2's own seed bracket, which nothing of ours has managed. **Zer
 collisions are the hard zeros. The **2-step arm dominates the 4-step** (identical score, 295 ms vs 520 ms), so step count buys nothing
 beyond 2 here.
 
-**Two reservations, both from our own history.** (1) *Throughput may be the binding gate:* our stock-B submission passed with only a
+**Throughput resolved (09-03, from the 08-31 official record — token expired, not re-pulled).** The run is renderer-bound: 14,850 Drive
+calls over 16 replicas in 2265 s = **0.41 calls/s demanded per replica**, against ~10 calls/s capacity at 103 ms. So the right test is
+added wall time, not the latency ratio: `added = 14,850 × (L − 103 ms) / 32 concurrent` (upper bound — assumes Drive is fully on the
+per-tick critical path).
+
+| arm | ms/call | capacity/replica | headroom vs demand | added wall | of the 220 s margin | verdict |
+|---|---|---|---|---|---|---|
+| stock B / cand#2 | 103 | 9.7 /s | 24× | — | — | baseline (passed) |
+| WA-JEPA 2 steps | 295 | 3.4 /s | 8× | 89 s | 40 % | **passes** |
+| WA-JEPA 4 steps | 520 | 1.9 /s | 5× | 194 s | 88 % | tight — would not submit |
+| WA-JEPA 12 steps | 1516 | 0.7 /s | 2× | 656 s | 298 % | **fails** |
+
+H100 is faster than our card, so absolute ms shrink officially — the *ratio* to stock B is what transfers. Caveat the other way: the
+organizers are moving to a new final scene set, so the limit and scene count may change. Net: **2-step is the only arm with both the
+best score and a comfortable throughput story**; my earlier "5× the cost so it likely fails" was reasoning from a raw ratio and was
+too pessimistic.
+
+**Remaining reservation, from our own history.** (1) ~~*Throughput may be the binding gate:*~~ *(resolved above.)* our stock-B submission passed with only a
 **9.7 % wall-time margin** (2265 s observed vs 2485 s limit) at 103 ms/call; 295 ms is ~3×, 520 ms ~5×, 1516 ms ~15× that per-call cost,
 and throughput failure is a hard fail independent of score. Needs the official `throughput_limit` numbers before anything is called
 submittable. (2) *n=100 cannot see a 5-collision regression:* our route follower led candidate #2 on every path metric at this scale and

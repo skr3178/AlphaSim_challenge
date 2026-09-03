@@ -118,6 +118,21 @@ target GPU.
    borderline-to-failing, not impossible. If ever revisited: 5 steps (297 ms), cached T5 command
    embeddings, CUDA graphs, fp8, then `capture/driver_loadtest.py --streams 8` vs stock B is the
    arbiter. Not worth a slot while WA-JEPA is untested (see 3b).
+3d. **WA-JEPA T1 SCREEN PASSED (2026-09-03) — clears the noise bracket on all three arms.**
+   Paired on navtest_local100, official per-scene scores from `results-summary.json` rollouts[]:
+   cand#2 draws 0.9067 / 0.8582 / 0.9064 (bracket [0.8582, 0.9067], spread 0.0485, = seed noise);
+   WA-JEPA **12 steps 0.9667**, **4 steps 0.9493**, **2 steps 0.9499**. All three above the bracket top.
+   **Zero at-fault collisions in all three arms** (300 scenes of driving) vs 3/7/3 for cand#2 and 6 for
+   the route follower. Lateral med/p90: 0.63/1.76 (s12), 0.35/2.43 (s4), 0.42/2.38 (s2) vs cand#2 ~1.0/3.15
+   and follower 0.67/2.29. Progress below 0.8 on 8/5/4 scenes vs cand#2 9 and follower 16 — i.e. it does
+   NOT pay the follower's progress tax. Independently verified by a peer session from the same field.
+   **2 steps dominates 4**: identical score at 295 ms vs 520 ms. Cost is the open risk, not quality:
+   1516/520/295 ms per call = 104%/58.3%/38.9% of local wall vs cand#2's 103 ms/16.8%. Stock B used
+   2265 s of a 2485 s official limit (9.7% margin), so even 2 steps is ~2.3x its driver burden —
+   `capture/driver_loadtest.py --streams 8` and a 400-scene paired confirm are the gates before submitting.
+   Videos: `viz/wajepa-s12-on-cand2-failures/` (53 clips, 44 pass / 6 partial / 3 corridor on the 15
+   navtest_local100 scenes where cand#2 scored 0).
+
 3c. **WA-JEPA integrated + T0-smoke PASSED (2026-09-03).** Additive package
    `e2e_challenge/sample_submission_wajepa` (driver cloned from the GTRS sample: 4 cams L0/F0/R0/B0,
    4-frame 2Hz history, ego-status+history-traj inputs, cached 4s plan) + preset `dev_fast2_wajepa`

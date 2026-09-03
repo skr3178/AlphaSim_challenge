@@ -138,6 +138,25 @@ The only reliable route is the `attrib` measurement. An earlier version of this 
 carried estimate (2) and told the reader not to use `{0.1, 0.3, 1.0}`; that advice was wrong —
 those values are approximately the right zone.
 
+### The noise band of an unchanged config exceeds every effect measured at n=100
+
+Two runs of the **same policy configuration** (VaVAM μP gain 1.00, k=1, selection off),
+differing only in the RNG draw, score **0.8582** (`s1a-k1`) and **0.9067**
+(`screen-mup-g100`) — a spread of **0.0485**.
+
+Every effect this workstream measured is smaller than that. The best `w_disc` arm moved the
+score by **+0.028**, barely half the gap between two draws of a config that did not change.
+
+This is the honest statement of the S1b result, and it is stronger than the sign test
+(p = 0.69) because it does not depend on the reader accepting a particular test: **no 100-scene
+comparison in this project can resolve an effect of this size**, no matter how many weights are
+swept or how carefully the arms are paired. It is also why the numerics floor matters — a 4 mm
+per-call fp16 difference moved at-fault by 2 with zero policy change.
+
+Design consequence for any future ladder: judge early rungs on **continuous** metrics
+(`dist_to_gt`, lateral error, corridor margin), where n=100 has real power, and defer
+zero-rate/at-fault verdicts to 400+ scenes with a ≥5-incident gate.
+
 ### The scene score is written by the evaluator — never re-derive it
 
 `aggregate/results-summary.json` carries `rollouts[]`, one entry per scene, with **`score`**

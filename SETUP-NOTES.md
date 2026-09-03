@@ -2205,10 +2205,30 @@ spread". That is the wrong objective. A distant *low*-ability subject widens the
 scenes that separate cand#2 from WA-JEPA. Informativeness for a contrast comes from subjects near that contrast failing a *different*
 subset, not from range.
 
-**Optional no-GPU robustness check (data already exists):** the 100-scene set is a subset of the 400. Re-slicing the 400-runs to those
-100 scenes adds replicate subjects to the 20 we have (23 now, 26 after tonight) ⇒ **better difficulty identification (26 subjects/scene)
-but worse ability precision (100 items)** — the exact opposite trade to the 6×400 fit. If both fits agree on the s2-vs-cand#2 ordering,
-that ordering is robust to the identification regime; if they disagree, neither is usable. Costs no GPU.
+**No-GPU robustness check — redesigned after peer a5's replicate caveat, which was correct.** The 100-scene set is a subset of the
+400 (peer-verified: 100/100 ids present, and both `wajepa-s2-400` and `confirm400-mup-g100` cover 100/100). My first framing —
+"23 now, 26 after tonight" — **overstated the identification**, because a config appearing in both sets is *two draws of one policy*,
+not two independent response patterns; counting both inflates the subject count and would tighten difficulty CIs spuriously.
+De-duplicated, the arithmetic is quite different and better:
+- the **three existing** 400-runs add **zero** new configs (cand#2, wajepa-s2, follower-cv are all already at n=100);
+- **tonight adds exactly two**: **stock VaVAM and the go-straight starter** — and those are the two **anchor policies**.
+⇒ The n=100 regime becomes **22 distinct configs *including both anchors***, so it can be **anchored too**, not just the 6×400 fit.
+That is the real prize of the re-slice: two fits, opposite identification regimes (**22 subjects × 100 items** vs **6 × 400**), *both*
+on the board's 1000/1600 scale. Replicate draws (cand#2 ×2, wajepa-s2 ×2, …) are then kept **only** as declared null-distance
+controls, never counted toward identification.
+
+**Pre-registered disagreement rule (peer a5's, sharper than mine).** I had said "if they disagree, neither is usable". Correct
+reading: **disagreement means the ordering is not resolvable at our sample sizes at all** — itself a reportable result, and it would
+mean the **400-scene mean-score margin (+0.0434) remains the better-grounded claim than any ability estimate.** Not a dead end: a
+finding about the limit of what we can measure locally.
+
+**Cross-check ownership:** mine, at peer a5's request and for a sound reason — a second drive-irt install risks version skew, which
+would make a disagreement between the two fits ambiguous, destroying the very signal the check exists to produce. Both fits come from
+`/media/skr/storage/irt-venv`; they critique the output instead of duplicating the tooling.
+
+**Generalisation worth keeping (from the s4 exchange):** *any contrast fit should carry a null-distance pair when one is available
+free* — two configs whose response profiles are near-identical must land at near-identical ability, else the contrast of interest is
+uninterpretable whatever its size.
 
 ### The guard that would have caught all four of today's errors (peer a5's formulation)
 > **State the resolution of the measurement before interpreting the difference.**

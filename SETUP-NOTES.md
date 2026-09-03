@@ -1704,3 +1704,36 @@ scene-group yaml (verified: 20/100/400). Guard tested live against a running pee
 was still emitting S0 lines at 09:44:39 UTC — 5 s *before* the renderer's first error. A force-removed driver produces the opposite
 signature. No second `run-eval.sh` was active (log mtimes: s1a finished 15:11, s1b started after). **Cause remains the display-GPU
 watchdog under memory pressure**, as recorded in §6.20. The guard is still worth having — the hazard is real even though it did not fire.
+
+## 6.28 The official per-scene score is in the results file — stop proxying it  [09-03]
+
+Two peer sessions independently re-derived the scene score from `metrics_unprocessed.parquet` and got ~0.035 below our numbers,
+which prompted the right question. The answer: **the evaluator already writes the official score.** `results-summary.json` →
+`rollouts[]` carries `score`, `passed`, `failure_reason` and `score_metrics` next to `metrics` (written by
+`aggregation/processing.py:301` calling `scene_score.score_rollout`), and the file's own `score_criteria` block documents the formula.
+
+Mean of `rollouts[].score` — the canonical numbers, to be used everywhere from now on:
+
+| run | official mean scene score |
+|---|---|
+| `screen-mup-g100` (candidate #2, lucky draw) | **0.9067** |
+| `s1a-k1` (candidate #2, other draw) | **0.8582** |
+| `f1c-follow-cv` (route follower, best arm) | **0.8926** |
+| `confirm400-mup-g100` (candidate #2, 400) | **0.8813** |
+| `f3-follow-cv-400` (follower, 400) | **0.8896** |
+| S1b arms w_disc 0 / 0.05 / 0.2 / 0.4 | 0.8779 / 0.8779 / 0.8973 / 0.9062 |
+
+Our proxy (zero on `collision_at_fault | offroad | left_corridor_laterally`, else `min(progress_clipped_rel/0.8, 1)`) reproduces the
+official score on **100/100 scenes to < 1e-6**, so every proxy figure recorded earlier in these notes stands unchanged — but the proxy
+is now redundant and should not be re-implemented.
+
+**Why re-derivation from the raw parquet reads low:** `rollouts[].metrics` are the *post-modifier* per-scene values (the eval has
+already applied `RemoveTimestepsBeforeEvent(eval_relevant)`, `RemoveTimestepsAfterEvent(offroad_or_collision)` **and** the separately
+configured corridor modifier `dist_to_gt_trajectory >= 4.0` from `aggregation/main.py`). Reading them gets truncation for free;
+re-deriving requires reproducing every modifier, and the corridor one — which truncates on drift with no collision at all — is the easy
+one to miss. Corroboration that they are post-modifier: counting `collision_at_fault > 0` over them reproduces
+`metrics_results[0].collision_at_fault` to 1e-9 on four runs.
+
+**Rule:** read `rollouts[].score` (and `failure_reason` / `passed`) directly. Also for tail analysis use
+`lateral_dist_to_gt_trajectory`, not `dist_to_gt_trajectory` — the latter clamps at the recording's end, and 67/100 scenes in
+`screen-mup-g100` out-run the GT, which inflates its p90 (5.73 m vs 3.17 m lateral).

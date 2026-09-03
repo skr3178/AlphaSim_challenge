@@ -118,6 +118,18 @@ target GPU.
    borderline-to-failing, not impossible. If ever revisited: 5 steps (297 ms), cached T5 command
    embeddings, CUDA graphs, fp8, then `capture/driver_loadtest.py --streams 8` vs stock B is the
    arbiter. Not worth a slot while WA-JEPA is untested (see 3b).
+3c. **WA-JEPA integrated + T0-smoke PASSED (2026-09-03).** Additive package
+   `e2e_challenge/sample_submission_wajepa` (driver cloned from the GTRS sample: 4 cams L0/F0/R0/B0,
+   4-frame 2Hz history, ego-status+history-traj inputs, cached 4s plan) + preset `dev_fast2_wajepa`
+   (dev_fast2 + 4 cameras) + image `alpasim-e2e-wajepa-driver:local`. VaVAM package untouched. Smoke:
+   20/20 scenes, 200/200 inferences (10/scene = 2Hz gate), inference_error=0, straight_fallback=0,
+   driver 33.7% of wall @ 4 steps, peak driver VRAM 5.2 GiB / GPU 14.2 GiB. Strict checkpoint load OK.
+   **Latency-burden note:** inferences/scene is fixed at 10 by the 0.5s inference gate x 2Hz camera
+   frames (frames are 2Hz local AND official). So the official 10Hz Drive loop only adds cheap cached
+   serves between the same 10 inferences — mean per-call latency drops ~5x, but total driver wall
+   burden does NOT. Screen by driver-share-of-wall per step-count (12/4/2), not per-call ms. Next: step
+   screen on navtest_local100.
+
 3b. **WA-JEPA (added 2026-09-01) is the strongest new candidate for the *closed-loop* problem specifically.**
    Its navtest score is in the same band as CLOVER/DrivoR, but it is the only checkpoint with a
    published zero-shot closed-loop result under Gaussian-splat rendering with reactive agents

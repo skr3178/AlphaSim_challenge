@@ -2087,3 +2087,41 @@ they are not a hidden stronger baseline. The new CLI endpoints are `/terms/curre
 unreadable while the API is closed. **One new, track-relevant disclosure:** the NuPlan/MTGS README section now states *"Traffic on this
 track consists of vehicles only; pedestrians and cyclists are not simulated"* — consistent with `capture/collision_actors.py` (every
 hit actor was a vehicle), and it bounds any hazard/collision-guard logic to vehicles.
+
+## 6.37 Can `--controller-gains` help WA-JEPA? Mostly no — the corridor losses are model-side (09-03, data-only, nothing run)
+
+**WA-JEPA's remaining loss is now almost purely lateral.** Of its 26 zeros on the 400: **24 `left_corridor_laterally`, 2
+`collision_at_fault`** (cand#2: 33 corridor, 13 collision). It tracks tightly in general — median lateral dist-to-GT **0.50 m** vs
+cand#2's 0.90 m — but in the 24 failures the median is **4.67 m** (per-tick max 7.9 m). Bimodal: excellent, then catastrophic.
+
+**The corridor sets are largely disjoint, which settles the attribution without new runs.** Both drivers ran the *identical*
+controller and *identical* default gains. Yet WA-JEPA **saves 24** of cand#2's 33 corridor scenes and **breaks 15 new ones**
+(9 shared). A constant cannot explain a difference: the plan, not the controller, decides which scenes exit the corridor.
+Net ledger of the +0.0434: corridor 33→24 (+9 scenes), collisions 13→2 (+11), ≈ +20 scenes ≈ +0.05. **The safety win is real but the
+lateral win is only net +9, with 15 fresh regressions hiding inside it** — those 15 are the highest-value diagnostic target, not gains.
+
+**No actuation or stability problem to fix.** In the failures the controller commands 3.4× more steering (max |δ| 0.106 vs 0.031 rad)
+and the vehicle *achieves* it: |commanded − achieved| median **0.010 rad** (perfect scenes 0.004), steering sign-flip rate 0.000 in
+both. So no saturation, no oscillation, no authority deficit — raising `lat_position_weight` would tighten an error that is not there.
+
+⚠️ **`plan_deviation` is NOT controller tracking error** — `scorers/plan_deviation.py` measures the distance between *consecutive
+driver plans* over their common timestamps (decay-weighted), i.e. plan-to-plan churn, the `w_disc` quantity. Failures 0.889 m mean vs
+perfect 0.682 m. It does not answer the controller question and must not be read as tracking error. (A clean tracking error needs the
+commanded plan and realised path in one frame, i.e. `rollout.asl`.) `x_ref_0/y_ref_0` are also not tracking error: they are the plan
+anchor's pose in the *current* rig frame, so they mix heading change with drift.
+
+**The one gain with a real mechanism: `idx_start_penalty`.** At `dt_mpc=0.1`, the default 10 means the MPC **ignores tracking cost for
+the first 1.0 s of every plan**, while the 2 Hz driver **replaces the plan every 0.5 s**. The controller therefore only ever acts on
+the 1.0–2.0 s segment of a plan it will discard before reaching it. Lowering it (5 → 0.5 s, 2 → 0.2 s) is the only gain change that is
+a structural fix rather than a weight-balance guess. Unknown sign: if a plan's near field is good and far field poor it helps, and the
+reverse if not.
+
+**Proposed screen (not run; GPU idle, 414 MiB).** 100-scene screen, WA-JEPA image, ~8 min/arm on `dev_fast2`, control already exists
+(`wajepa-s2-100` = 0.9499). `run-eval.sh` does **not** pass extra Hydra overrides — add `"$@"` after `wizard.log_dir=...` on line 47
+first. Arms: `controller.gains.idx_start_penalty=5`; `=2`; and `controller.gains.lat_position_weight=2.0` as a control that should show
+**no** effect if this section is right. **Gate on at-fault, not progress** — WA-JEPA's whole value is the 13→2, and faster/tighter
+tracking is exactly what could erode it.
+
+**Submission rule.** Gains ride free with a driver-image submission (no extra slot), but **do not bundle an unvalidated gain set into
+WA-JEPA's first submission** — the same rule applied to cand#2 in §6.20. A clean measurement of the driver comes first; a gain set
+earns its place only by clearing the ±0.0485 seed band on the 400.

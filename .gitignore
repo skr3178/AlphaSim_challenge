@@ -63,3 +63,5 @@ reference/
 # third-party papers / reference material (not our modifications)
 WA-JEPA/
 *.pdf
+alpasim-latest/
+trees/

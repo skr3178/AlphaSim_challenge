@@ -1737,3 +1737,18 @@ one to miss. Corroboration that they are post-modifier: counting `collision_at_f
 **Rule:** read `rollouts[].score` (and `failure_reason` / `passed`) directly. Also for tail analysis use
 `lateral_dist_to_gt_trajectory`, not `dist_to_gt_trajectory` — the latter clamps at the recording's end, and 67/100 scenes in
 `screen-mup-g100` out-run the GT, which inflates its p90 (5.73 m vs 3.17 m lateral).
+
+**S1b re-read on official scores (verified independently, 09-03).** Paired per-scene on `rollouts[].score`:
+
+| w_disc | mean score | zero scenes | scenes changed vs w=0 | better / worse | sign test |
+|---|---|---|---|---|---|
+| 0 | 0.8779 | 12 | — | — | — |
+| 0.05 | 0.8779 | 12 | 1 | 0 / 1 | — |
+| 0.2 | 0.8973 | 10 | 5 | 3 / 2 | p = 1.00 |
+| **0.4** | **0.9062** | **9** | 6 | 4 / 2 | p = 0.69 |
+
+Effect is **+0.028** (not the +0.018 the earlier hand-rolled proxy showed) and clean in direction: the three recovered scenes were
+2 × `collision_at_fault` and 1 × `left_corridor_laterally`, with **none newly zeroed**. **But the decisive comparison is scale, not
+sign:** candidate #2's own two same-config draws span **0.8582 – 0.9067, a spread of 0.0485 — nearly twice the effect**. A 6-scene
+change at p = 0.69 inside a 0.049 seed band is not evidence, so the parked verdict stands; the branch failed on 400 scenes, not here.
+This is the cleanest statement of the n=100 limit: *the noise band of an unchanged config exceeds every effect we have measured on it.*

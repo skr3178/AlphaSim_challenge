@@ -118,6 +118,22 @@ target GPU.
    borderline-to-failing, not impossible. If ever revisited: 5 steps (297 ms), cached T5 command
    embeddings, CUDA graphs, fp8, then `capture/driver_loadtest.py --streams 8` vs stock B is the
    arbiter. Not worth a slot while WA-JEPA is untested (see 3b).
+3e. **WA-JEPA 400-SCENE CONFIRM (2026-09-03) — 4 of 5 pre-registered gates pass; progress gate fails.**
+   `wajepa-s2-400` (2 steps, 4 cams) vs `confirm400-mup-g100`, paired on navtest_local400, official
+   rollouts[].score. VALIDITY 400/400, 0 inference failures.
+   score **0.8813 -> 0.9247** (+0.0434) | at-fault **13 -> 2** | corridor 33 -> 24 | zeros 46 -> 26 |
+   lateral med/p90 0.90/3.45 -> **0.50/2.64** | Drive 290 ms (48.6% of wall) | per-city at-fault
+   pitt 6->0, boston 4->1, vegas 3->0, singapore 0->1.
+   **Gate failed: mean progress 1.0204 -> 0.9565 (required >=0.989).** But the scoring-relevant count is
+   TIED at 37/37 scenes below the 0.8 saturation threshold, and it is not the same 37 — only 9 overlap,
+   28 dropped below and 28 different ones rose above (a real 28-for-28 exchange). The mean fell because
+   233 scenes sit lower but still above 0.8, which is score-neutral. The peer session pre-registered the
+   gate (SETUP-NOTES 6.31) with the rationale "a slower policy pushes more scenes under 0.8"; that
+   mechanism did NOT fire. Adjudication left to them rather than retrofitted here.
+   **Their other prediction resolved in favour:** 0-4 at-fault if the n=100 zero was real, 9-13 if noise
+   -> landed at 2. The zero-collision result is real, not a lucky draw.
+   **Limitation:** only one cand#2 draw exists at n=400, so there is NO noise bracket at this sample size.
+
 3d. **WA-JEPA T1 SCREEN PASSED (2026-09-03) — clears the noise bracket on all three arms.**
    Paired on navtest_local100, official per-scene scores from `results-summary.json` rollouts[]:
    cand#2 draws 0.9067 / 0.8582 / 0.9064 (bracket [0.8582, 0.9067], spread 0.0485, = seed noise);

@@ -1849,3 +1849,42 @@ scenes with progress < 0.8: **37** · lateral median **0.90** p90 **3.50** · Dr
 **0–4**. If it lands 9–13, the 100-scene zero was noise and the honest read is "no better than candidate #2 on safety".
 The one asymmetry to watch: WA-JEPA drove *slower* at n=100 (progress 1.003 vs 1.048), so a progress failure is the more likely way
 this dies than a collision failure.
+
+## 6.32 WA-JEPA 400-scene gate — RESULT and the adjudication  [09-03 14:2x, verified independently]
+
+`wajepa-s2-400` (2 flow steps, 4 cameras) vs `confirm400-mup-g100` (candidate #2), 400 paired scenes, VALIDITY 400/400, 0 inference
+failures, Drive 290 ms. Both sessions computed this separately from `rollouts[].score` and agree to the digit.
+
+| | cand#2 | WA-JEPA s2 | gate (§6.31) |
+|---|---|---|---|
+| **scene score** | 0.8813 | **0.9247** (+0.0434) | pass |
+| **at-fault** | 13 | **2** (−11) | pass (≤ 8) |
+| corridor exits | 33 | 24 (−9) | — |
+| zero-scored scenes | 46 | **26** (−20) | — |
+| mean progress | 1.0204 | 0.9565 | **FAIL** (≥ 0.989) |
+| scenes progress < 0.8 | 37 | **37** | — |
+| lateral med / p90 | 0.90 / 3.50 | **0.50 / 2.64** | — |
+| per-city at-fault | pitt 6, boston 4, vegas 3, sing 0 | 0, 1, 0, 1 | pass |
+| Drive | 103 ms | 290 ms | pass (§6.29: 40 % of margin) |
+
+Per-scene: **59 better / 35 worse / 306 identical**, sign test **p = 0.017**.
+
+**Prediction 1 resolved in favour** (§6.31 said 0–4 at-fault if the n=100 zero was real, 9–13 if noise): **2**. The zero was real.
+**Prediction 2 (the mechanism) did not occur.** I expected a slower policy to push scenes under the 0.8 saturation point; the count is
+37 vs 37, and it is a genuine exchange — overlap 9, 28 newly below, 28 risen above.
+
+**Adjudication: the gate FAILS as written and was NOT waived.** The peer declined to rule on their own result; I declined to waive my
+own criterion after seeing the number, which is exactly what §6.31 exists to prevent. Recorded instead:
+- the criterion was **mis-specified**, demonstrable from its own text: §6.31's stated rationale was "a slower policy pushes more scenes
+  under 0.8", a claim about the scoring-relevant region that is measurably false here. The scene score is `min(progress/0.8, 1)`, so
+  progress above 0.8 earns nothing — and **335 of 400 scenes have both runs above 0.8**, where the mean drop (+0.060) is worth zero.
+  A correctly specified gate ("scenes below 0.8 must not increase") passes exactly;
+- **but the failure is not cosmetic.** An independent reason to care about progress survives: §6.13 measured Spearman(PCS, dist_to_gt)
+  = +0.69 and SymPhi gained +92 PCS from a pure speed knob with no safety change, and the organizers state PCS is "not necessarily the
+  average of the scene score, due to weighting in the fit". A slower policy could score better locally and worse officially. **That risk
+  is unresolvable locally — only a submission answers it.**
+- **No noise bracket exists at n = 400** (one cand#2 draw only). At n=100 two same-config draws spanned 0.0485; naive √-scaling
+  suggests ~0.024 at n=400, which would put +0.0434 outside — an assumption, not a measurement. A second `confirm400` draw of
+  candidate #2 was commissioned to settle it.
+
+**Status: decision deferred to the user**, with candidate #2 remaining the staged submission until then.

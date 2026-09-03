@@ -210,3 +210,61 @@ target GPU.
 - OneVL: https://huggingface.co/xiaomi-research/OneVL_NAVSIM · AutoVLA: https://github.com/ucla-mobility/AutoVLA · DriveVLA-W0: https://github.com/BraveGroup/DriveVLA-W0
 - ReSim: https://github.com/OpenDriveLab/ReSim
 - nuPlan privileged planners: https://github.com/ZhengYinan-AIR/Diffusion-Planner · https://github.com/jchengai/pluto · https://github.com/jchengai/planTF · https://github.com/DiffusionAD/Flow-Planner
+
+## 6. Addendum 2026-09-03 — world-action models (WAM) sweep: is there an 8-camera one?
+
+Question asked: WA-JEPA (4 cams) beats stock VaVAM (1 cam); is there a released world-action
+model for nuPlan/NAVSIM that consumes all 8 cameras and would plausibly score higher?
+
+**Short answer: no.** Every WAM published through Sept 2026 with NAVSIM numbers uses 1–4 views.
+The only released driving model trained with a fixed 8-view NAVSIM input is DVGT-2, which is a
+geometry foundation model with a planning head, not a WAM, and its NAVSIM-finetuned planning
+checkpoint is not on HF (only the base `dvgt2.pt`). No paper in the set ablates camera count, so
+"more cameras ⇒ higher score" is an untested assumption, not a published result.
+
+| Model | arXiv | Cams | Backbone / params | PDMS / EPDMS (navtest) | Closed-loop | Latency (authors) | Weights | Verdict for AlpaSim |
+|---|---|---|---|---|---|---|---|---|
+| **WA-JEPA** (have) | 2608.20974 | **4** L0/F0/R0/B0 @256×512 | V-JEPA 2.1 ViT-L | 91.8 / **91.7** | HUGSIM 0.446 (best published) | unmeasured | HF, Apache-2.0 | Current candidate #2. `configs/CONFIG_GUIDE.md` exposes `model.camera_names` / `nuplan_cameras` as an ordered list — arch is camera-count agnostic, but retraining used 64 + 32 A800s. |
+| **DrivoR** (in §3) | 2601.05083 | **4** F/FL/FR/B | ViT-S DINOv2 registers | 93.1–94.6 / 48.3–54.6 | HUGSIM 0.357 | 110 ms A100 | GH Releases, Apache-2.0 | Not a WAM. 4 cams, not 8. team-vt's `cam4` DrivoR on the board = 945. |
+| **DVGT-2** (in §3) | 2604.00813 | **8** (NAVSIM ft, 512 long edge) | DINOv3 ViT-L, 1.8 B | 90.3 / 89.6 (DVGT-2-NAVSIM) | — | **260 ms/frame** | HF `RainyNight/DVGT-2/dvgt2.pt` 6.8 GB = **base only, no NAVSIM planning ckpt** | Only 8-view model; blocked twice (no planning ckpt, 2.6× over tick). |
+| **Latent-WAM** | 2603.24581 | 3 L/F/R @448×224 | DINOv2-B, 104 M | — / 89.3 | HUGSIM 0.289 | 107 ms A100 | not found | Small, but no weights and below WA-JEPA on both axes. |
+| **DriveFuture** | 2605.09701 | 2 front+rear @2048×512 | TransFuser-style BEV + diffusion | 90.7 / 89.9; **navhard 55.5 (#1, Apr 2026)** | — | — | no URL in paper | Best navhard number of any camera model; no release. Watch. |
+| **Metis** | 2606.15869 | 1 front @640×768 | Wan2.2-5B + 1 B action expert | 89.1 / 89.5 | navhard 41.7 | 170 ms 4090 (2 steps) | "coming Aug 2026", **not out** as of 09-03 | Same family as SimWAM; over tick. |
+| **SimWAM** (in §3) | 2608.07468 | 1 front | Wan2.2-5B | 91.5 / 90.2 | — | 115–518 ms | HF, 12 GB | Dropped 09-01 on latency. |
+| **DriveWAM** | 2605.28544 | 1 front @256×448 | Wan2.2-5B + Qwen3-VL-8B (~13 B) | 90.1 / — | PAI-AV ADE 0.83 | ~871–1262 ms H20 | none | Beats VaVAM and Alpamayo-1.5 on PAI-AV, but 13 B and >8× over tick. |
+| **DriveVA** | 2604.04198 | 1 front | Wan2.2-TI2V-5B | 90.9 / — | zero-shot nuScenes, Bench2Drive | — | none | No release. |
+| **EponaV2** | 2605.14696 | 1 front @512×1024 | Qwen3-VL-4B + DINO-Tok, 6.7 B | 90.4 / 88.9 | navhard 36.1 | — | GH `JiaweiXu8/EponaV2` MIT, README empty | 6.7 B VLM per tick; skip. |
+| **ForeSight** | 2605.07195 | 3 @1024×256 | Epona 2.5 B world model + 73 M | 89.3 / — | — | **900 ms H100** | GH `LogosRoboticsGroup/ForeSight` | Generates future frames at inference; 9× over tick. |
+| **WorldDrive** | 2603.14948 | 1 front | CogVideoX-init DiT | 88.1 / 34.9 navhard | — | 53 ms A800 | GH `TabGuigui/WorldDrive`, **CC BY-NC-SA** | Fast but below VaVAM-class numbers and NC licence. |
+| **DriveWorld-VLA** | 2602.06521 | 3 | InternVL + DiT | 91.3 / 86.8 | — | — | Baidu-pan only | VLM; skip. |
+| **ExploreVLA** | 2604.02714 | 1 front @256×448 | Show-o / Phi-1.5 | 93.7 (best-of-N) / 88.8 | HUGSIM (per-dataset) | — | project page only | Best-of-N inflates PDMS; no ckpt found. |
+| **Drive-JEPA** (in §3) | 2601.22032 | 1 front @512×256 | V-JEPA ViT-L | 93.3 / 87.8 | Bench2Drive 64.5 DS | — | HF dataset, 3.7 GB | Same encoder family as WA-JEPA, fewer cams, lower EPDMS, no HUGSIM. |
+| X-Foresight, OWMDrive, Map-World, JEPA-WAM, TerraTransfer | — | 7 / occ / — / robotics / — | — | none on NAVSIM or n/a | — | — | none | Proprietary data, occupancy-based, or not driving. |
+
+Takeaways for the backlog:
+
+1. **The 8-camera WAM the question assumes does not exist in released form.** The field has
+   moved the other way in 2026: the top-EPDMS WAMs are single-front-camera video-prior models
+   (SimWAM, Metis, DriveWAM, DriveVA) that trade cameras for a 5 B video backbone — and every
+   one of them is over the 0.1 s tick. WA-JEPA's 4-view setup is the most cameras any released
+   model with a competitive EPDMS uses.
+2. **No published camera-count ablation exists** (checked WA-JEPA, DrivoR, DVGT-2 full texts).
+   The closest evidence: DrivoR 4-cam 93.1 PDMS vs Drive-JEPA 1-cam 93.7 PDMS — same family of
+   metric, same dataset, no gain from the side cameras. Do not budget on 8 cams scoring higher.
+3. **An 8-cam WA-JEPA is technically buildable but not affordable here.** The config accepts any
+   `camera_names` list; ViT-L over 8 cams × 4 frames doubles encoder cost per tick (latency is
+   already the open item in §3e), and the published recipe used 96 A800s across two stages.
+4. **Our scoring bottleneck is progress, not perception coverage** (§3e / 6.33). Side and rear
+   cameras address collisions and cut-ins, which WA-JEPA already handles (at-fault 13→2). Extra
+   views do nothing for the progress deficit. Camera count is the wrong knob for the gap we have.
+5. **Watch list, not action list:** DriveFuture (front+rear, navhard #1) and Metis if either
+   ships weights; DVGT-2 only if a NAVSIM planning checkpoint appears *and* latency drops 3×.
+
+Sources (addendum): DVGT https://github.com/wzzheng/DVGT · Latent-WAM https://arxiv.org/abs/2603.24581 ·
+DriveFuture https://arxiv.org/abs/2605.09701 · Metis https://github.com/LogosRoboticsGroup/Metis ·
+DriveWAM https://arxiv.org/abs/2605.28544 · DriveVA https://arxiv.org/abs/2604.04198 ·
+EponaV2 https://github.com/JiaweiXu8/EponaV2 · ForeSight https://arxiv.org/abs/2605.07195 ·
+WorldDrive https://github.com/TabGuigui/WorldDrive · DriveWorld-VLA https://github.com/liulin815/DriveWorld-VLA ·
+ExploreVLA https://arxiv.org/abs/2604.02714 · DrivoR paper https://arxiv.org/abs/2601.05083 ·
+WA-JEPA config guide https://github.com/AFARI-Research/WA-JEPA/blob/main/configs/CONFIG_GUIDE.md ·
+WAM index https://github.com/miracle-techlink/awesome-wam-2026

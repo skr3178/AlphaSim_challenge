@@ -1950,3 +1950,36 @@ the scorer's own transform** (`clip(p,0,1)/0.8`, hard-failure zeroing, post-modi
 safe-and-tight is **necessary-but-not-sufficient**, not punished. The top 5 spans two routes up — `sub1` (safe+tight) and
 `vavam-gain1075` (1.75 km / 3.72 m) — and our stock entry (1.62 / 3.05) sits on the gain route. WA-JEPA would move us onto `sub1`'s.
 Progress is therefore **the metric to protect, not merely to not-fail**.
+
+## 6.34 Upstream "Maintenance Candidate" landed on `e2e_challenge` (09-02, fetched 09-03) — four things that affect us
+
+`origin/e2e_challenge` moved `f012862 → 54952f4` ("Maintenance Candidate (#173) — Initial candidate version for the final competition
+version"), plus #169 (SimScale/NAVSIM sample docs) and #167 (curated NuRec splits). ~5,000 insertions. What matters:
+
+**1. The leaderboard's scoring algorithm is now runnable locally.** New `e2e_challenge/local_evaluation/evaluate.py` (549 lines) fits
+*"the same pinned Drive-IRT algorithm used for the challenge leaderboard"* to local `aggregate/results-summary.json` files and emits
+`capability_ranking.csv` (policy capability score, avg scene score, **posterior rank interval, rank spread**), `scene_score_matrix.csv`,
+and the serialized fit. This is the thing we have repeatedly called "unresolvable locally". Two caveats:
+- **the reference bundle `data/` is intentionally empty** until organizers publish it. Without it, `--without-references` compares local
+  runs only and is explicitly *"not leaderboard-like"* — no affine scale to real PCS numbers, since the manifest supplies the two anchor
+  subjects and their target scores (1000 / 1600);
+- **sufficiency guard**: zoib needs ≥ `S + 5N` observations for `S` subjects, `N` scenes, else it silently falls back to arithmetic
+  average with no rank spread. At N = 400 that needs **S ≈ 6 runs on the identical scene set**; we have 3 (`confirm400-mup-g100`,
+  `f3-follow-cv-400`, `wajepa-s2-400`). More subjects on the same 400 would let us fit it properly.
+
+**2. Submitting now requires accepting competition terms first.** The CLI gained `terms show|status|accept`, and `submit` calls
+`require_terms_ready(client)` *before* the image probe — both the acting user **and the team captain** must have accepted the current
+terms version. **This is a new precondition on our pending candidate-#2 submission**: when the API reopens, run `terms status` / `terms
+accept` before `submit`, or it will refuse. Rejection is API-side and consumes no quota.
+
+**3. New submission lever we did not have: `--controller-gains`.** A modified gain set for the official **nonlinear** MPC can be
+submitted *without changing the driver image* (`starter_kit/controller_gains.example.json`: `long_position_weight` 2.0,
+`lat_position_weight` 1.0, `heading_weight` 1.0, `acceleration_weight` 0.1, `rel_front_steering_angle_weight` 5.0,
+`rel_acceleration_weight` 1.0, `idx_start_penalty` 10). Structure, dynamics and limits stay fixed. Testable locally via
+`controller.mpc_implementation=nonlinear controller.gains.*=…`. Note `idx_start_penalty` is the 1.0–2.0 s tracking window we identified
+in §6.24 — it is now a *tunable submission parameter*.
+
+**4. Our track's contract is UNCHANGED.** The `4cam_1080 → 6cam_1080` switch is in `e2e_challenge/{dev,ec2}.yaml`, i.e. the **PAI**
+track; `e2e_challenge_nuplan*` configs are untouched by the diff. The nuPlan 8-camera contract and everything in §6.29/§6.32 stands.
+Also EC2 now runs the renderer with `--no-enable-nrend` ("the public competition evaluates the unharmonized renderer until the
+separately announced final reruns").

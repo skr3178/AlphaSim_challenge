@@ -200,3 +200,13 @@ lateral error med/p90	0.90 / 3.50 m	0.50 / 2.64 m	—
 per-city at-fault	6, 4, 3, 0	0, 1, 0, 1	✅
 latency	103 ms	290 ms	✅
 Per scene: 59 better, 35 worse, 306 identical — sign test p = 0.017. At-fault 13 → 2 across 400 scenes. My pre-registered prediction was "0–4 if the n=100 zero was real, 9–13 if it was noise." It's 2. The zero was real.
+
+
+## Co-relation
+
+The quadrant table (split at the medians: 1.66 km, 1.24 m)
+quadrant	n	median PCS	max PCS	>1600
+avgDist high + d2gt high	15	1213	1715	3
+avgDist high + d2gt low	16	1096	1715	1
+avgDist low + d2gt high	16	1152	1601	1
+avgDist low + d2gt low	15	879	1009	0

@@ -1,0 +1,8 @@
+einops==0.8.2
+grpcio==1.74.0
+numpy==1.26.4
+omegaconf==2.3.0
+opencv-python-headless==4.9.0.80
+pillow==11.1.0
+protobuf==4.25.8
+timm==0.9.16

@@ -7,22 +7,44 @@
 set -u
 IMG="$1"; NAME="$2"; GROUP="$3"; PRESET="${4:-dev}"
 LOGDIR=/home/skr/alpasim-challenge/logs; cd /home/skr/alpasim-challenge/alpasim
-docker rm -f local-driver >/dev/null 2>&1
-docker run -d --name local-driver --init --cap-drop ALL --security-opt no-new-privileges:true --read-only --pids-limit 1024 --memory 32g --cpus 8 \
+
+# --- MUTUAL EXCLUSION (added 2026-09-03) ------------------------------------------------------
+# The GPU fits exactly one dev_fast2 stack (peaks 22.5-23.6 of 24.5 GiB) and this script used to
+# `docker rm -f local-driver` unguarded at both ends, so a second launch would silently destroy a
+# running job's driver -- and the wizard still exits 0 and writes a plausible-looking aggregate over
+# empty rollouts (Defect 8). Refuse to start instead. FORCE=1 overrides deliberately.
+exec 9>"$LOGDIR/.run-eval.lock"
+if ! flock -n 9; then
+  echo "REFUSING: another run-eval.sh holds $LOGDIR/.run-eval.lock (see logs/.run-eval.owner). Wait for it, or FORCE=1 to override." >&2
+  cat "$LOGDIR/.run-eval.owner" 2>/dev/null >&2; [ "${FORCE:-0}" = 1 ] || exit 1
+fi
+if docker ps -a --format '{{.Names}}' | grep -q '^local-driver$'; then
+  echo "REFUSING: a container named local-driver already exists -- another session is probably mid-run:" >&2
+  docker ps -a --filter name=^local-driver$ --format '   {{.Names}} {{.Status}} {{.Image}}' >&2
+  echo "   If it is stale: docker rm -f local-driver. To override: FORCE=1 run-eval.sh ..." >&2
+  [ "${FORCE:-0}" = 1 ] || exit 1
+  docker rm -f local-driver >/dev/null 2>&1
+fi
+printf 'pid %s  run %s  started %s  by %s\n' "$$" "$NAME" "$(date +%F\ %T)" "${USER:-?}" > "$LOGDIR/.run-eval.owner"
+# ----------------------------------------------------------------------------------------------
+
+CID=$(docker run -d --name local-driver --init --cap-drop ALL --security-opt no-new-privileges:true --read-only --pids-limit 1024 --memory 32g --cpus 8 \
   --tmpfs /tmp:rw,nosuid,nodev,size=2g --tmpfs /run:rw,nosuid,nodev,size=64m -p 127.0.0.1:6789:6789 \
   -e ALPASIM_DRIVER_HOST=0.0.0.0 -e ALPASIM_DRIVER_PORT=6789 -e ALPASIM_CONTESTANT_REPLICA_INDEX=0 -e ALPASIM_CONTESTANT_REPLICAS=1 \
-  -e ALPASIM_DRIVER_GRPC_WORKERS=4 -e OMP_NUM_THREADS=1 -e TORCH_NUM_THREADS=1 $(for kv in ${DRIVER_ENV:-}; do printf -- "-e %s " "$kv"; done) --gpus all "$IMG" >/dev/null
+  -e ALPASIM_DRIVER_GRPC_WORKERS=4 -e OMP_NUM_THREADS=1 -e TORCH_NUM_THREADS=1 $(for kv in ${DRIVER_ENV:-}; do printf -- "-e %s " "$kv"; done) --gpus all "$IMG")
 echo "[$(date +%H:%M:%S)] driver env extras: ${DRIVER_ENV:-none}"
 for i in $(seq 1 120); do timeout 1 bash -c 'exec 3<>/dev/tcp/127.0.0.1/6789' 2>/dev/null && break; sleep 1; done; sleep 20
 T0=$(date +%s); echo "[$(date +%H:%M:%S)] driver $IMG up; wizard preset=$PRESET group=$GROUP -> runs/$NAME"
 VR=$LOGDIR/vram-$NAME.csv; : > "$VR"; : > "$VR.gpu"
-( while docker ps --format '{{.Names}}' | grep -q '^local-driver$'; do
-    DP=$(docker top local-driver -eo pid 2>/dev/null | tail -n +2 | tr '\n' '|' | sed 's/|$//')   # host PIDs of the driver container only
+( while docker ps -q --no-trunc | grep -q "^$CID$"; do
+    DP=$(docker top "$CID" -eo pid 2>/dev/null | tail -n +2 | tr '\n' '|' | sed 's/|$//')   # host PIDs of the driver container only
     [ -n "$DP" ] && nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader 2>/dev/null | grep -E "^($DP)," >> "$VR"
     nvidia-smi --query-gpu=memory.used --format=csv,noheader >> "$VR.gpu" 2>/dev/null; sleep 5; done ) & SAMP=$!
 ALPASIM_NUPLAN_ROOT=/home/skr/alpasim-challenge/nuplan-track ALPASIM_DRIVER_HOST=localhost ALPASIM_DRIVER_PORT=6789 \
 uv run --no-sync alpasim_wizard +e2e_challenge_nuplan=$PRESET nuplan_scenes=$GROUP scenes.limit_to_first_n=0 wizard.log_dir=./runs/$NAME
-RC=$?; T1=$(date +%s); docker rm -f local-driver >/dev/null 2>&1
+RC=$?; T1=$(date +%s)
+# remove BY CONTAINER ID: if another session has since taken the name, we must not kill theirs
+docker rm -f "$CID" >/dev/null 2>&1; rm -f "$LOGDIR/.run-eval.owner"
 echo "[$(date +%H:%M:%S)] wizard exit: $RC | total wall $((T1-T0)) s"
 kill $SAMP 2>/dev/null
 # per-scene timing from the runtime's own "Session COMPLETED" timestamps (scene 1 excluded: gsplat JIT warm-up),
@@ -51,4 +73,16 @@ except Exception: pass
 if d: print(f"TIMING {rundir.split('/')[-1]}: {len(ts)} scenes | per-scene wall (excl. #1) mean {st.mean(d):.1f} s median {st.median(d):.1f} [{min(d):.1f}-{max(d):.1f}] | total wall {tot} s")
 if drive is not None: print(f"DRIVER {rundir.split('/')[-1]}: Drive sum {drive:.1f} s over {int(calls)} calls (mean {1000*drive/calls:.0f} ms) = {100*drive/tot:.1f}% of wall | peak driver-proc VRAM {peak} MiB | peak GPU total {gpeak} MiB")
 PYEOF
+# --- VALIDITY GATE ------------------------------------------------------------------------
+# `RUN DONE` alone means the wizard exited, not that the run is usable: a clobbered or
+# renderer-crashed run still exits 0 and aggregates empty rollouts (Defect 8, SETUP-NOTES 6.18).
+COMPLETED=$(grep -c "Session COMPLETED" "$LOG" 2>/dev/null || echo 0)
+EXPECTED=$(grep -cE "^\s+- [0-9]{4}\." "src/wizard/configs/nuplan_scenes/$GROUP.yaml" 2>/dev/null || echo 0)
+INFER_FAIL=$(docker logs "$CID" 2>&1 | grep -c "inference failed\|refusing to serve" 2>/dev/null || echo 0)
+echo "VALIDITY $NAME: completed $COMPLETED/${EXPECTED:-?} scenes | driver inference failures $INFER_FAIL | wizard rc $RC"
+if [ "$EXPECTED" -gt 0 ] && [ "$COMPLETED" -lt "$EXPECTED" ]; then
+  echo "RUN INVALID $NAME -- only $COMPLETED of $EXPECTED scenes completed; do not read the aggregate" >&2
+elif [ "$INFER_FAIL" -gt 0 ]; then
+  echo "RUN INVALID $NAME -- $INFER_FAIL driver inference failures; the policy did not run on every tick" >&2
+fi
 echo "RUN DONE $NAME"

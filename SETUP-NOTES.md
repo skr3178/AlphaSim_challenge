@@ -1684,3 +1684,23 @@ already includes GT_LINESTRING / ROUTE / DRIVER_RESPONSES / AGENTS).
 offroad; progress costs only 0.4 % of the score. 4 of the 13 collisions happened while already > 2 m off the human line, so
 **lateral tracking is implicated in 37/46 = 80 % of all lost scenes** — the same axis the leaderboard leaders win on
 (NaLa dist_to_gt 0.98 m vs our 3.05 official / 2.35 local for μP).
+
+## 6.27 run-eval.sh hardened against concurrent-run clobbering  [09-03, raised by a peer session]
+
+**The hazard (real):** the script did an unguarded `docker rm -f local-driver` at start *and* at teardown, and the box fits exactly one
+`dev_fast2` stack (peaks 22.5–23.6 of 24.5 GiB). Two sessions launching would silently destroy each other's driver, and the wizard still
+exits 0 and writes a plausible aggregate over empty rollouts (Defect 8). Only a chat claim prevented it.
+
+**Fix (installed atomically with `mv`, since bash reads a running script by byte offset — never truncate one in place):**
+`flock -n` on `logs/.run-eval.lock` + an owner file; refusal if a container named `local-driver` already exists (prints who owns it;
+`FORCE=1` overrides); teardown now removes the driver **by container id**, not by name, so a later session's container can never be
+killed by an earlier one's cleanup; and a **validity gate** that prints `VALIDITY <run>: completed N/EXPECTED | driver inference
+failures F` and shouts `RUN INVALID` when the completed count is short or the driver logged failures. Expected count is parsed from the
+scene-group yaml (verified: 20/100/400). Guard tested live against a running peer job: refused with exit 1, container untouched.
+
+**Correction to the incident attribution.** The peer believed this clobbering killed `s1b-k5-off` on 09-01. The log says otherwise:
+`s1b-k5-off-FAILED.log` has **508 renderer "CUDA error: the launch timed out"** entries and **zero** driver-side gRPC failures
+(`UNAVAILABLE` / connection refused / socket closed), the first error in file order is the renderer's, and the driver's own log stream
+was still emitting S0 lines at 09:44:39 UTC — 5 s *before* the renderer's first error. A force-removed driver produces the opposite
+signature. No second `run-eval.sh` was active (log mtimes: s1a finished 15:11, s1b started after). **Cause remains the display-GPU
+watchdog under memory pressure**, as recorded in §6.20. The guard is still worth having — the hazard is real even though it did not fire.

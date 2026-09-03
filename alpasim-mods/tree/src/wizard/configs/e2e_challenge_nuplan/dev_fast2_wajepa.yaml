@@ -1,0 +1,33 @@
+# @package _global_
+# LOCAL preset (not upstream): dev_fast2 concurrency but with the four cameras
+# WA-JEPA consumes (CAM_L0/F0/R0/B0). The MTGS renderer rasterises all views
+# internally either way; this only adds 3x JPEG encode / gRPC / ASL volume.
+#
+#   uv run alpasim_wizard +e2e_challenge_nuplan=dev_fast2_wajepa nuplan_scenes=navtest_local100 wizard.log_dir=./runs/<name>
+defaults:
+  - dev_fast2
+  - _self_
+
+wizard:
+  run_name: "e2e_challenge_nuplan_dev_fast2_wajepa"
+  description: "NuPlan local fast preset, 4 cameras for WA-JEPA (no video)"
+
+runtime:
+  simulation_config:
+    cameras:
+      - logical_id: CAM_L0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920
+      - logical_id: CAM_F0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920
+      - logical_id: CAM_R0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920
+      - logical_id: CAM_B0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920

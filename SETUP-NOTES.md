@@ -1658,3 +1658,29 @@ cross-street) put the car where the human never was. Combined with (a): the fail
 line, plus follower lateral error on top — **not** under-braking (confirmed) and **not** simple lane-centre-vs-parked-car geometry.
 Implication for any revival: a route-trust gate keyed on the *measurable* ego-vs-route offset would have disabled the follower in exactly
 the scenes it fails, at zero perception cost. That is the one untried lateral idea the data actually supports.
+
+## 6.26 Offline video rendering from stored rollouts (no simulator, no GPU)  [09-03]
+
+The eval renders its camera+BEV overlay video directly from a `rollout.asl`, so any past run can be visualised after the fact:
+
+```bash
+# 1. copy the run's eval-config.yaml, set video.render_video/overlay_plans_on_camera/generate_combined_video: true
+#    (keep run_metadata.yaml next to it — get_metadata() reads the config's parent dir)
+# 2. stage the scenes you want as symlinks, each in <clipgt_id>/<rollout_id>/rollout.asl, plus an empty `_complete`
+#    marker in each rollout dir (main.py filters on TRACKER_FILE_NAME and errors out without it)
+cd ~/alpasim-challenge/alpasim && uv run --no-sync python -m eval.main \
+  --asl_search_glob "<stage>/*/*/rollout.asl" --config_path <cfg>/eval-config.yaml \
+  --trajdata_cache_dir ~/alpasim-challenge/nuplan-track --usdz_glob "~/alpasim-challenge/nuplan-track/**/*.usdz"
+```
+~1 s/scene with `num_processes: 6`; output `<rollout dir>/videos/...CAM_F0_default.mp4` (6 s, camera + BEV with GT path, route,
+agents, ego box, metrics table). Video config knobs are in the run's own `eval-config.yaml` (`video.map_video.map_elements_to_plot`
+already includes GT_LINESTRING / ROUTE / DRIVER_RESPONSES / AGENTS).
+
+**Rendered sets for candidate #2 (in `viz/`, gitignored):** `failures-cand2/` = all 13 at-fault collisions + the 8 worst drift-outs;
+`successes-cand2/` = 22 representative passes (6 scenes stock crashes but μP passes, 5 tight-traffic passes at 0.21–0.54 m clearance,
+5 clean ~80° turns, 3 cm-accurate tracking, 3 longest runs), each with an `INDEX.md`.
+
+**Failure taxonomy behind those clips (400 scenes):** 46 zeros = 13 at-fault collisions + 33 pure corridor exits (no collision) + 0
+offroad; progress costs only 0.4 % of the score. 4 of the 13 collisions happened while already > 2 m off the human line, so
+**lateral tracking is implicated in 37/46 = 80 % of all lost scenes** — the same axis the leaderboard leaders win on
+(NaLa dist_to_gt 0.98 m vs our 3.05 official / 2.35 local for μP).

@@ -1902,3 +1902,21 @@ own criterion after seeing the number, which is exactly what §6.31 exists to pr
   candidate #2 was commissioned to settle it.
 
 **Status: decision deferred to the user**, with candidate #2 remaining the staged submission until then.
+
+**Where WA-JEPA's 6 % progress deficit actually falls (09-03, our analysis of the peer's run).** Not a uniform slowdown: per-scene
+delta vs candidate #2 across the 400 is mean −0.064 / median −0.041, with **237 slower, 81 faster, 82 tied** (p25 −0.137, p75 +0.000),
+and the worst 20 scenes carrying **30 %** of all progress lost.
+
+**The decisive cut: of the 237 slower scenes only 32 cost any score** — the other 205 are slower above the 0.8 threshold where it is
+arithmetically free. Those 32 cost **17.0 score points = 0.0426 on the mean**, against a total win of **+0.0434**. So WA-JEPA wins
+~+0.086 on safety and hands half of it back on 32 scenes; fixing them would put the arm near **0.967**.
+
+The worst cases look like **stalls, not caution** — 1.41 → 0.09, 1.30 → 0.17, 1.20 → 0.13, 1.37 → 0.48 progress — and two of them score
+*better* anyway (a stall that avoids a collision candidate #2 had). **The fix is not an output-gain knob:** §6.16 is the precedent —
+on the μP-correct model ×1.05 bought +0.016 progress and cost 3 collisions, i.e. scaling the output trades away exactly what WA-JEPA won.
+A stall-specific fix preserves the safety and recovers the score.
+
+**Strategic framing (peer's, verified):** NaLa `sub1` at 3.36 km *and* 0.98 m d2gt at joint #1 is the existence proof that
+safe-and-tight is **necessary-but-not-sufficient**, not punished. The top 5 spans two routes up — `sub1` (safe+tight) and
+`vavam-gain1075` (1.75 km / 3.72 m) — and our stock entry (1.62 / 3.05) sits on the gain route. WA-JEPA would move us onto `sub1`'s.
+Progress is therefore **the metric to protect, not merely to not-fail**.

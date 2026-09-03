@@ -59,3 +59,7 @@ workdir
 # ---- peer-session extras
 reference/
 .doc-backup-*/
+
+# third-party papers / reference material (not our modifications)
+WA-JEPA/
+*.pdf

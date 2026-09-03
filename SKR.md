@@ -160,3 +160,27 @@ steps	ms/prediction
 1	140
 encoder only (fixed floor)	59
 That works out to roughly 63 ms fixed plus ~77 ms per step.
+
+
+
+# ON board metrics
+
+	km between at-fault ↑	dist_to_gt ↓
+NaLa (#1, PCS 1715)	3.36	0.98
+메타몽 (#1=, PCS 1715)	3.09	2.65
+SymPhi (#3, 1690)	1.75	3.72
+us — stock, submitted (1592)	1.62	3.05
+candidate #2 (400 scenes, local)	0.90	2.35
+WA-JEPA 2-step (100 scenes, local)	> 2.58 (zero incidents in 2.58 km)	1.50
+
+
+## Run score
+
+run	score ↑	zeros ↓	at-fault ↓	corridor ↓	prog<0.8 ↓	lateral med/p90 ◇	ms ↓	%wall ↓
+cand #2 draw A	0.9067	9	3	6	9	0.99 / 3.13	103	16.7%
+cand #2 draw B	0.8582	13	7	6	10	1.09 / 3.17	102	16.9%
+cand #2 draw C (mine)	0.9064	9	3	6	9	1.05 / 3.13	104	16.8%
+route follower (best prior)	0.8926	10	6	4	16	0.67 / 2.29	109	18.2%
+WA-JEPA 12 steps	0.9667	3	0	3	8	0.63 / 1.76	1516	104%
+WA-JEPA 4 steps	0.9493	5	0	5	5	0.35 / 2.43	520	58.3%
+WA-JEPA 2 steps	0.9499	5	0	5	4	0.42 / 2.38	295	38.9%

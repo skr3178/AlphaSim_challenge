@@ -1794,3 +1794,26 @@ and throughput failure is a hard fail independent of score. Needs the official `
 submittable. (2) *n=100 cannot see a 5-collision regression:* our route follower led candidate #2 on every path metric at this scale and
 then lost the 400-scene gate on collisions (18 vs 13). The required next step is `navtest_local400` paired against
 `confirm400-mup-g100`.
+
+## 6.30 Disk hygiene — two traps worth knowing before anyone frees space  [09-03]
+
+**Trap 1: Docker is not on the disk that fills up.** `DockerRootDir` is `/media/skr/storage/docker` (`nvme1n1p2`, 910 G), not `/`.
+Pruning Docker frees the *storage* disk; the one that hits 98 % is `/`, where `/home` lives (686 G: `alpasim-challenge` 243 G —
+`nuplan-track` 158 G + `runs/` 56 G — `Downloads` 117 G, `.cache` 71 G, `miniconda3` 54 G). Check `docker info --format '{{.DockerRootDir}}'`
+before assuming a prune helps.
+
+**Trap 2: `docker system df` "reclaimable" is not free space, and `prune -a` would cost us the submission.**
+The image SIZE column double-counts layers shared between images: 12 dangling `<none>` images each listed at 10.6 GB returned
+**1.2 MB** when pruned, because every layer was shared with a tagged image. And the headline "139 GB reclaimable (98 %)" is the
+`prune -a` figure — *everything not attached to a **running** container*. That set includes:
+- `alpasim-e2e-vavam-driver:submit-mup` = `…team-lucifer:vavam-b-mup-20260831b` — **candidate #2, the staged submission**. The team ECR
+  role is **push-only** (no `ecr:GetDownloadUrlForLayer`, Defect 6), so a deleted local copy **can never be pulled back**;
+- whatever image another session is mid-experiment with.
+**Never run `docker system prune -a` on this box.** The safe subset is `docker container prune` + `docker builder prune -af` +
+`docker image prune` (dangling only, no `-a`): that returned 14 GB + 26 GB here, all on the storage disk.
+
+**What actually frees `/`:** `runs/` is 56 G and ~97 % of each run is `rollouts/*.asl`. Those ASLs are not disposable — every
+post-mortem this week came from them (collision bearings §6.24, route-vs-human-line gap §6.25, all 43 failure/success videos §6.26),
+and the eval can re-render video from them offline. Preferred fix is therefore **move `runs/` to the storage disk and symlink**
+(zero loss, transparent to `run-eval.sh`), not deletion. If deleting, drop `rollouts/` for superseded runs and keep every
+`aggregate/` (1.3 MB each — all cited scores live there).

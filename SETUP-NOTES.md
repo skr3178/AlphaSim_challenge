@@ -2237,3 +2237,38 @@ Today: (1) the score-proxy episode, (2) the progress-deficit overstatement (6×,
 (4) the raw-vs-clipped progress deltas. Common shape: **a plausible causal story fitted to a difference the data could not resolve.**
 This complements §6.33 (never compute a scoring claim from a raw metric): §6.33 governs *which quantity*, this governs *whether the
 quantity is resolved enough to carry an explanation*.
+
+## 6.40 Anchor runs complete (09-03 22:00) — the μP fix measured paired at n=400 for the first time
+
+`stock400-g100` and `starter400` both 400/400, 0 errors. `wajepa-s4-400` started 22:00 (ETA ~22:35).
+
+| run | mean | zeros | ones | at-fault | corridor | at-fault km |
+|---|---:|---:|---:|---:|---:|---:|
+| `starter400` (go-straight) | 0.6192 | 104 | 218 | 22 | 82 | 0.47 |
+| `stock400-g100` (stock VaVAM) | 0.8493 | 60 | 335 | 22 | 38 | 0.578 |
+| `confirm400-mup-g100` (cand#2) | 0.8813 | 46 | 329 | 13 | 33 | 0.897 |
+| `f3-follow-cv-400` (follower) | 0.8896 | 41 | 323 | 18 | 23 | 0.621 |
+| `wajepa-s2-400` (WA-JEPA) | 0.9247 | 26 | 351 | 2 | 24 | 5.4 |
+
+**The μP fix, paired, n=400 — we had never measured this.** Every stock-vs-μP number before came from the unpaired 300-set, and the
+"0.9064 vs 0.9067" pair turned out to be two cand#2 draws (§6.38). Paired on identical scenes/seed/preset:
+**+0.0320 (sd 0.3388, se 0.0169, 1.89 σ)**, at-fault **22 → 13**, corridor 38 → 33.
+**Shape of the win:** cand#2 is *worse* on more scenes than it is better on — **wins 31, loses 40** — but wins **big** (mean magnitude
+0.970, i.e. converting hard failures into full scores) and loses **small** (0.432, partial-credit shavings). Net +30.1 vs −17.3 points.
+A scene-count comparison would have called this a regression; the magnitude asymmetry is the whole effect.
+
+**Anchor scale, now on identical scenes** (replaces the 20–27 guess built from mismatched sets):
+go-straight **0.6192 → 1000**, stock VaVAM **0.8493 → 1600** ⇒ **26.1 PCS per +0.01 mean score**.
+*Validation:* our stock submission scored **1592** officially while local stock **is** the 1600 anchor by construction — an 8-point
+agreement on the one point we can cross-check. The local scale is not wildly off.
+
+⚠️ **But the linear-in-mean projection fails two sanity checks, so do not quote it.**
+| | mean | linear projection |
+|---|---:|---:|
+| cand#2 | 0.8813 | 1683 |
+| follower | 0.8896 | **1705** |
+| WA-JEPA | 0.9247 | **1797** |
+Both flagged values are implausible: the follower lands *above* cand#2 despite **18 vs 13 at-fault** (and the n=100 IRT put every
+follower arm last with tight intervals, §6.38), and WA-JEPA exceeds the **~1715 ceiling** of §6.36. PCS is an IRT ability — difficulty-
+weighted, with separate 0/1 channels and an at-fault tiebreak — **not a linear function of the mean**. These numbers are exactly the
+artefact the 6-subject fit exists to replace; treat them as an ordering hint at best, and never as a projected score.

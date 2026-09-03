@@ -184,3 +184,19 @@ route follower (best prior)	0.8926	10	6	4	16	0.67 / 2.29	109	18.2%
 WA-JEPA 12 steps	0.9667	3	0	3	8	0.63 / 1.76	1516	104%
 WA-JEPA 4 steps	0.9493	5	0	5	5	0.35 / 2.43	520	58.3%
 WA-JEPA 2 steps	0.9499	5	0	5	4	0.42 / 2.38	295	38.9%
+
+
+## per scene score
+
+The result (400 paired scenes, both sessions computed it separately and agree exactly)
+candidate #2	WA-JEPA	gate
+scene score	0.8813	0.9247 (+0.043)	✅
+at-fault collisions	13	2	✅ (needed ≤ 8)
+corridor exits	33	24	—
+zero-scored scenes	46	26	—
+mean progress	1.020	0.957	❌ (needed ≥ 0.989)
+scenes below the 0.8 threshold	37	37	—
+lateral error med/p90	0.90 / 3.50 m	0.50 / 2.64 m	—
+per-city at-fault	6, 4, 3, 0	0, 1, 0, 1	✅
+latency	103 ms	290 ms	✅
+Per scene: 59 better, 35 worse, 306 identical — sign test p = 0.017. At-fault 13 → 2 across 400 scenes. My pre-registered prediction was "0–4 if the n=100 zero was real, 9–13 if it was noise." It's 2. The zero was real.

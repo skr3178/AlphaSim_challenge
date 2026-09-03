@@ -1879,10 +1879,24 @@ own criterion after seeing the number, which is exactly what §6.31 exists to pr
   under 0.8", a claim about the scoring-relevant region that is measurably false here. The scene score is `min(progress/0.8, 1)`, so
   progress above 0.8 earns nothing — and **335 of 400 scenes have both runs above 0.8**, where the mean drop (+0.060) is worth zero.
   A correctly specified gate ("scenes below 0.8 must not increase") passes exactly;
-- **but the failure is not cosmetic.** An independent reason to care about progress survives: §6.13 measured Spearman(PCS, dist_to_gt)
-  = +0.69 and SymPhi gained +92 PCS from a pure speed knob with no safety change, and the organizers state PCS is "not necessarily the
-  average of the scene score, due to weighting in the fit". A slower policy could score better locally and worse officially. **That risk
-  is unresolvable locally — only a submission answers it.**
+- **but the failure is not cosmetic** — though my first two arguments for that were wrong and are **withdrawn** (peer-corrected, both
+  verified against our own files): (a) the SymPhi "+92 PCS from a speed knob" evidence does **not** transfer — §6.16 records that on the
+  μP-*correct* model gain ×1.05 made things worse (at-fault 0.94 → 0.58 km, collisions 4 → 7, d2gt 2.71 → 3.02) and attributes SymPhi's
+  wins to the μP-*broken* 4× overshoot regime; (b) Spearman(PCS, d2gt) = +0.69 does not mean drifting scores better — the joint **#1
+  (NaLa) has the board's LOWEST d2gt at 0.98**, and METRICS.md already says "never optimise d2gt".
+
+  **The risk survives in a stronger form, from evidence neither of us had cited.** Of the 18 board entries with > 3 km between at-fault
+  incidents, only **two** clear 1600 (NaLa 1715, 메타몽 1715); the other **16 score 1008–1478 — all below our stock entry's 1592**.
+  Of everything under 1.6 m d2gt, only NaLa is above 1600. VF-Team v2 has the board's best safety (12.75 km) and scores **1095**. So
+  *"very safe + tracks tightly" is the modal profile of the board's **bottom***, and the discriminator between NaLa (3.36 km / 0.98) at
+  1715 and foxhihi c6 (5.69 km / 1.15) at 1447 must be something the board does not display — the organizers named it: *"a policy can get
+  a very high distance between at-fault incidents by simply braking hard … this will not result in a very high scene score."*
+  **Progress is invisible on the board and is what separates 1715 from 1447 at identical safety.**
+
+  **Why this is a caution and not an alarm:** WA-JEPA does not fit the punished profile. 0.9565 progress is 96 % of the human's distance,
+  not braking-hard territory, and `prog<0.8` is tied at 37 with a genuine 28-for-28 exchange — it is not stalling scenes out. Its shape
+  resembles NaLa's side of the split, not foxhihi's. But "resembles" is the strongest word the data supports. **Unresolvable locally —
+  only a submission answers it.**
 - **No noise bracket exists at n = 400** (one cand#2 draw only). At n=100 two same-config draws spanned 0.0485; naive √-scaling
   suggests ~0.024 at n=400, which would put +0.0434 outside — an assumption, not a measurement. A second `confirm400` draw of
   candidate #2 was commissioned to settle it.

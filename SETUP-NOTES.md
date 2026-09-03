@@ -1812,6 +1812,16 @@ The image SIZE column double-counts layers shared between images: 12 dangling `<
 **Never run `docker system prune -a` on this box.** The safe subset is `docker container prune` + `docker builder prune -af` +
 `docker image prune` (dangling only, no `-a`): that returned 14 GB + 26 GB here, all on the storage disk.
 
+**Done 09-03 12:34: `runs/` moved to the storage disk and symlinked.** `~/alpasim-challenge/alpasim/runs` ->
+`/media/skr/storage/alpasim-runs`. Copy-first (rsync), verified before deleting the original: 22,885 files both sides, `rsync
+--itemize` dry-run empty, a random `rollout.asl` byte-identical, and the four cited `results-summary.json` parsing to the same scores
+(0.8813 / 0.8896 / 0.9499 / 0.9067). Post-swap the tooling's globs still resolve — 38 `aggregate/results-summary.json`, 5,120
+`rollout.asl` — so `wizard.log_dir=./runs/<name>` and the eval's `--asl_search_glob` are unaffected. **`/` went 22 G -> 76 G free
+(98 % -> 92 %)**; storage disk 141 G free. The destination is `nvme1n1p2`, **ROTA=0, ~3.6 GB/s** — an NVMe SSD, *not* the SeagateHub1
+spinning disk — so per-scene wall time is unaffected. Caveat for anyone comparing timings across the move: `DRIVER ms` come from the
+telemetry `rpc_duration` counters and are disk-independent, but `% of wall` is a ratio against total wall, so if per-scene wall ever
+drifts after the move, rule out I/O before blaming a policy.
+
 **What actually frees `/`:** `runs/` is 56 G and ~97 % of each run is `rollouts/*.asl`. Those ASLs are not disposable — every
 post-mortem this week came from them (collision bearings §6.24, route-vs-human-line gap §6.25, all 43 failure/success videos §6.26),
 and the eval can re-render video from them offline. Preferred fix is therefore **move `runs/` to the storage disk and symlink**

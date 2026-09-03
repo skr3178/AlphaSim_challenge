@@ -16,7 +16,7 @@ rm -rf "$MODS/tree"; mkdir -p "$MODS/tree"
   git rev-parse HEAD > "$MODS/BASE_COMMIT"
   git diff > "$MODS/tracked-changes.patch"
   { git ls-files -m; git ls-files --others --exclude-standard; } \
-    | grep -v -E 'assets/(vavam|vavam-l)/|__pycache__|\.pyc$|\.bak$|\.pt$|\.jit$|\.safetensors$|^runs/|\.log$' | sort -u > "$MODS/files.txt"
+    | grep -v -E 'assets/(vavam|vavam-l)/|__pycache__|\.pyc$|\.bak$|\.pt$|\.jit$|\.safetensors$|^runs($|/)|\.log$' | sort -u > "$MODS/files.txt"
   while read -r f; do mkdir -p "$MODS/tree/$(dirname "$f")"; cp -p "$f" "$MODS/tree/$f"; done < "$MODS/files.txt" )
 
 # ---- 3. launcher scripts

@@ -2077,3 +2077,13 @@ board hides std; **the local tool exposes `policy_capability_score_std`** — th
 pushed by avoiding zeros where others score, hitting 1.0 where others don't, and partial progress. Scenes where everyone is at 1.0
 (or 0) carry ~no information — the mechanism behind §6.32's "335 of 400 scenes are free". A zero on a discriminating scene is charged
 through its own logistic channel, which is why at-fault dominates and why "safe but stalled" still loses.
+
+**Model-side leakage check of the Maintenance Candidate (09-03): none.** Nothing in `f012862..54952f4` reveals top teams' models or
+the final nuPlan scene set (the new curated suites CSVs are NuRec 26.04 = PAI only, 0 nuPlan rows; the renderer-harmonizer note and
+the 6-cam/gRPC-64 MiB fix are PAI-only — nuPlan runs `alpasim-mtgs-server`). The NAVSIM sample submissions (LTF, DiffusionDrive,
+GTRS-Dense) **pre-exist at f012862**; #169 only adds a doc link. They are already in CHECKPOINT-SURVEY.md with board evidence:
+OpenDriveLab's own submissions of all three top out at GTRS-Dense 1354 / LTF 1213 / DiffusionDrive 1207 — 240–590 below stock — so
+they are not a hidden stronger baseline. The new CLI endpoints are `/terms/current` and `/terms/status` only; the terms text is
+unreadable while the API is closed. **One new, track-relevant disclosure:** the NuPlan/MTGS README section now states *"Traffic on this
+track consists of vehicles only; pedestrians and cyclists are not simulated"* — consistent with `capture/collision_actors.py` (every
+hit actor was a vehicle), and it bounds any hazard/collision-guard logic to vehicles.

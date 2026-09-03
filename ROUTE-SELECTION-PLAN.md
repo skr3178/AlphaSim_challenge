@@ -138,6 +138,25 @@ The only reliable route is the `attrib` measurement. An earlier version of this 
 carried estimate (2) and told the reader not to use `{0.1, 0.3, 1.0}`; that advice was wrong —
 those values are approximately the right zone.
 
+### ⚠️ No local result exercises the 4-tick interpolation path
+
+`cached_plan` is **0 on every local Drive call**, in this workstream and in the WA-JEPA one
+(200/200 calls, measured 09-02). Camera frames are 2 Hz — `e2e_challenge_nuplan_common/base.yaml`
+lines 124-154, inherited by `ec2.yaml` with no override — and `VAVAM_INFERENCE_INTERVAL_US` is
+500 000, so the inference gate opens on *every* frame and the plan cache never hits. Officially
+`Drive` is called more often than a frame arrives, so the controller follows one interpolated
+plan for several ticks before the next.
+
+Consequence for **S1b specifically**: `w_disc` penalises a candidate for differing from the
+previously committed plan. That is exactly a plan-to-plan continuity effect, and the local loop
+re-plans every tick where the official one does not. So the null result is untested against the
+regime the term was designed for — this weakens the conclusion in **both** directions and is a
+reason not to treat "selection is neutral" as settled for the official run.
+
+Watch for a second trap while checking this: `src/wizard/configs/base_config.yaml` says
+`frame_interval_us: 100_000` and is **not** the file the challenge presets inherit. The one that
+matters is `e2e_challenge_nuplan_common/base.yaml` at `500_000`.
+
 ### Reading per-scene at-fault — use `rollouts[]`, do not re-derive
 
 `results-summary.json` carries `rollouts[].metrics` with `collision_at_fault` (and `collision_any`,

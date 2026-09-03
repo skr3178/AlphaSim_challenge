@@ -1827,3 +1827,25 @@ post-mortem this week came from them (collision bearings §6.24, route-vs-human-
 and the eval can re-render video from them offline. Preferred fix is therefore **move `runs/` to the storage disk and symlink**
 (zero loss, transparent to `run-eval.sh`), not deletion. If deleting, drop `rollouts/` for superseded runs and keep every
 `aggregate/` (1.3 MB each — all cited scores live there).
+
+## 6.31 PRE-REGISTERED criteria for the WA-JEPA 400-scene gate  [written 09-03 13:38, BEFORE the result]
+
+`wajepa-s2-400` (WA-JEPA, 2 flow steps, 4 cameras, `navtest_local400`, `dev_fast2_wajepa`) launched 13:36, ETA ~14:26, paired against
+**`confirm400-mup-g100`** (candidate #2). Written down first because today has already produced two contested-number episodes, and
+because the route follower's 400-scene failure is the precedent this run exists to test.
+
+**Baseline to beat (official `rollouts[].score`):** score **0.8813** · zeros **46** = 13 at-fault + 33 corridor · progress **1.020** ·
+scenes with progress < 0.8: **37** · lateral median **0.90** p90 **3.50** · Drive 103 ms.
+
+**Noise at n = 400:** counts scale as √n, so the ±2/100 numerics floor is ~**±4/400**. A difference of ≤ 4 at-fault is not resolvable.
+
+| verdict | condition (all must hold) |
+|---|---|
+| **PASS — becomes candidate #3** | at-fault ≤ **8** (i.e. ≥ 5 fewer, the Codex gate) · progress ≥ **0.989** (−3 % of 1.020) · score clearly > 0.8813 · no single city worse than candidate #2 by > 3 at-fault · Drive ≈ 295 ms (throughput arithmetic in §6.29 holds) |
+| **INTERESTING, not shippable** | at-fault 9–13 with corridor and lateral clearly better — i.e. it tracks better but does not convert; same shape as the route follower |
+| **FAIL** | at-fault ≥ 14, or progress < 0.989, or a city regression, or Drive materially above 295 ms |
+
+**Predictions on record.** If the n=100 result (0 at-fault in 2.58 km) is real rather than a lucky draw, at-fault at 400 should be
+**0–4**. If it lands 9–13, the 100-scene zero was noise and the honest read is "no better than candidate #2 on safety".
+The one asymmetry to watch: WA-JEPA drove *slower* at n=100 (progress 1.003 vs 1.048), so a progress failure is the more likely way
+this dies than a collision failure.

@@ -2388,3 +2388,34 @@ throughput limit at **zero measurable quality gain**. **s2 remains the ship cand
 than inferred at n=100.
 *Caveat if we ever reach the ~1715 ceiling:* at the ceiling the board's tiebreak is at-fault km, where s4 shows 10.68 vs s2's 5.40 —
 but that gap rests on a **1-vs-2 collision count** on 400 scenes and is not a measurable difference; both are far above NaLa's 3.36.
+
+## 6.44 Latency headroom, measured (09-04) — s2 fits with 5.4 % margin, s4 with 1.2 %, s12 fails
+
+**Measured per-`Drive` latency, all five arms on the identical 400 scenes**, from `rpc_duration_seconds_{sum,count}`
+`{method="drive",service="driver"}` summed over both workers (4000 calls each — the honest source, not a log estimate):
+
+| arm | mean Drive | added wall | projected | margin | verdict |
+|---|---:|---:|---:|---:|---|
+| stock | 103.9 ms | 0 s | 2266 s | 220 s (8.8 %) | PASS |
+| cand#2 | 102.8 ms | 0 s | 2265 s | 220 s (8.9 %) | PASS |
+| follower | 104.6 ms | 1 s | 2266 s | 219 s (8.8 %) | PASS |
+| **WA-JEPA s2** | **289.7 ms** | 87 s | 2352 s | **133 s (5.4 %)** | **PASS** |
+| **WA-JEPA s4** | **511.2 ms** | 189 s | 2455 s | **31 s (1.2 %)** | **PASS, no room** |
+| WA-JEPA s12 | 1516 ms | 656 s | 2921 s | **−436 s** | **FAIL** |
+
+Basis: official 08-31 record `observed_wall_time_s 2265.3` vs `limit_wall_time_s 2485.4` at 103 ms/call;
+`added = 14,850 × (L − 103 ms) / 32` (1,485 scenes × 10 calls, 32 concurrent).
+
+**This is an UPPER bound** — it assumes every millisecond of `Drive` sits on the critical path. The official run is renderer-bound
+(0.41 calls/s demanded per replica against ~10 calls/s capacity at 103 ms), so the true added wall is **lower**, by an unknown amount.
+Conservative basis is the right one for a hard-fail constraint.
+
+**Reading.** s2's 133 s margin survives ordinary run-to-run variance; **s4's 31 s does not** — that is 1.2 %, smaller than the
+variation we see between identical local reruns, and throughput failure is a **hard fail independent of score**. Since §6.43 showed
+s4 offers **zero measurable quality gain** over s2 (+0.0055, 0.84 σ), s4 costs ~7 points of margin for nothing. **s2 is the only
+sensible WA-JEPA arm**, and this is now the second independent reason (cost, and headroom) on top of the quality tie.
+
+⚠️ **Re-verify before submitting.** These are 08-31 numbers for a *different* driver on the *pre-Maintenance-Candidate* stack. The
+final competition may change scene count, concurrency or `throughput_limit` (organizers signalled limits may drop 5→3, and #173 is
+"the initial candidate version for the final competition version"). Pull the official `limits` from the CLI when the API reopens and
+recompute before treating s2's 5.4 % as banked.

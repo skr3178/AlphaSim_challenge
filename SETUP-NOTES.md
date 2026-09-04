@@ -2335,3 +2335,43 @@ subjects in the anchored fit is contaminated, and neither anchor is.** §6.38/§
 **Rule:** a run is valid only if `completed == expected`; never infer validity from exit code, file presence, or rollout count — the
 failure mode writes a full-length, schema-valid, all-zero result. Cross-check any new subject's mean against its driver log before it
 enters a fit.
+
+## 6.43 The 6×400 anchored fit (09-04 10:06) — pre-registered test PASSES, but the fit fails an external validity check
+
+`wajepa-s4-400` finished 400/400, VALIDITY clean, 0 inference failures (mean 0.9302, 24 zeros, **1 at-fault**, 23 corridor,
+at-fault km 10.68). Six subjects on `navtest_local400`, anchored on our own `starter400`→1000 / `stock400-g100`→1600,
+`effective_algorithm=zoib`, `score_scale.applied=true`, no warnings.
+
+| rk | PCS | ± | subject | mean | at-fault km |
+|---:|---:|---:|---|---:|---:|
+| 1 | 1778 | 47 | `wajepa-s4` | 0.9302 | 10.68 |
+| 2 | 1815 | 44 | `wajepa-s2` | 0.9247 | 5.40 |
+| 3 | 1600 | 44 | `anchor-high` = stock | 0.8493 | 0.58 |
+| 4 | 1529 | 36 | `cand2` | 0.8813 | 0.90 |
+| 5 | 1444 | 32 | `follower` | 0.8896 | 0.62 |
+| 6 | 1000 | 10 | `anchor-low` = go-straight | 0.6192 | 0.47 |
+
+(s4 outranks s2 despite lower PCS: both have rank_lo 1 / rank_hi 2, and the tiebreak is at-fault km, 10.68 > 5.40 — the tool's
+documented `ranking_policy` behaving exactly as specified.)
+
+**§6.39's pre-registered test: PASSES.** `wajepa-s2 − cand2` = **+286 PCS**, pooled std 57 ⇒ **+5.04 σ** (n=100 gave 0.81 σ).
+**Null-distance control: PASSES.** s4 − s2 = −37 PCS = **−0.58 σ**, i.e. the near-replicate pair is ~9× closer than the contrast.
+**Peer a5's disagreement rule: the two regimes AGREE** on the ordering (WA-JEPA > cand#2 at both n=100 and n=400), so by the
+pre-registered criterion the *ordering* is robust to the identification regime.
+
+⚠️ **But the fit is confidently wrong about a contrast we can check directly, and this was NOT pre-registered.** On the *same* 400
+scenes cand#2 beats stock on **mean (+0.0320, 1.89 σ paired), at-fault (22→13), corridor (38→33) and zeros (60→46)** — it loses only
+6 "ones" (329 vs 335). The IRT nonetheless places cand#2 **71 PCS below** the stock anchor at **−1.24 σ**, and **both** fits (n=100
+and n=400) do this. A policy dominating another on four of five channels cannot be 71 PCS worse. So:
+- the σ units are **not calibrated** — mean-field variational inference is known to understate posterior variance, and here the
+  stds *shrank* (93–116 → 36–47) while identification got *worse*;
+- **identification collapsed as predicted**: **370/400 scenes (92.5 %)** have `difficulty_std` > |`difficulty`|, vs 80/100 at 22
+  subjects. Fewer subjects per scene ⇒ per-scene difficulty and the g0/g1 channel parameters are fitted from 6 observations each;
+- the two fits **agreeing is not validation** when they share a systematic bias — both mis-rank cand#2 vs stock the same way.
+- Corroborating implausibility: WA-JEPA's 1778–1815 **exceeds the ~1715 board ceiling** (§6.36), as did the independent
+  linear-in-mean projection (1797, §6.40).
+
+**Ruling.** The **ordering** WA-JEPA > cand#2 is now supported three independent ways — raw paired margin (+0.0434), n=100 anchored
+fit (+120 PCS), n=400 anchored fit (+286 PCS) — and the null-distance control says it is not replicate noise. **The magnitude and
+the σ are not usable**: "+286 PCS" and "5.04 σ" must not be quoted as a projected board gain. The **+0.0434 paired mean-score margin
+remains the reportable claim**, exactly as peer a5 pre-registered. What the IRT adds is corroboration of direction, not a number.

@@ -2375,3 +2375,16 @@ and n=400) do this. A policy dominating another on four of five channels cannot 
 fit (+120 PCS), n=400 anchored fit (+286 PCS) — and the null-distance control says it is not replicate noise. **The magnitude and
 the σ are not usable**: "+286 PCS" and "5.04 σ" must not be quoted as a projected board gain. The **+0.0434 paired mean-score margin
 remains the reportable claim**, exactly as peer a5 pre-registered. What the IRT adds is corroboration of direction, not a number.
+
+**s2 vs s4 at n=400 — indistinguishable in quality; s2 wins on cost alone (09-04).**
+Paired on the identical 400: **s4 − s2 = +0.0055 (0.84 σ)** — not significant. Per-metric: s4 has *fewer* zeros (24 vs 26),
+*fewer* at-fault (1 vs 2), *fewer* corridor (23 vs 24) and a higher mean; s2 has *more* perfect scores (351 vs 348) and the higher
+(uncalibrated) PCS. **No metric separates them beyond noise**, and the IRT itself puts them at **−0.58 σ** — which is precisely why
+they served as the null-distance control in §6.43. Note s4 repeats the cand#2-vs-stock pattern: higher mean while losing *more*
+scenes (worse on 25, better on 10) — big wins, small losses.
+**The decisive axis is cost:** ~**295 ms/call (s2) vs ~520 ms (s4)**, i.e. ~1.75×. With stock B consuming 2265 s of the 2485 s
+official budget (9.7 % margin) and 2-step WA-JEPA already ~2.3× stock's driver burden, s4 is the materially riskier arm for the
+throughput limit at **zero measurable quality gain**. **s2 remains the ship candidate** — now for a reason measured at n=400 rather
+than inferred at n=100.
+*Caveat if we ever reach the ~1715 ceiling:* at the ceiling the board's tiebreak is at-fault km, where s4 shows 10.68 vs s2's 5.40 —
+but that gap rests on a **1-vs-2 collision count** on 400 scenes and is not a measurable difference; both are far above NaLa's 3.36.

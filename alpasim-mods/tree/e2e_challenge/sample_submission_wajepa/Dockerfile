@@ -16,7 +16,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     ALPASIM_DRIVER_HOST=0.0.0.0 ALPASIM_DRIVER_PORT=6789 ALPASIM_DRIVER_GRPC_WORKERS=4 \
     WAJEPA_CONFIG=/app/assets/wajepa/wa_jepa_infer.yaml \
     WAJEPA_CKPT=/app/assets/wajepa/model_state_dict.pt \
-    WAJEPA_SOURCE_ROOT=/app/wajepa_src
+    WAJEPA_SOURCE_ROOT=/app/wajepa_src \
+    WAJEPA_STEPS=2
 
 WORKDIR /app
 COPY src/grpc /tmp/alpasim_grpc

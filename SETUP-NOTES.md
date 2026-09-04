@@ -2419,3 +2419,36 @@ sensible WA-JEPA arm**, and this is now the second independent reason (cost, and
 final competition may change scene count, concurrency or `throughput_limit` (organizers signalled limits may drop 5→3, and #173 is
 "the initial candidate version for the final competition version"). Pull the official `limits` from the CLI when the API reopens and
 recompute before treating s2's 5.4 % as banked.
+
+## 6.45 Submission prep complete; blocked on MAINTENANCE, not on us (09-04 ~11:00)
+
+**Terms ACCEPTED (on the user's explicit instruction).** Version `placeholder-2026-09-02`
+(sha256 `93a4915622242679a2e73a1ac4dbd2c3bbd852303565ccd72756e3fe8052cc64`, body is literally
+"this will contain the terms and conditions"). Now `actor_accepted: true`, `captain_accepted: true`,
+**`team_ready: true`** — a captain's acceptance satisfies both roles. Requires the **new** CLI from the
+`54952f4` worktree; our pinned checkout predates the `terms` subcommand. Acceptance is one-time per version.
+
+**Account trap that cost a round-trip:** the first fresh token authenticated as `sangramrout`
+(`sangram.kr.rout@gmail.com`), `registered: false` → every team call 403 "User is not registered", including
+`leaderboard`. The registered identity is **`skr3178` / `sangramrout2021@u.northwestern.edu`, captain of
+`team-lucifer`, approved**. Two HF accounts exist; only `skr3178` is registered. **Always check
+`me → registration.team_id` before assuming a token failure means the API is closed.**
+
+**Quota changed as the organizers signalled:** monthly limit **3** (was 5), **0 used, 3 remaining**.
+
+**Current gate:** `ecr-login` → `403 "Competition is in MAINTENANCE; image uploads are limited to organizer
+teams"`. So the push cannot proceed yet; nothing on our side is missing. Competition `status: MAINTENANCE`;
+window was announced to ~09-06. `submit` deliberately NOT called — it would consume one of three slots and the
+user has the final go on hold.
+
+**Staged and verified, ready to push the moment MAINTENANCE lifts:**
+| artifact | tag | verification |
+|---|---|---|
+| WA-JEPA s2 | `…team-lucifer:wajepa-s2-20260904` | cu124 server base; **resolved `steps=2`** from the policy's own log on CPU, 0 load errors |
+| candidate #2 | `…team-lucifer:vavam-b-mup-20260831b` | already in ECR, digest `bbe3a0af…`, muP confirmed in baked env |
+
+**Bug fixed before it could ship (§6.44 follow-up):** neither `Dockerfile` nor `Dockerfile.local` pinned
+`WAJEPA_STEPS`, so the image fell through to `wa_jepa_infer.yaml: num_inference_steps: 12` → 1516 ms/call →
+**−436 s against the throughput limit, a hard fail**. Every validated run had passed the var через `DRIVER_ENV`,
+masking it in all of them including the 400s. `ENV WAJEPA_STEPS=2` now baked in **both** files (peer-confirmed
+both were affected). Verification asserts the **resolved** value, not the env var — the muP lesson applied.

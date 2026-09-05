@@ -2452,3 +2452,40 @@ user has the final go on hold.
 **−436 s against the throughput limit, a hard fail**. Every validated run had passed the var через `DRIVER_ENV`,
 masking it in all of them including the 400s. `ENV WAJEPA_STEPS=2` now baked in **both** files (peer-confirmed
 both were affected). Verification asserts the **resolved** value, not the env var — the muP lesson applied.
+
+## 6.46 The route-command "fix" was WRONG and is reverted (09-05) — the mechanism cannot occur
+
+**Claim I made:** WA-JEPA's `command_from_route` was copied from the GTRS sample (lookahead 5.0, lateral 2.0,
+Euclidean `hypot(x,y)`) and diverges from VaVAM (20.0, 3.0, longitudinal `x`); a 5 m *Euclidean* gate fires on a
+waypoint merely 5 m to the SIDE, flipping the command mid-straight — suspected cause of the 15 corridor exits
+worth 0.0375. I demonstrated it on the synthetic route `[(1,6),(30,0.5)]`: LEFT under the old rule, STRAIGHT
+under VaVAM's.
+
+**It is wrong, and peer d0 caught it.** `route_start_offset_m: 40.0` — `e2e_challenge_nuplan_common/base.yaml:121`,
+and confirmed present in `runs/wajepa-fix-100/wizard-config.yaml` — means the submitted route **starts ~40 m ahead
+of the ego**. So **no waypoint is ever within 5 m**, both gates select the *same* first waypoint at ~40 m, and the
+lookahead and the distance metric are **inert on real routes**. Only the lateral threshold (2.0 vs 3.0) can differ
+at that point. My synthetic route is not a shape the simulator produces.
+
+**Measured, paired on the 100 (same scenes, same steps=2, same 4-cam preset — only the rule differs):**
+| | mean | zeros | corridor | at-fault |
+|---|---:|---:|---:|---:|
+| pre-fix (5.0/2.0/hypot) | **0.9499** | 5 | 5 | 0 |
+| "fix" (20.0/3.0/x) | **0.9399** | 6 | 6 | 0 |
+Δ **−0.0100**; 97 unchanged, 1 better, 2 worse; **0 corridor exits repaired, 1 newly broken.** Only 3 scenes moved,
+so the delta is inside noise — but there is no repair signal whatsoever, which is what the hypothesis predicted.
+
+**Reverted** to the original defaults (5.0 / 2.0 / Euclidean), keeping the env-overridability, which is useful and
+harmless. Consequence: **`cf33b1399a2d` (`…:wajepa-s2-20260904`) is valid again** — it bakes the original logic, so
+it reproduces exactly the behaviour measured at n=400 (0.9247). No rebuild needed.
+
+**My error, and the lesson.** I verified the *logic* of the change (in-container, correct outputs) but never checked
+that the failure mode could occur in the *input distribution*. A synthetic unit test that exercises a route shape the
+simulator never emits proves nothing about the simulator. This is a sibling of §6.39's guard: that one says state the
+resolution of the measurement before interpreting a difference; this one says **verify the trigger condition exists in
+real inputs before believing a mechanism**. Four of today's five errors are now the same family — a plausible causal
+story attached to something the data cannot support.
+
+**The 15 corridor exits remain unexplained** and are still the largest actionable defect (0.0375, ~87 % of the
++0.0434 margin). Peer d0 is screening WA-JEPA's own nav rule (`arc_length` 20 m + lateral 2.5 m AND heading 0.15 rad,
+ported from `WA-JEPA/datasets/nav_command_infer.py`) as `WAJEPA_ROUTE_MODE=arc_length`, default unchanged.

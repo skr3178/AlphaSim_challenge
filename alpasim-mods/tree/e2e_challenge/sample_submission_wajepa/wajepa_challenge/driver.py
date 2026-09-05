@@ -38,7 +38,7 @@ from PIL import Image
 import grpc
 
 from .batch_worker import BatchPolicy, BatchWorker
-from .navigation import DriveCommand, command_from_route, command_one_hot
+from .navigation import DriveCommand, command_from_route, command_one_hot, describe_route_rule
 from .policy import (
     EGO_STATUS_DIM,
     NUM_HISTORY_FRAMES,
@@ -713,6 +713,7 @@ def main() -> None:
             steps_env or "config-default",
             max_batch_size,
         )
+        LOGGER.info("WA-JEPA %s", describe_route_rule())
         policy_handle.start()
         server.wait_for_termination()
     finally:

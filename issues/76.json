@@ -1,0 +1,70 @@
+{
+ "author": {
+  "login": "awesthue-iav"
+ },
+ "body": "Hi NVIDIA team,\n\ncan you confirm, that the current NuRec image (nvcr.io/nvidia/nre/nre-ga:26.02) is not ARM64 compatible and if so, are there plans to support ARM64 in future?\nWe would like to run Alpasim on a NVIDIA DGX Spark.\n\nKind Regards,\nAndreas",
+ "closedAt": "2026-05-09T09:22:31Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "You're right. I had thought that the released version supported arm64, but it doesn't. The Nurec team does plan on releasing a version but has not committed to a date. Sorry for the confusion and the delay",
+   "createdAt": "2026-05-07T17:47:55Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "awesthue-iav"
+   },
+   "authorAssociation": "NONE",
+   "body": "Ok, thanks for clarification",
+   "createdAt": "2026-05-09T09:22:31Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "kokun66"
+   },
+   "authorAssociation": "NONE",
+   "body": "Is there any update on the schedule of arm64 NeRec release?",
+   "createdAt": "2026-07-14T16:19:32Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 3
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "n-akram"
+   },
+   "authorAssociation": "NONE",
+   "body": "Would also be interesting in building this on AARCH64.",
+   "createdAt": "2026-08-20T10:08:39Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-04-28T08:58:59Z",
+ "labels": [],
+ "number": 76,
+ "state": "CLOSED",
+ "title": "Question Regarding NuRec ARM64 Support",
+ "_updatedAt": "2026-08-20T10:08:39Z"
+}

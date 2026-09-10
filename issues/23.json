@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "jenspetersen"
+ },
+ "body": "**Describe the bug**\n\nsensorsim service produces the following output:\n\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | XXX readobject called with exception set\nsensorsim-0-1 | ModuleNotFoundError\nsensorsim-0-1 | To identify missing module enable 'debug: True' in the relevant config in scripts/pycena/configs\nsensorsim-0-1 | For additional information consult scripts/pycena/README.md\nsensorsim-0-1 | No module named 'I1II1llI11IIIlIllI1lIlllI'\n\n**To Reproduce**\n\nSteps to reproduce the behavior:\n\ndocker compose -f docker-compose.yaml --profile sim up\n\n**Expected behavior**\n\nNo error in sensorsim\n\n**Screenshots**\n\nIf applicable, add screenshots to help explain your problem.\n\n**Desktop (please complete the following information):**\n\n- OS: Ubuntu 24.04\n- Nvidia driver/CUDA version (e.g. from `nvidia-smi`): 575.57.08, CUDA 12.9\n\n**Additional context**\n\nI'm aware of this [issue](https://github.com/NVlabs/alpasim/issues/9), but the proposed solution didn't help.\n",
+ "closedAt": "2026-01-24T17:26:17Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hm.. the driver/cuda versions should be fine. Which GPU is this on? I'll need to forward the question to the NuRec team.",
+   "createdAt": "2026-01-24T15:20:58Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "jenspetersen"
+   },
+   "authorAssociation": "NONE",
+   "body": "Found the problem, I wasn't root in the container",
+   "createdAt": "2026-01-24T17:26:17Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-23T18:23:58Z",
+ "labels": [],
+ "number": 23,
+ "state": "CLOSED",
+ "title": "sensorsim service fails with ModuleNotFoundError",
+ "_updatedAt": "2026-01-24T17:26:18Z"
+}

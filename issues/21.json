@@ -1,0 +1,75 @@
+{
+ "author": {
+  "login": "Mani-offl"
+ },
+ "body": "## **Setup Context and Problem**\n\n\nI am following the steps in tutorial.md to run the tutorial simulation. While running the command\n\n\n`alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial`\n\nor, directly the `run.sh` inside the `tutorial` directory using - `bash run.sh`\n\nthe image build fails at the uv sync step while fetching:\n\n`git+https://github.com/valeoai/VideoActionModel.git`\n\nGit fails with a TLS handshake error.\n\n## **Command**\n\n`alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial`\n\n## **Error**\n\n```\nFailed to download and build `vam @ git+https://github.com/valeoai/VideoActionModel.git`\nfatal: unable to access 'https://github.com/valeoai/VideoActionModel.git/':\ngnutls_handshake() failed\n```\n\n## **Fails at**\n\n```\nRUN --mount=type=secret,id=netrc,target=/home/ubuntu/.netrc \\\n    --mount=type=cache,target=/root/.cache/uv \\\n    NETRC=/home/ubuntu/.netrc uv sync\n```\n\n## **Full Error Log**\n\n\n```\n[+] Building 277.8s (15/19)  \n => CACHED [physics-0 stage-0  6/12] RUN which python3.12 && python3.12 --version                                            0.0s\n => CACHED [driver-0 stage-0  7/12] WORKDIR /repo/src/grpc                                                                   0.0s\n => ERROR [runtime-0 stage-0  8/12] RUN --mount=type=secret,id=netrc,target=/home/ubuntu/.netrc     --mount=type=cache,ta  277.2s\n------\n > [runtime-0 stage-0  8/12] RUN --mount=type=secret,id=netrc,target=/home/ubuntu/.netrc     --mount=type=cache,target=/root/.cache/uv     NETRC=/home/ubuntu/.netrc uv sync:\n0.401 Using CPython 3.12.12 interpreter at: /usr/bin/python3.12\n0.401 Creating virtual environment at: /repo/.venv\n125.1    Updating https://github.com/NVlabs/trajdata.git (alpasim)\n126.4    Updating https://github.com/valeoai/VideoActionModel.git (HEAD)\n277.1   \u00d7 Failed to download and build `vam @\n277.1   \u2502 git+https://github.com/valeoai/VideoActionModel.git`\n277.1   \u251c\u2500\u25b6 Git operation failed\n277.1   \u251c\u2500\u25b6 failed to fetch into: /root/.cache/uv/git-v0/db/743b10e9cb86240c\n277.1   \u2570\u2500\u25b6 process didn't exit successfully: `/usr/bin/git fetch --force\n277.1       --update-head-ok 'https://github.com/valeoai/VideoActionModel.git'\n277.1       '+HEAD:refs/remotes/origin/HEAD'` (exit status: 128)\n277.1       --- stderr\n277.1       fatal: unable to access\n277.1       'https://github.com/valeoai/VideoActionModel.git/': gnutls_handshake()\n277.1       failed: Error in the pull function.\n[+] up 0/1\nDockerfile:48\n\n--------------------\n\n  47 |     WORKDIR /repo/src/grpc\n  48 | >>> RUN --mount=type=secret,id=netrc,target=/home/ubuntu/.netrc \\\n  49 | >>>     --mount=type=cache,target=/root/.cache/uv \\\n  50 | >>>     NETRC=/home/ubuntu/.netrc uv sync\n  51 |     RUN uv run compile-protos --no-sync\n\n--------------------\n\ntarget runtime-0: failed to solve: process \"/bin/sh -c NETRC=/home/ubuntu/.netrc uv sync\" did not complete successfully: exit code\n[+] up 0/1\n\u2826 Image alpasim-base:0.1.3 Building                                                                                       447.7s \nDocker Compose deployment failed with return code: 1\n\n[2026-01-21 05:32:42,986][alpasim_wizard.deployment.docker_compose][ERROR] - Docker Compose deployment failed with return code: 1\nError executing job with overrides: ['+deploy=local', 'wizard.log_dir=/home/ubuntu/manibarathi/alpamayo/alpasim/alpasim/tutorial']\nTraceback (most recent call last):\n  File \"/home/ubuntu/manibarathi/alpamayo/alpasim/alpasim/src/wizard/alpasim_wizard/__main__.py\", line 18, in run_wizard\n    AlpasimWizard.create(cfg).cast()\n  File \"/home/ubuntu/manibarathi/alpamayo/alpasim/alpasim/src/wizard/alpasim_wizard/wizard.py\", line 96, in cast\n    docker_compose_deployment.deploy_all_services()\n  File \"/home/ubuntu/manibarathi/alpamayo/alpasim/alpasim/src/wizard/alpasim_wizard/deployment/docker_compose.py\", line 62, in deploy_all_services\n    subprocess.run(\n  File \"/usr/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/home/ubuntu/manibarathi/alpamayo/alpasim/alpasim/tutorial/run.sh']' returned non-zero exit status 1.\n\nSet the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.\n\n```\n## **Environment**\n\nOS: Ubuntu Linux (host)\n\nDocker: Docker version 29.1.2 (BuildKit enabled)\n\nDocker Compose: v5.0.0\n\nCUDA: 13.1 (NVIDIA driver installed on host)\n\nPython (container): 3.12.12\n\n#### Has anyone faced this issue before or knows how to resolve this?  \n#### @mwatson-nvidia , @maximilianigl  Any help would be appreciated.",
+ "closedAt": "2026-01-22T07:56:27Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Can you pull it outside of the docker build? I.e. with `git clone https://github.com/valeoai/VideoActionModel.git`?\nIf yes, can you try running \n```\nalpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial wizard.debug_flags.use_localhost=True\n```",
+   "createdAt": "2026-01-21T07:57:52Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Mani-offl"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks a lot for your time and the reply.\n\nI was able to resolve the issue by enabling host networking in the Docker Compose files and building the containers directly via `run.sh` from the terminal in both `tutorial` and `tutorial_alpamayo` folders. \n\nAfter this change, I was able to successfully build and run the containers, though i am not sure this is the correct approach.\n\nI will also try the solution you have suggested.\n\nHowever, when switching to **Alpamayo** (which is my main goal), I am consistently running into a different problem. The simulation fails at runtime with a **CUDA Out-Of-Memory error in `sensorsim`**. \n\nThis occurs initially and causes secondary errors like `Session does not exist`.\n\nSo while **VaVaM** runs correctly on my setup, **Alpamayo** appears to hit significantly higher GPU memory usage during rendering.\n\n\n---\n\n## What Works\n\n- Docker images build successfully  \n- Docker Compose starts all services  \n- VaVaM model runs without issues  \n- Physics, controller, runtime, and driver initialize correctly  \n- Scene loads successfully \n\n## What Fails\n\n- Alpamayo model rollout\n\n\n## System Specifications\n\n- **GPU:** NVIDIA GeForce RTX 3090 (24 GB VRAM)  \n- **CUDA version:** 13.1 \n- **OS:** Ubuntu 24.04.3 (x86_64)  \n\n\n## Error Log\n\n```\nruntime-0-1     |   }\nruntime-0-1     | }\nruntime-0-1     |  (session=c173f164-f69f-11f0-a2a3-167dba5579dd, service_addr=sensorsim-0:6001)\nsensorsim-0-1   | [2026-01-21 08:04:23,674][nre.grpc.serve][INFO] render_rgb\nsensorsim-0-1   | [2026-01-21 08:04:24,181][grpc._server][ERROR] Exception calling application: CUDA out of memory. Tried to allocate 508.00 MiB. GPU 0 has a total capacity of 23.56 GiB of which 216.75 MiB is free. Including non-PyTorch memory, this process has 1.70 GiB memory in use. Of the allocated memory 1.37 GiB is allocated by PyTorch, and 24.51 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)\n```\n\nWhich further raises errors like:\n```\nruntime-0-1     |   File \"/repo/src/runtime/alpasim_runtime/loop.py\", line 815, in _loop\ncontroller-0-1  | KeyError: 'Session c173f164-f69f-11f0-a2a3-167dba5579dd does not exist'\nsensorsim-0-1   |   File \"/app/pycena_run.runfiles/pip_deps_3_11_grpcio/site-packages/grpc/_server.py\", line 609, in _call_behavior\nruntime-0-1     |     await asyncio.gather(*tasks)\n\nsensorsim-0-1   |     response_or_iterator = behavior(argument, context)\n\nruntime-0-1     |   File \"/repo/src/runtime/alpasim_runtime/loop.py\", line 746, in _send_images\nsensorsim-0-1   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n\nruntime-0-1     |     await asyncio.gather(\nsensorsim-0-1   |   File \"nre/utils/<unknown>\", line 0, in wrapper\n\n\nsensorsim-0-1   |   File \"nre/grpc/<unknown>\", line 0, in render_rgb\nruntime-0-1     |   File \"/repo/src/runtime/alpasim_runtime/loop.py\", line 460, in render_and_send_image\nsensorsim-0-1   | torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 508.00 MiB. GPU 0 has a total capacity of 23.56 GiB of which 216.75 MiB is free. Including non-PyTorch memory, this process has 1.70 GiB memory in use. Of the allocated memory 1.37 GiB is allocated by PyTorch, and 24.51 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)\n\n\n\nruntime-0-1     |     image = await self.sensorsim.render(\nsensorsim-0-1   | This can occur when running an unconverged checkpoint, or when volumetric effects are present (.e.g fog).\n\n\nsensorsim-0-1   | [2026-01-21 08:04:24,197][nre.grpc.serve][INFO] render_rgb\nruntime-0-1     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nsensorsim-0-1   | [2026-01-21 08:04:24,197][nre.grpc.serve][INFO] Creating new backend for clipgt-05bb8212-63e1-40a8-b4fc-3142c0e94646 from /mnt/nre-data/scenesets/2ecd7b86f6a864127b8bbecbff539872/318cf863-25ea-4d9b-b3b4-e4eb902bf69d.usdz\nruntime-0-1     |     response: RGBRenderReturn = await profiled_rpc_call(\nruntime-0-1     |                                 ^^^^^^^^^^^^^^^^^^^^^^^^\nruntime-0-1     |   File \"/repo/src/runtime/alpasim_runtime/telemetry/rpc_wrapper.py\", line 124, in profiled_rpc_call\nruntime-0-1     |     result = await fut\nruntime-0-1     |              ^^^^^^^^^\nruntime-0-1     |   File \"/repo/.venv/lib/python3.12/site-packages/grpc/aio/_call.py\", line 328, in __await__\nruntime-0-1     |     raise _create_rpc_error(\nruntime-0-1     | grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:\nruntime-0-1     |       status = StatusCode.UNKNOWN\nruntime-0-1     |       details = \"Exception calling application: CUDA out of memory. Tried to allocate 508.00 MiB. GPU 0 has a total capacity of 23.56 GiB of which 216.75 MiB is free. Including non-PyTorch memory, this process has 1.70 GiB memory in use. Of the allocated memory 1.37 GiB is allocated by PyTorch, and 24.51 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)\nruntime-0-1     | This can occur when running an unconverged checkpoint, or when volumetric effects are present (.e.g fog).\"\nruntime-0-1     |       debug_error_string = \"UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:\"Exception calling application: CUDA out of memory. Tried to allocate 508.00 MiB. GPU 0 has a total capacity of 23.56 GiB of which 216.75 MiB is free. Including non-PyTorch memory, this process has 1.70 GiB memory in use. Of the allocated memory 1.37 GiB is allocated by PyTorch, and 24.51 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)\\nThis can occur when running an unconverged checkpoint, or when volumetric effects are present (.e.g fog).\"}\"\nruntime-0-1     | >\n```\n\nAnd the terminal is stuck after the below line, with a constant 5gb GPU memory usage.\n\n```\nsensorsim-0-1   | [2026-01-21 08:04:37,860][111IIIl11I1l1111l111lIllI][INFO] Model v$25.7.9 is already compatible with NuRec v25.7.9, no upgrade needed\n```\n\nI have also set the `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in the container environment, as listed in the error logs.\n\n<img width=\"1483\" height=\"550\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/c75ad382-2ff6-4631-b4c3-96e7d7cc3bad\" />\n\n\n**As a clarification** \nIs it possible to run Alpasim in a CPU-only mode instead of requiring a GPU, even if at reduced performance?\n",
+   "createdAt": "2026-01-21T09:58:51Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Great you fix it! My solution would have tried the same thing, `use_localhost=True` should enable the host network.\n\nRe OOM error: Yes, I think 24 GB might just not be enough. I believe Alpamayo takes around that amount and sensorsim takes a couple more. \n\nRe running on CPU: I don't think anyone of us has tried that, so unfortunately can't help you. But even if you could get it to run, it will be _very_ slow! ",
+   "createdAt": "2026-01-21T10:19:41Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Mani-offl"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for the quick reply, really appreciate it!\n\nI ran Alpamayo inference on CPU \u2014 it's slow but working.  \n\n<img width=\"1432\" height=\"139\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/bffe6c6c-6bac-4e71-a7eb-a2b0a9e9a1cb\" />\n\n\nWhile doing this, I observe that the GPU usage for the containers is ~6\u202fGB.  \nSo I guess running the full setup on GPU would need at least 32\u202fGB VRAM. Is that right?",
+   "createdAt": "2026-01-22T07:49:05Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Nice, glad you got it running! And yes, 32GB sounds about right, though a couple of extra as buffer probably wouldn't hurt. \nClosing the issue but feel free to re-open.",
+   "createdAt": "2026-01-22T07:56:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-21T06:21:23Z",
+ "labels": [],
+ "number": 21,
+ "state": "CLOSED",
+ "title": "Docker build fails during alpasim_wizard +deploy=local (Git TLS error in uv sync)",
+ "_updatedAt": "2026-01-22T07:56:27Z"
+}

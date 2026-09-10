@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "garamgim"
+ },
+ "body": "Hi,\nI ran `source setup_local_env.sh` and got the following error at the `compile-protos` step.\n\n```\nEnsuring Git LFS files are pulled...\nSetting up GRPC...\nTraceback (most recent call last):\n  File \"/home/int2/Workspace/gr/alpasim/.venv/bin/compile-protos\", line 4, in <module>\n    from scripts.compile_protos import compile_protos\n  File \"/home/int2/Workspace/gr/alpasim/src/grpc/scripts/compile_protos.py\", line 8, in <module>\n    from grpc_tools import command\n  File \"/home/int2/Workspace/gr/alpasim/.venv/lib/python3.12/site-packages/grpc_tools/command.py\", line 19, in <module>\n    import pkg_resources\nModuleNotFoundError: No module named 'pkg_resources'\n\u274c Failed to compile protobufs. Exiting.\n```\n\nIt looks like `setuptools>=82.0.0` (released 2026-02-08) removed `pkg_resources`, which `grpc_tools` depends on.\n\nI replaced `uv run compile-protos` with `uv pip install --reinstall \"setuptools<70\" && uv run --no-sync compile-protos` in the shell file and it worked. But i'm not sure if this is the best approach. It might need some adjustment. \n\n## Desktop\n\n- OS: Ubuntu 22.04 (x86_64)\n- Nvidia driver/CUDA version: CUDA 13.0",
+ "closedAt": "2026-02-12T08:56:55Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for bringing this up. Will be fixed in #38 ",
+   "createdAt": "2026-02-12T08:34:48Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Should work now, please reopen if it doesn't.",
+   "createdAt": "2026-02-12T08:56:55Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-12T02:51:01Z",
+ "labels": [],
+ "number": 36,
+ "state": "CLOSED",
+ "title": "compile-protos fails",
+ "_updatedAt": "2026-02-12T08:56:55Z"
+}

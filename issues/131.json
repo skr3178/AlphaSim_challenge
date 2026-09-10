@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "junhyeokp0"
+ },
+ "body": "My PAI submission appears to be stuck in the RUNNING state.\nSubmission ID: 5c7c0189-c623-4a2f-a4f9-696bb3753cf1 \nIt started at 2026-07-31 01:51:57 UTC, and updated_at stopped changing at 2026-07-31 05:51:47 UTC, approximately four hours later. Could you please confirm whether the evaluation timed out or failed during finalization? Since it did not complete normally, would it be possible to cancel the stuck submission and restore the consumed submission quota? Please also let me know if you need any additional logs or identifiers.\n\n\"submission_id\": \"5c7c0189-c623-4a2f-a4f9-696bb3753cf1\"",
+ "closedAt": "2026-07-31T09:50:45Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for the head's up! It looks like the submission was too slow and reached our 4 hour hard limit. Things didn't close properly and left the system in a incomplete state. I suspect that you probably need to reduce the compute of your submission.\n\nIn the meantime, I will work on a fix",
+   "createdAt": "2026-07-31T09:50:45Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "junhyeokp0"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thank you!",
+   "createdAt": "2026-07-31T09:57:31Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-31T08:41:52Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 131,
+ "state": "CLOSED",
+ "title": "PAI Submission stuck in RUNNING state after approximately 4 hours",
+ "_updatedAt": "2026-07-31T09:57:31Z"
+}

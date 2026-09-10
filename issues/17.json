@@ -1,0 +1,175 @@
+{
+ "author": {
+  "login": "chocwjc"
+ },
+ "body": "**Is your feature request related to a problem? Please describe.**\n\nI have RTX Pro 6000. But sensorsim container can not working on it.\n\n**Describe the solution you'd like**\n\nCould you check when sensorsim image support for Blackwell ?\nAnd where can I download the latest one?\nhttps://forums.developer.nvidia.com/t/questions-about-nurec-container/350490\nIn here, \"The nurec container itself is not open source\u2014it is a pre-packaged runtime you pull from NVIDIA\u2019s registry (NGC), including proprietary checkpoints. Its code is closed, although you can use its models and API for your own data.\"\nHowever, I can not find \"nurec container\" on NVIDIA\u2019s NGC.\nAnd the \"https://hub.docker.com/r/carlasimulator/nvidia-nurec-grpc\" is too old.\n\n**Describe alternatives you've considered**\n\nCould you check when sensorsim image support for Blackwell ?\nAnd\nWhere can I downloads the sensorsim image ?\n\n**Additional context**\n\nCan I build the sensorsim render (such as libnrend_cc_100.so) ?\n",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "annz96"
+   },
+   "authorAssociation": "NONE",
+   "body": "> But sensorsim container can not working on it.\nDo you have any error log for check that? Thanks.",
+   "createdAt": "2026-01-09T07:00:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "chocwjc"
+   },
+   "authorAssociation": "NONE",
+   "body": "As same as https://github.com/NVlabs/alpasim/issues/6\nAnd on sensorsim container, there are only libnrend_cc_8X.so libnrend_cc_90.so\nMaybe need libnrend_cc_100.so ",
+   "createdAt": "2026-01-09T07:48:06Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This is the container: docker.io/carlasimulator/nvidia-nurec-grpc:0.2.0\nIt was initially released for Carla, hence it's hosted there. \nUnfortunately I can't give a timeline regarding the next release, but it's actively being worked on. ",
+   "createdAt": "2026-01-16T13:54:08Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 2
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "frrrizzz"
+   },
+   "authorAssociation": "NONE",
+   "body": "sm_120/RTX 5090-Support for the NuRec-Container would be required. Currently, the NuRec-Container is limited to sm_90 capability.",
+   "createdAt": "2026-01-17T20:48:36Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "im-hashim"
+   },
+   "authorAssociation": "NONE",
+   "body": "+ me too. similar problem\n\nSystem Spec:\nUbuntu 22.04 LTS\nRTX PRO 6000 Workstation Edition\nCompute Capability: 12.0\n\nAlso attempted to run on \nUbuntu 22.04 LTS\nRTX 2080 Ti, whose\nCompute Capability: 7.5 (excepted some backward compatibility and attempted to run)\n\nwill be waiting for new container image. ",
+   "createdAt": "2026-02-12T20:54:17Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "adityac-ymsli"
+   },
+   "authorAssociation": "NONE",
+   "body": "My current conifguration is:\nUbuntu 22.04 LTS\nRTX 5090\n\nI also am facing the same issue when I try to execute: _uv run alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial_\n\nOutput error:\nsensorsim-0-1   | RuntimeError: CUDA error: no kernel image is available for execution on the device\nsensorsim-0-1   | CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nsensorsim-0-1   | For debugging consider passing CUDA_LAUNCH_BLOCKING=1\n",
+   "createdAt": "2026-03-19T06:18:18Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "pranavdoma"
+   },
+   "authorAssociation": "NONE",
+   "body": "Hi @maximilianigl \n\nI am facing similar issue running alpasim wizard on Blackwell RTX PRO 6000,  Driver Version: 580.126.09     CUDA Version: 13.0.\n\nCUDA error: no kernel image is available for execution on the device\ntinycudann was built for lower compute capability (90)\nsystem compute capability = 120\n\nThe crash originates in:\n\nsensorsim-0 (nvidia-nurec-grpc container)\n\nDuring:\n\nget_available_cameras \u2192 load renderer \u2192 CUDA kernel launch.\n\nnvidia-nurec-grpc:0.2.0 does not support your GPU architecture (sm_120), causing CUDA kernel launch failure.\n\nCan you please let know if there could be a precompiled version for latest setup?\n\nThanks,\nPranav Doma.\n",
+   "createdAt": "2026-03-25T16:16:37Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The sensorsim images are created by a different team, so I don't have perfect information here. But AFAIK the image should come any day now, with it currently going through some review process. ",
+   "createdAt": "2026-03-25T17:46:29Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Could you try this PR please: #63 \nit updtes to the newest NuRec image",
+   "createdAt": "2026-03-31T09:14:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "ikutasama"
+   },
+   "authorAssociation": "NONE",
+   "body": "Could you confirm that which NuRec image now supports Blackwell? e.g. RTX 5090",
+   "createdAt": "2026-07-02T02:35:20Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "im-hashim"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Could you confirm that which NuRec image now supports Blackwell? e.g. RTX 5090\n\nI tested on blackwell using:\nhttps://catalog.ngc.nvidia.com/orgs/nvidia/nre/containers/nre-ga/26.02.00\n\nlatest seems to be 26.04.00",
+   "createdAt": "2026-07-02T03:44:31Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 2
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-01-09T05:02:32Z",
+ "labels": [],
+ "number": 17,
+ "state": "OPEN",
+ "title": "Could you check when sensorsim image support for Blackwell ?",
+ "_updatedAt": "2026-07-02T03:44:31Z"
+}

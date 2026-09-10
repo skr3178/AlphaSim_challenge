@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "yasu-nxt"
+ },
+ "body": "**Is your feature request related to a problem? Please describe.**\nI would like to use AlpaSim with Alpamayo2, but I could not find whether Alpamayo2 is currently supported or planned to be supported.\n\n**Describe the solution you'd like**\nCould you please share whether there is any plan to support Alpamayo2 in AlpaSim?\n\n**Describe alternatives you've considered**\nNone at the moment. I would first like to understand the planned support status.\n\n**Additional context**\nAlpamayo2 has recently been released, and I am interested in using it with AlpaSim.\nThank you.\n",
+ "closedAt": "2026-08-17T12:37:14Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for your interest! We are working on this and hope to have it out soon.",
+   "createdAt": "2026-08-07T13:20:57Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-07T06:33:59Z",
+ "labels": [],
+ "number": 136,
+ "state": "CLOSED",
+ "title": "[FEA]Support for Alpamayo2",
+ "_updatedAt": "2026-08-17T12:37:14Z"
+}

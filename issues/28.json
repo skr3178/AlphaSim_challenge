@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "jenspetersen"
+ },
+ "body": "Hello!\n\nI wanted to ask what your timeline for full integration of traffic simulation is (as opposed to just replay).\n\nThank you!\n",
+ "closedAt": "2026-01-28T14:47:20Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Unfortunately we're all spread thin a bit atm since we're working on other (exciting!) improvements, and the trafficsim is not the highest priority right now. We definitely want to include it, if I had to guess, maybe a few months? But that's a guess, not a plan. ",
+   "createdAt": "2026-01-28T14:47:20Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-28T13:59:08Z",
+ "labels": [],
+ "number": 28,
+ "state": "CLOSED",
+ "title": "Timeline for traffic simulation?",
+ "_updatedAt": "2026-01-28T14:47:20Z"
+}

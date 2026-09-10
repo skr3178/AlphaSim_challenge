@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "dennisdarrow"
+ },
+ "body": "**Describe the bug**\n\nRunning `driver=alpamayo1_5` crashes during model inference with a FlashAttention RuntimeError. Sensorsim starts and renders frames successfully, but the driver fails on the first inference call. The same setup with `driver=alpamayo1` runs without issue.\n\n**To Reproduce**\n\n1. Clone `NVlabs/alpasim` and run `source setup_local_env.sh`\n\n2. Download both gated models:\n   huggingface-cli download nvidia/Alpamayo-1.5-10B\n   huggingface-cli download nvidia/Cosmos-Reason2-8B\n\n3. Pre-build the Docker image:\n   docker build -t alpasim-base:0.70.0 /home/ubuntu/alpasim\n\n4. Run the wizard:\n   uv run alpasim_wizard deploy=local topology=1gpu driver=alpamayo1_5 wizard.log_dir=$PWD/test_ar15 eval.video.video_layouts=[REASONING_OVERLAY]\n\n5. Rollout fails \u2014 runtime-0-1 reports 1 jobs failed\n\n**Expected behavior**\n\nDriver completes inference and rollout succeeds, as it does with driver=alpamayo1.\n\n**Desktop**\n\n- OS: Ubuntu 22.04\n- Driver/CUDA: 580.105.08 / CUDA 13.0\n- GPU: 2x NVIDIA H100 80GB HBM3 (Lambda Labs)\n- AlpaSim: 0.70.0\n- PyTorch: 2.8.0+cu128\n- Transformers: 4.57.1\n\n**Additional context**\n\nRoot error from driver logs:\n\nRuntimeError: cu_seqlens_q must have shape (batch_size + 1)\nalpamayo1_5/models/alpamayo1_5.py line 368 - sample_trajectories_from_data_with_vlm_rollout\nalpamayo1_5/diffusion/flow_matching.py line 190 - _euler / step_fn\ntransformers/models/qwen3_vl/modeling_qwen3_vl.py line 444 - flash_attention_forward\n\nEarlier test on AlpaSim 0.66.0 with the default non-intersection scene completed successfully. The error may be scene-complexity or sequence-length dependent.",
+ "closedAt": "2026-07-09T15:45:34Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for writing the issue. This is something we recently discovered, too, and should be fixed with the next sync. ",
+   "createdAt": "2026-05-29T00:32:14Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "jarcherNV"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This should now be fixed on current `main`. The Alpamayo 1.5 driver now loads the model with `attn_implementation=\"sdpa\"`, which avoids the FlashAttention path that was producing the `cu_seqlens_q` error.\n\nPlease pull the latest `main` and try again. I\u2019m going to close this for now, but feel free to reopen if the crash still reproduces with the current code.",
+   "createdAt": "2026-07-09T15:45:34Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-05-28T22:55:39Z",
+ "labels": [],
+ "number": 95,
+ "state": "CLOSED",
+ "title": "[Bug] alpamayo1_5 driver crashes with RuntimeError: cu_seqlens_q must have shape (batch_size + 1)",
+ "_updatedAt": "2026-07-09T15:45:34Z"
+}

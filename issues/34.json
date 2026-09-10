@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "hromadka-nv"
+ },
+ "body": "\"runtime\" link on https://github.com/NVlabs/alpasim/blob/main/docs/DESIGN.md points to gitlab-master",
+ "closedAt": "2026-02-11T23:39:24Z",
+ "comments": [
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Merged the fix and close this issue.",
+   "createdAt": "2026-02-11T23:38:51Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-10T15:08:08Z",
+ "labels": [],
+ "number": 34,
+ "state": "CLOSED",
+ "title": "public github points to internal gitlab",
+ "_updatedAt": "2026-02-11T23:39:24Z"
+}

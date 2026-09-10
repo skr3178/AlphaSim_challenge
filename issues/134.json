@@ -1,0 +1,99 @@
+{
+ "author": {
+  "login": "trexinator37"
+ },
+ "body": "Hello,\n\nwhat is the number of cameras and the camera resolution being used on the AlpaSim E2E challenge evaluation server for the `PAI` track?\n\nThere is contradictory information in `dev.yaml` (which is meant for local development) and `ec2.yaml` (which is supposed to be the eval server's configuration) in `src/wizard/configs/e2e_challenge/`:\n- `dev.yaml`: Uses no `driver` override, thus utilizes defaults from `base_config.yaml`: 2 cameras (`camera_front_wide_120fov`, `camera_front_tele_30fov`) at 320p vertical resolution\n- `ec2.yaml`: Uses the `alpamayo1` driver override, which transitively includes `alpamayo_configs.yaml`: 4 cameras (`camera_front_wide_120fov`, `camera_front_tele_30fov`, `camera_cross_left_120fov`, `camera_cross_right_120fov`) at 1080p vertical resolution\n\nCould you specify more clearly which camera setup the `PAI` track is targetting?\n\nCan we assume that the camera setup stays constant across all scenes / sessions / rollouts?\n\nThanks a lot!",
+ "closedAt": "2026-08-13T14:56:11Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for the catch! Yes, the \"official\" challenge uses the 4 cam config and should be consistent across all scenes/rollouts. I'll provide a fix for this this week.",
+   "createdAt": "2026-08-03T16:06:28Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "trexinator37"
+   },
+   "authorAssociation": "NONE",
+   "body": "Great, thanks! Maybe you could then also document the exact image resolution to expect. The camera configs set the width to 1900, while the comments e.g. in `alpamayo_configs.yaml` mention that NRE will resize to 1916 pixels. But if I try locally with this config and the publicly provided NRE container, I actually receive 1920 pixels in width.\n\nI.e. is the resolution:\n- 1900 x 1080\n- 1916 x 1080\n- 1920 x 1080\n\npixels?",
+   "createdAt": "2026-08-03T19:33:45Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "trexinator37"
+   },
+   "authorAssociation": "NONE",
+   "body": "I've tried the changes from the pending early August update (PR #135). With the updated `dev.yaml`, I now get 4 cameras at 1080p vertical resolution. However, running locally, the horizontal resolution remains at `1920` pixels, instead of the `1916` pixels claimed in `README.md`. Both the decoded JPEG images (via `PIL.Image.open(BytesIO(grpc_image.image_bytes))`) and the intrinsics report `1920` pixels in width. Is there maybe a difference in the NRE containers that are used locally vs. on the public eval server, which could explain the 4 pixels difference?",
+   "createdAt": "2026-08-04T15:49:41Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Sorry--I probably pushed the changes a bit too early, but thanks so much for taking a look. If I recall correctly, there is some sort of funny business with the aspect ratio handling with NuRec, but it's been a while since I looked at it. That being said, the challenge is using public GA 26.04 image, so you should be able to confirm the behavior running it locally.\n\nI'll try to take a closer look at this tomorrow and clarify the documentation.\n",
+   "createdAt": "2026-08-04T16:46:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "trexinator37"
+   },
+   "authorAssociation": "NONE",
+   "body": "When testing locally, we always receive `1920` pixel wide camera images with the public GA 26.04 image when the camera is configured for `1900` pixels, i.e. 4 pixels wider than what the config and the [README](https://github.com/NVlabs/alpasim/blob/7c44e126620d5e4bbd4b033a96002eb0fc9bd0a7/src/wizard/configs/e2e_challenge/README.md#dev) from the pending PR state (`1916` pixels). The intrinsics we receive locally also say `1920`. We are testing this with an RTX 3090 GPU.\n\nStill wondering if the eval server provides a different resolution (i.e. `1916` as mentioned in the README). Last month we had submitted a test container using 4 cameras (with the camera IDs mentioned in the README), including an assertion on the camera resolution being `1920 x 1080`. We suspect that this assertion failed, causing our driver to just return empty trajectories and get a very bad policy capability score (but strangely, a much higher/better avg_dist_at_fault metric). The submission ID for this 4-camera test was `13a453c0-9e33-472d-8a2e-54b80e10b157`.\n\nWhen replicating this suspected situation locally (always returning empty trajectories when camera number / resolution does not match the expectation), we do not get any metrics at all (aggregation fails), which is also puzzling us why this did not happen on the eval server.",
+   "createdAt": "2026-08-12T13:57:23Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "\nThanks for continuing to question this. I checked the artifacts from your exact submission, and I need to correct my earlier answer. Contrary to my claims (and this was news to me), the delivered horizontal resolution is not constant across scenes. The configured render request is 1900\u00d71080, but the current official evaluation set produces both 1916\u00d71080 and 1920\u00d71080 JPEGs, depending on the scene\u2019s native camera calibration/aspect ratio.\n\nThe calibration supplied through start_session describes the native camera calibration and may not have the same resolution as the decoded JPEG. Drivers should decode the JPEG, derive its actual dimensions, and scale the supplied intrinsics accordingly rather than asserting a fixed width.\n\nWith respect to your particular submission `13a453c0-9e33-472d-8a2e-54b80e10b157`, your 1920-pixel assertion did account for a large number of failures. While it's not necessarily the case that a higher distance between at-fault incidents always results in a higher capability score, your results were definitely skewed by the failures.\n\nThanks for identifying this\u2014the documentation stating that 1916\u00d71080 is fixed across all scenes is incorrect and will be corrected.",
+   "createdAt": "2026-08-12T14:40:28Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Closing since the merge yesterday I think addressed this: https://github.com/NVlabs/alpasim/tree/e2e_challenge/e2e_challenge#pai-sensor-contract",
+   "createdAt": "2026-08-13T14:56:11Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-03T14:41:25Z",
+ "labels": [],
+ "number": 134,
+ "state": "CLOSED",
+ "title": "Clarifications on camera setup in e2e challenge",
+ "_updatedAt": "2026-08-13T14:56:11Z"
+}

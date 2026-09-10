@@ -1,0 +1,75 @@
+{
+ "author": {
+  "login": "Vi0letYan"
+ },
+ "body": "**Describe the bug**\n\nI tried to reproduce Level 1 in tutorial.md, but encountered an issue where the image docker.io/carlasimulator/nvidia-nurec-grpc:0.2.0 failed to pull during the configuration process.\n\n**To Reproduce**\n\nSteps to reproduce the behavior:\n\n1. All prerequisite libraries were configured strictly according to the requirements in docs/ONBOARDING.md and passed the runtime tests.\n2. The command export HF_TOKEN=<my token> was executed correctly.\n3. The docker login operation was completed successfully.\n4. The script source setup_local_env.sh ran without errors.\n5. The error occurred when running the command: alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial.\n\n**Expected behavior**\n\n`[+] up 1/2lpasim-base:0.1.3                               pull access denied for alpasim-base, repository does not exist or may require 'docker logi\n[+] up 1/2lpasim-base:0.1.3                               pull access denied for alpasim-base, repository does not exist or may require 'docker logi\n[+] up 1/2lpasim-base:0.1.3                               pull access denied for alpasim-base, repository does not exist or may require 'docker logi\n[+] up 1/2lpasim-base:0.1.3                               pull access denied for alpasim-base, repository does not exist or may require 'docker logi\n[+] up 1/2lpasim-base:0.1.3                               pull access denied for alpasim-base, repository does not exist or may require 'docker logi\n ! Image alpasim-base:0.1.3                               pull access denied for alpasim-base, repository does not exist or may require 'docker login' 3.5s  docker.io/carlasimulator/nvidia-nurec-grpc:0.2.0 Pulling                                                                             36.2s \n \u2839 Image docker.io/carlasimulator/nvidia-nurec-grpc:0.2.0 Pulling                                                                             36.2s \npull access denied for carlasimulator/nvidia-nurec-grpc, repository does not exist or may require 'docker login'\nDocker Compose deployment failed with return code: 1\n[2026-01-14 16:49:28,868][alpasim_wizard.deployment.docker_compose][ERROR] - Docker Compose deployment failed with return code: 1\nError executing job with overrides: ['+deploy=local', 'wizard.log_dir=/home/leo/AD_VLA/alpasim/tutorial']\nTraceback (most recent call last):\n  File \"/home/leo/AD_VLA/alpasim/src/wizard/alpasim_wizard/__main__.py\", line 18, in run_wizard\n    AlpasimWizard.create(cfg).cast()\n  File \"/home/leo/AD_VLA/alpasim/src/wizard/alpasim_wizard/wizard.py\", line 96, in cast\n    docker_compose_deployment.deploy_all_services()\n  File \"/home/leo/AD_VLA/alpasim/src/wizard/alpasim_wizard/deployment/docker_compose.py\", line 62, in deploy_all_services\n    subprocess.run(\n  File \"/home/leo/miniconda3/envs/alpasim/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/home/leo/AD_VLA/alpasim/tutorial/run.sh']' returned non-zero exit status 1.\n\nSet the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.`\n\n**Screenshots**\n\n<img width=\"2420\" height=\"1210\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/b934609d-baf0-4b0b-9ccf-25d54a9ae7d6\" />\n\n**Desktop (please complete the following information):**\n\n- OS: Ubuntu22.04\n- Nvidia driver/CUDA version : Driver Version 580.95.05, CUDA Version 13.0, 4090laptop\n\n<img width=\"1480\" height=\"937\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/36d591c9-22f4-4b08-8a64-e400c82e1d77\" />",
+ "closedAt": "2026-03-20T17:30:33Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The image is hosted on docker.io - if not already, can you running running `docker login` before running the wizard?\n",
+   "createdAt": "2026-01-16T14:00:26Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The \"pull access denied for alpasim-base\" isn't a problem, that container it will just build locally.",
+   "createdAt": "2026-01-16T14:01:19Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Vi0letYan"
+   },
+   "authorAssociation": "NONE",
+   "body": "> The \"pull access denied for alpasim-base\" isn't a problem, that container it will just build locally.\n\nThank you for your assistance. After I commented out the image required by sensorsim, namely docker.io/carlasimulator/nvidia-nurec-grpc:0.2.0, all the other packages and images were pulled successfully without any issues.\nI also attempted to pull this image manually and performed a docker login operation, yet the image still failed to be pulled.\n\n<img width=\"1468\" height=\"791\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/71e458ae-5cb7-4eea-bff6-99763a6ebfec\" />\n",
+   "createdAt": "2026-01-19T02:23:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Have you tried `docker pull` without sudo (as you logged in without sudo)? But really, I have no idea, unfortunately. This seems to work for others, so I suspect the issue is with your docker setup somehow. ",
+   "createdAt": "2026-01-19T07:48:14Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I hope this got resolved. If not, feel free to reopen.",
+   "createdAt": "2026-03-20T17:30:33Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-14T08:54:35Z",
+ "labels": [],
+ "number": 19,
+ "state": "CLOSED",
+ "title": "! Image alpasim-base:0.1.3 pull access denied for alpasim-base, repository does not exist or may require 'docker login'",
+ "_updatedAt": "2026-03-20T17:30:33Z"
+}

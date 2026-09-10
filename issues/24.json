@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "haoyu9746-ship-it"
+ },
+ "body": "Nice method!\nI wanna ask if I can run the simulation with my own NuRec dataset? Is it allowed and how can I transfer the data form to the form needed.",
+ "closedAt": "2026-01-26T09:31:05Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hi, the conversion to NuRec isn't public yet. But if you have already access or already converted data, you should be able to simulate it. This isn't yet well supported, so you'd need to do a bit of modifications to get it to work:\n* Add your data to the two `csv` files under `data/scenes` \n* In `src/wizard` add code for your storage place s.t. it can auto-download the files if needed. If you have them locally, that shouldn't be necessary\n* Do you know in which format you have the map & bboxes? Because that's not natively in NuRec - for the public sim, we converted it to XODR, but other formats are possible. ",
+   "createdAt": "2026-01-26T06:06:13Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "haoyu9746-ship-it"
+   },
+   "authorAssociation": "NONE",
+   "body": "thanks!",
+   "createdAt": "2026-01-26T09:31:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-26T06:00:08Z",
+ "labels": [],
+ "number": 24,
+ "state": "CLOSED",
+ "title": "Is it possible to simulate on my own dataset?",
+ "_updatedAt": "2026-01-26T09:31:05Z"
+}

@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "Zhouxijun"
+ },
+ "body": "I tried using NuRec to train and generate USDZ, but the generated data is missing a lot\u2014there is no clipgt, no mesh, and no map.\n",
+ "closedAt": "2026-07-29T07:06:47Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I forwarded your question to the internal team that manages NuRec to see if that capability exists. The AlpaSim team is also a consumer of that data and not responsible for generating or maintaining those artifacts.",
+   "createdAt": "2026-07-28T11:19:55Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "From the NuRec team:\n```\nI think this proposed workflow could work well if im understanding correctly\n\nsince they have their own collected data, i'd use this skill to convert to ncore v4 - https://github.com/NVIDIA/nurec-skills/blob/main/skills/ncore/SKILL.md#ncore-v4-data-conversion\n\nthen i'd refer to https://github.com/NVIDIA/nurec-skills/blob/main/skills/nre/SKILL.md to do the reconstruction\n```\n\nHope this helps! Resolving for now, but feel free to reopen here or on that other repo",
+   "createdAt": "2026-07-29T07:06:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-22T06:50:11Z",
+ "labels": [],
+ "number": 126,
+ "state": "CLOSED",
+ "title": "If I want to run AlpaSim using my own collected data, how can I convert my data into a USDZ file usable by AlpaSim?",
+ "_updatedAt": "2026-07-29T07:06:47Z"
+}

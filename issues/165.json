@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "trexinator37"
+ },
+ "body": "Hi! \n\nOur recent submission `1462fbf1-bbd5-460d-85b5-d636d4fd4326` failed with the following failure code shortly after startup:\n\n```\n\"failure_code\": \"CONTESTANT_GRPC_NOT_READY\",\n\"failure_diagnostics\": {\n\t\"failed_stage\": \"wait_for_driver_grpc\",\n\t\"simulation_timeout_seconds\": null,\n\t\"simulation_wall_time_s\": null\n},\n\"failure_reason\": \"contestant driver ports opened, but get_version did not succeed for all endpoints within 300s\",\n```\n\nCould you let us know if this was an issue with our driver container, or if something went wrong on the simulator side?\n\nThe mentioned failure reason is a bit confusing, since the driver ports _are_ supposed to be open, yet `get_version()` does not seem to succeed.\n\nWe have conducted extensive local tests with this container and for us it starts up without any problems.\n\nWe suspect that one of the final log messages before termination of the driver process might be similar to:\n```\n[I:onnxruntime:, graph_transformer.cc:15 Apply] GraphTransformer WhereDummyDq modified: 0 with status: OK\n```\n\nwhich would indicate that setting up the inference session may have taken too long; but during our local testing with an RTX 3090 GPU on an 8-year old workstation, or using just a single MIG slice of an H200 GPU, the gRPC server always reported to be ready in significantly less than 300 seconds.\n\nRelated to this we were wondering: do contestant drivers get assigned a full H100 or H200 GPU, or only a single MIG slice per driver container? Just to get a rough understanding of how much compute capacity we can assume.\n\nThanks!",
+ "closedAt": "2026-08-27T10:35:13Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The evaluator and image launch completed successfully, but all 16 driver replicas remained in ONNX Runtime session initialization and never served the required GetVersion gRPC RPC within 300 seconds. This was not a simulator-scoring failure. Evaluation uses full H100 devices rather than MIG slices, but four contestant replicas share each of four H100s.\n\nPlease make startup robust to that concurrent configuration\u2014particularly by explicitly limiting ONNX Runtime intra-/inter-op thread counts (rather than using its detected 192-thread default), and by avoiding expensive per-replica initialization before the gRPC service becomes ready.\n\n\n```\n  - Host: p5.48xlarge, with 8 physical H100 80 GB GPUs.\n  - Contestant replicas: 16.\n  - Contestant GPU devices: physical GPUs 4,5,6,7.\n  - Mapping: round-robin, so 4 driver containers share each physical H100.\n  - No MIG partitioning is used. Each container sees its assigned full GPU device, but it is not exclusive access.\n```\n\nLet me know if you have additional questions or concerns. In the meantime, I'll close this thread",
+   "createdAt": "2026-08-27T10:35:13Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "trexinator37"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks a lot for checking the logs and your clarification on the GPU setup. We will try to come up with a more robust solution.",
+   "createdAt": "2026-08-27T13:57:15Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-26T15:41:01Z",
+ "labels": [],
+ "number": 165,
+ "state": "CLOSED",
+ "title": "[E2E challenge] Failed submission: contestant GRPC not ready",
+ "_updatedAt": "2026-08-27T13:57:15Z"
+}

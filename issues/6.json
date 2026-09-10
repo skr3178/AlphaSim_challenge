@@ -1,0 +1,58 @@
+{
+ "author": {
+  "login": "codedetermination"
+ },
+ "body": "Hi there \ud83d\udc4b,\n\nFirst of all, thank you for the great work on this project.\n\nI\u2019m running into a CUDA runtime error when trying to start a scene on a machine with a 5090D GPU under WSL2. The sensorsim container fails to create a backend with the following error:\n\nRuntimeError: CUDA error: no kernel image is available for execution on the device\n\nFrom the logs:\n\nsensorsim-0-1   | [2025-12-03 00:35:35,877][nre.grpc.serve][INFO] get_available_cameras\nsensorsim-0-1   | [2025-12-03 00:35:35,877][nre.grpc.serve][INFO] Creating new backend for clipgt-05bb8212-63e1-40a8-b4fc-3142c0e94646 from /mnt/nre-data/all-usdzs/sample_set/25.07_release/Batch0001/05bb8212-63e1-40a8-b4fc-3142c0e94646/05bb8212-63e1-40a8-b4fc-3142c0e94646.usdz\nsensorsim-0-1   | [2025-12-03 00:35:36,448][I11llIl11lllIll1I11l11ll1][INFO] Config v25.7.9 is already compatible with NuRec v25.7.9, no upgrade needed\nsensorsim-0-1   | [2025-12-03 00:35:36,611][lI1IIIllII1l1Il111lII11I1][INFO] SHGaussianModel/progressive_training: increase_frequency=1000 increase_step=1\nsensorsim-0-1   | [2025-12-03 00:35:36,699][nre.grpc.serve][ERROR] Failed to create backend for clipgt-05bb8212-63e1-40a8-b4fc-3142c0e94646: CUDA error: no kernel image is available for execution on the device\n...\nruntime-0-1     | grpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:\nruntime-0-1     |       status = StatusCode.UNKNOWN\nruntime-0-1     |       details = \"Exception calling application: CUDA error: no kernel image is available for execution on the device\nruntime-0-1     | CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nruntime-0-1     | For debugging consider passing CUDA_LAUNCH_BLOCKING=1\nruntime-0-1     | Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\nruntime-0-1     | \"\n\n\nAfter that, the rollout fails and the controller reports that the session does not exist.\n\nEnvironment\n\nGPU: NVIDIA 5090D\n\nHost: WSL2 on Windows\n\nContainers involved: sensorsim-0-1, runtime-0-1, controller-0-1\n\nError location: when calling get_available_cameras / creating backend for scene clipgt-05bb8212-63e1-40a8-b4fc-3142c0e94646\n\nFramework: PyTorch (from the project\u2019s provided environment)\n\nCommand / setup: running via the provided Docker setup (default configuration)\n\nIf helpful, I can also provide the full log output and exact driver / CUDA / PyTorch versions.\n\nSteps to Reproduce\n\nRun the project under WSL2 on a machine with an NVIDIA 5090D GPU using the provided Docker setup.\n\nStart a simulation / rollout that loads the scene clipgt-05bb8212-63e1-40a8-b4fc-3142c0e94646.\n\nWait until the sensorsim-0-1 container tries to create a backend and call get_available_cameras.\n\nExpected Behavior\n\nThe backend for the scene should be created successfully, and get_available_cameras should return the available cameras without CUDA errors.\n\nActual Behavior\n\nsensorsim-0-1 fails with RuntimeError: CUDA error: no kernel image is available for execution on the device.\n\nThe rollout fails and the runtime/controller report that the session does not exist because initialization never completed successfully.\n\nQuestion\n\nIt looks like the CUDA kernels / PyTorch extensions in the image might not be compiled for the 5090D\u2019s compute capability.\n\nIs this GPU / architecture currently supported?\n\nIf so, is there a recommended way to rebuild or configure the project so that the CUDA kernels are compiled for this device?\n\nIf not yet supported, are there any workarounds (e.g., flags, environment variables, different build / image) that you would recommend?\n\nThanks a lot for your help, and please let me know if I can provide any additional details (full logs, environment info, etc.) to debug this further. \ud83d\ude4f",
+ "closedAt": "2026-03-20T17:29:55Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I'm not sure I saw it, but can you provide the output of `nvidia-smi` ?",
+   "createdAt": "2025-12-03T01:55:49Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I heard back from the nurec team (they build the sensorsim image) that 25.07 didn't have support for Blackwell, but that the coming release will. I don't know if you have access to different hardware; but, if so, it might be worth trying that, for now.",
+   "createdAt": "2025-12-03T18:02:17Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "codedetermination"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks a lot for the quick reply and the explanation.\nUnfortunately I don\u2019t have access to any non-Blackwell hardware at the moment, so I\u2019m not able to try a different GPU for now.\nI\u2019ll wait for the upcoming release with Blackwell support.\nFeel free to close this issue if it\u2019s already being tracked elsewhere; otherwise I\u2019m happy to keep it open and can help test once the new release is available.\n",
+   "createdAt": "2025-12-03T18:12:11Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2025-12-03T00:56:40Z",
+ "labels": [],
+ "number": 6,
+ "state": "CLOSED",
+ "title": "UDA no kernel image is available for execution on the device on 5090D (WSL2) when starting sensorsim backend",
+ "_updatedAt": "2026-03-20T17:29:55Z"
+}

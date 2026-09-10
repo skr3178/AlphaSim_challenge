@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "bhanu-iav"
+ },
+ "body": "Describe the bug\nWhen attempting to pull a Docker image from nvcr.io, the operation fails with an \"Access Denied\" error.\n\nTo Reproduce\nSteps to reproduce the behavior:\n\n    Open a terminal.\n    Run the command docker login nvcr.io and authenticate successfully.\n    Execute the command docker pull nvcr.io/nvidian/alpamayo/nre:25.7.9-dc9a8043.\n    See error: \"Error response from daemon: Head 'https://nvcr.io/v2/nvidian/alpamayo/nre/manifests/25.7.9-dc9a8043': denied: {\"errors\": [{\"code\": \"DENIED\", \"message\": \"Access Denied\"}]}\"\n\nExpected behavior\nThe Docker image should be pulled successfully without any access denied errors.\n\nOS:                             Ubuntu 24.04.4 LTS \nCUDA Version:           13.1 \nNvidia driver version: 590.48.01 \nGPU:                           NVIDIA Grace Blackwell. ",
+ "closedAt": "2026-03-13T17:51:18Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "That's an internal-only image. I'm guessing you got it fromhttps://github.com/NVlabs/alpasim/blob/d1755893d1f2c7ceef642cd0a977b470eaa6c549/src/wizard/configs/deploy/local_oss_arm.yaml#L24\n\nSorry about the confusion, here. We'll remove this yaml file from the public repo and add a pointer to a public nurec image if it becomes available",
+   "createdAt": "2026-03-13T06:09:33Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-03-12T08:52:40Z",
+ "labels": [],
+ "number": 44,
+ "state": "CLOSED",
+ "title": "Docker Image nvcr.io/nvidian/alpamayo/nre:25.7.9-dc9a8043 Access Denied.",
+ "_updatedAt": "2026-03-13T17:51:18Z"
+}

@@ -1,0 +1,51 @@
+{
+ "author": {
+  "login": "zikang-xiong-ai"
+ },
+ "body": "Submission ID: fd892593-29c6-40ff-af31-94c48d151a7a\nTrack: nuplan\nImage tag: roadweaver-20260816-01\n\nThe submission completed successfully on 2026-08-16 at 17:33:46 UTC.\nThe status endpoint reports score 1.7158616581261055 with no failure code,\nbut the submission is absent from the public nuPlan leaderboard.\n\nCould you confirm:\n1. Whether this submission is eligible for leaderboard publication.\n2. Whether leaderboard aggregation completed.\n3. Whether the reported status score is the legacy metric.\n4. Whether a Policy Capability Score was generated.",
+ "closedAt": "2026-08-21T10:32:28Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "It looks like your run completed, but many of the rollouts were invalid because `terminate_session=True`. Was this intentional to be sending the message with that field populated? This is really for RL training purposes.\n\nInternally (will release later), I've modified the code to make it more robust to this (better feedback, etc.), and so will close this thread.",
+   "createdAt": "2026-08-21T10:32:28Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "zikang-xiong-ai"
+   },
+   "authorAssociation": "NONE",
+   "body": "Is there any pre-flight check we can run before the submission?",
+   "createdAt": "2026-08-21T17:45:56Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The closest thing to date is the starter kit walkthrough ( https://github.com/NVlabs/alpasim/tree/e2e_challenge/e2e_challenge/starter_kit ) which includes a local smoke test. This does not cover issues like: local hardware differs from competition hardware (H100), or some of the post processing algorithms.\n\nThe hardware issue will likely remain an open gap, but we will be adding some ways to allow users to run the post processing algorithms shortly",
+   "createdAt": "2026-08-24T08:29:29Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-20T17:00:12Z",
+ "labels": [],
+ "number": 159,
+ "state": "CLOSED",
+ "title": "[E2E Challenge] submission is absent from the public nuPlan leaderboard",
+ "_updatedAt": "2026-08-24T08:29:29Z"
+}

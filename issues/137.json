@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "0ttwhy4"
+ },
+ "body": "Dear Developers:\n\nThank you for your contribution! \n\nIs there an estimated timeline of releasing the additional road annotations (3D lane lines etc.) of PhysicalAIAV dataset, as is indicated in https://github.com/NVlabs/physical_ai_av/wiki/5.-Machine-Labels-(Coming-Soon)?\n\nThanks!\n\n(Also, I have posted the question on your official forum as guided and the original post is [here](https://forums.developer.nvidia.com/t/release-plan-of-more-labels/379200))",
+ "closedAt": "2026-08-07T13:23:47Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Unfortunately, I probably can't answer this. It does seem like https://github.com/NVlabs/physical_ai_av/issues might be a better place to ask that.\n\nI'm going to close this for now, but if you don't get any traction after a reasonable amount of time, feel free to reopen this and I can start trying to track down the internal team (different from this one).",
+   "createdAt": "2026-08-07T13:23:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "0ttwhy4"
+   },
+   "authorAssociation": "NONE",
+   "body": "I understand. Thanks a lot! : )",
+   "createdAt": "2026-08-07T13:26:19Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-07T07:15:26Z",
+ "labels": [],
+ "number": 137,
+ "state": "CLOSED",
+ "title": "Release Plan of Road Annotations in PhysicalAIAV Dataset",
+ "_updatedAt": "2026-08-07T13:26:20Z"
+}

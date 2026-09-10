@@ -1,0 +1,135 @@
+{
+ "author": {
+  "login": "awesthue-iav"
+ },
+ "body": "**Describe the bug**\nWe are trying to run multiple clips with alpamayo 1.5 in one session. \nWe can process a single clip without a crash, but as soon as we want to process multiple clips in a batch the session crashes for all clips except the first with CUDA errors (see below). \n\n_Note 1: the same error also happens when using ar1 or vavam model_\n_Note 2: we run the driver on a DGX Spark, connected via LAN to the host on which we run alpasim_\n\n```log\n<truncated first successful run>\n09:01:55.027 [W0] INFO:\tsim_time 2_053_074_337_002us: SimulationEndEvent @ 2_053_074_337_002us\n09:01:55.027 [W0] INFO:\tSimulation ended via SimulationEndEvent\n09:01:55.027 [W0] INFO:\tEvent-based simulation loop timer stopped\n09:02:57.856 [W0] INFO:\tSession COMPLETED: uuid=b749702a-2c13-11f1-a1ac-a5e31a7d6bd7 scene=clipgt-7c05aee0-88f1-4338-a48b-5cbe24d5b888 simulated 19.70 sim seconds in 1424.72 wall clock seconds for 0.01x real time (total rollout 1450.08s incl. setup/warmup)\n09:02:57.887 [W0] INFO:\tsim_time 2_877_831_378_022us: SimulationEndEvent @ 2_877_831_378_022us\n09:02:57.887 [W0] INFO:\tSimulation ended via SimulationEndEvent\n09:02:57.887 [W0] INFO:\tEvent-based simulation loop timer stopped\n09:04:04.759 [W0] INFO:\tSession COMPLETED: uuid=b8219644-2c13-11f1-a1ac-a5e31a7d6bd7 scene=clipgt-7b3070bd-8d4d-4394-bced-f89b0467a107 simulated 19.70 sim seconds in 1484.39 wall clock seconds for 0.01x real time (total rollout 1510.95s incl. setup/warmup)\n09:04:05.315 [W0] INFO:\tFiltering traffic objects with min duration 3000000 us\n09:04:05.315 [W0] INFO:\tNumber of traffic objects before filtering: 84\n09:04:05.317 [W0] INFO:\tNumber of traffic objects after filtering: 39\n09:04:05.322 [W0] INFO:\tLoading USDZ map data into memory. This will take a few seconds...\n09:04:05.365 [W0] INFO:\tApplied XODR ENU to Simulation coordinate transform for trajectory alignment\n09:04:05.761 [W0] INFO:\tFiltering traffic objects with min duration 3000000 us\n09:04:05.761 [W0] INFO:\tNumber of traffic objects before filtering: 64\n09:04:05.761 [W0] INFO:\tNumber of traffic objects after filtering: 41\n09:04:05.766 [W0] INFO:\tLoading USDZ map data into memory. This will take a few seconds...\n09:04:05.788 [W0] INFO:\tApplied XODR ENU to Simulation coordinate transform for trajectory alignment\n09:04:07.232 [W0] INFO:\tSuccessfully loaded map from XODR\n09:04:07.313 [W0] INFO:\tRequesting available cameras for scene_id='clipgt-7d994ed3-d15f-4c0d-a0ff-fd36ba005726'\n09:04:08.056 [W0] INFO:\tSuccessfully loaded map from XODR\n09:04:08.098 [W0] INFO:\tRequesting available cameras for scene_id='clipgt-7c4f23b7-be14-4505-b332-6d1ceb36cd75'\n09:04:10.544 [W0] INFO:\tSession STARTING: uuid=673df78c-2c17-11f1-a1ac-a5e31a7d6bd7 scene=clipgt-7d994ed3-d15f-4c0d-a0ff-fd36ba005726 steps=200\n09:04:10.544 [W0] INFO:\tWarming up sensorsim with initial render request...\n09:04:13.377 [W0] INFO:\tAvailable ego masks: ego_mask_metadata {\n  ego_mask_id {\n    camera_logical_id: \"camera_front_wide_120fov\"\n    rig_config_id: \"hyperion_8\"\n  }\n}\nego_mask_metadata {\n  ego_mask_id {\n    camera_logical_id: \"camera_front_wide_120fov\"\n    rig_config_id: \"hyperion_8_1\"\n  }\n}\n (session=673df78c-2c17-11f1-a1ac-a5e31a7d6bd7, service_addr=localhost:6000)\n09:04:13.482 [W0] INFO:\tSession STARTING: uuid=6781bc4c-2c17-11f1-a1ac-a5e31a7d6bd7 scene=clipgt-7c4f23b7-be14-4505-b332-6d1ceb36cd75 steps=200\n09:04:13.482 [W0] INFO:\tWarming up sensorsim with initial render request...\n09:04:16.371 [W0] INFO:\tAvailable ego masks: ego_mask_metadata {\n  ego_mask_id {\n    camera_logical_id: \"camera_front_wide_120fov\"\n    rig_config_id: \"hyperion_8\"\n  }\n}\nego_mask_metadata {\n  ego_mask_id {\n    camera_logical_id: \"camera_front_wide_120fov\"\n    rig_config_id: \"hyperion_8_1\"\n  }\n}\n (session=6781bc4c-2c17-11f1-a1ac-a5e31a7d6bd7, service_addr=localhost:6000)\n09:04:16.377 [W0] WARNING:\tRollout FAILED: job=0584fe7399e0406abf2937361589ec54 scene=clipgt-7d994ed3-d15f-4c0d-a0ff-fd36ba005726 uuid=673df78c-2c17-11f1-a1ac-a5e31a7d6bd7 error=<AioRpcError of RPC that terminated with:\n\tstatus = StatusCode.UNKNOWN\n\tdetails = \"Exception calling application: NRenderer.update_model_parameters failed.\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:\"Exception calling application: NRenderer.update_model_parameters failed.\"}\"\n>\nTraceback (most recent call last):\n  File \"/repo/src/runtime/alpasim_runtime/worker/main.py\", line 111, in run_single_rollout\n    eval_result = await EventBasedRollout(\n                  ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/repo/src/runtime/alpasim_runtime/event_loop.py\", line 475, in run\n    await self._warmup_sensorsim()\n  File \"/repo/src/runtime/alpasim_runtime/event_loop.py\", line 229, in _warmup_sensorsim\n    await self.sensorsim.render(\n  File \"/repo/src/runtime/alpasim_runtime/services/sensorsim_service.py\", line 363, in render\n    response: RGBRenderReturn = await profiled_rpc_call(\n                                ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/repo/src/runtime/alpasim_runtime/telemetry/rpc_wrapper.py\", line 124, in profiled_rpc_call\n    result = await fut\n             ^^^^^^^^^\n  File \"/repo/.venv/lib/python3.12/site-packages/grpc/aio/_call.py\", line 327, in __await__\n    raise _create_rpc_error(\ngrpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:\n\tstatus = StatusCode.UNKNOWN\n\tdetails = \"Exception calling application: NRenderer.update_model_parameters failed.\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:\"Exception calling application: NRenderer.update_model_parameters failed.\"}\"\n>\n\n09:04:16.402 [W0] WARNING:\tRollout FAILED: job=77f1110e83d549f5ba6c90952bb0a41a scene=clipgt-7c4f23b7-be14-4505-b332-6d1ceb36cd75 uuid=6781bc4c-2c17-11f1-a1ac-a5e31a7d6bd7 error=<AioRpcError of RPC that terminated with:\n\tstatus = StatusCode.UNKNOWN\n\tdetails = \"Exception calling application: CUDA error: an illegal memory access was encountered\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:\"Exception calling application: CUDA error: an illegal memory access was encountered\\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\\n\"}\"\n>\nTraceback (most recent call last):\n  File \"/repo/src/runtime/alpasim_runtime/worker/main.py\", line 111, in run_single_rollout\n    eval_result = await EventBasedRollout(\n                  ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/repo/src/runtime/alpasim_runtime/event_loop.py\", line 475, in run\n    await self._warmup_sensorsim()\n  File \"/repo/src/runtime/alpasim_runtime/event_loop.py\", line 229, in _warmup_sensorsim\n    await self.sensorsim.render(\n  File \"/repo/src/runtime/alpasim_runtime/services/sensorsim_service.py\", line 363, in render\n    response: RGBRenderReturn = await profiled_rpc_call(\n                                ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/repo/src/runtime/alpasim_runtime/telemetry/rpc_wrapper.py\", line 124, in profiled_rpc_call\n    result = await fut\n             ^^^^^^^^^\n  File \"/repo/.venv/lib/python3.12/site-packages/grpc/aio/_call.py\", line 327, in __await__\n    raise _create_rpc_error(\ngrpc.aio._call.AioRpcError: <AioRpcError of RPC that terminated with:\n\tstatus = StatusCode.UNKNOWN\n\tdetails = \"Exception calling application: CUDA error: an illegal memory access was encountered\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\n\"\n\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_status:2, grpc_message:\"Exception calling application: CUDA error: an illegal memory access was encountered\\nCUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.\\nFor debugging consider passing CUDA_LAUNCH_BLOCKING=1\\nCompile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.\\n\"}\"\n>\n\n```\n\n\n\n**To Reproduce**\nSteps to reproduce the behavior:\nwe run\n`uv run alpasim_wizard +deploy=local_external_driver_mult_scenes wizard.log_dir=$PWD/alpamayo_1_5_mult_scenes_test driver=[a1_5,a1_5_runtime_configs]`\n\n\nwe created a deployment config file 'local_external_driver_mult_scenes' that contains the scene_ids as list:\n``` yaml\n# @package _global_\n# Config for running with an EXTERNAL driver. See docs/MANUAL_DRIVER.md for usage.\n\ndefaults:\n  - _self_\n\ndefines:\n  filesystem: ${repo-relative:\"data\"}\n\nwizard:\n  # Use localhost networking so containers can reach external services\n  debug_flags:\n    use_localhost: true\n\n  # Don't start a driver container - we're using an external one\n  run_sim_services:\n    [\"sensorsim\", \"physics\", \"trafficsim\", \"controller\", \"runtime\"]\n\n  # External driver address (override this if your driver runs on a different port)\n  external_services:\n    driver:\n      - \"192.168.137.2:6000\"\n\nservices:\n  # No driver service needed - it's external\n\n  sensorsim:\n    replicas_per_container: 1 # Number of service replicas per container\n    gpus: [0] # GPUs to create containers on     \n\n  physics:\n    replicas_per_container: 1\n    gpus: [0]\n\n  controller:\n    replicas_per_container: 1\n    gpus: null\n\nscenes:\n  scene_ids: \n    - clipgt-a309e228-26e1-423e-a44c-cb00aa7378cb\n    - clipgt-804afc4a-fd1e-4f58-bd39-a4c486a916e5\n    - clipgt-81b0e06d-96e6-4832-99c1-a4084b54ca97\n    - clipgt-9b3509c2-a5fa-42c0-b0e5-feb617e9bf4e\n    - clipgt-90d1908c-9fdc-40ea-a5a1-351240aa323e\n    - clipgt-88d1e61e-d4a6-443a-8b3f-ad0f1de4d0f5\n    - clipgt-8aaa1135-573f-4f6c-8ff8-7ac6bd6ea5d6\n    - clipgt-9f8acd00-e8f5-467a-867d-b205f8d4d75d\n    - clipgt-97a2e621-a27b-4b87-9a58-b6b740fc1b4e\n    - clipgt-93982b71-92af-4cf6-8447-00d619f50ad3\n    - clipgt-9b6a51bd-cb54-4a68-8ed8-0e33a504c67e\n    - clipgt-9b314680-02be-48fe-bd6d-162a00a743d1\n    - clipgt-89f2eeb8-f4e4-42a1-8e07-d60003d223dc\n    - clipgt-7c4f23b7-be14-4505-b332-6d1ceb36cd75\n    - clipgt-9ea70552-6dcb-4ee8-a368-9a906a333f6e\n    - clipgt-895e3736-398f-459a-b511-5781e8120c6c\n    - clipgt-9f20476f-6ef6-46f4-a77c-ac511fde19a1\n    - clipgt-825dc886-0491-482a-abe3-e1743f5972b8\n    - clipgt-994977b5-4db6-43eb-950a-c0faaccc930b\n    - clipgt-8578f2c7-70a0-4877-980a-7ba65bcded30\n    - clipgt-7eaac028-ff62-4f54-9cca-52c8f49ba87e\n    - clipgt-82da2d46-4ec7-4f8c-8f54-e6febb1c303b\n    - clipgt-89c2e887-cffa-4b7c-86cf-80b89be1cb06\n    - clipgt-8a97e5f9-a699-48ff-acc3-0a3c28253d9d\n    - clipgt-7c05aee0-88f1-4338-a48b-5cbe24d5b888\n    - clipgt-7d994ed3-d15f-4c0d-a0ff-fd36ba005726\n    - clipgt-a206d733-17d2-407f-85a2-5db9f57705ea\n    - clipgt-7b3070bd-8d4d-4394-bced-f89b0467a107      \n```\n\n**Expected behavior**\nalpasim should process all clips\nA clear and concise description of what you expected to happen.\n\n\n**Desktop (please complete the following information):**\n - OS: Ubuntu 24.04.4 LTS \n - Nvidia driver/CUDA version (e.g. from `nvidia-smi`):\n``` shell\n# host:\n nvidia-smi \nMon Mar 30 11:25:49 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 580.126.09             Driver Version: 580.126.09     CUDA Version: 13.0     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA GeForce RTX 3080        Off |   00000000:19:00.0 Off |                  N/A |\n| 36%   70C    P2            124W /  320W |    8472MiB /  10240MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n|   1  NVIDIA GeForce RTX 3080        Off |   00000000:1A:00.0 Off |                  N/A |\n| 30%   51C    P8             23W /  320W |      15MiB /  10240MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n|   2  NVIDIA GeForce RTX 3080        Off |   00000000:67:00.0 Off |                  N/A |\n| 32%   55C    P8             23W /  320W |      15MiB /  10240MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n|   3  NVIDIA GeForce RTX 3080        Off |   00000000:68:00.0 Off |                  N/A |\n| 31%   52C    P8             24W /  320W |      15MiB /  10240MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|    0   N/A  N/A            2003      G   /usr/lib/xorg/Xorg                       18MiB |\n|    0   N/A  N/A          462006      C   /repo/.venv/bin/python3                 602MiB |\n|    0   N/A  N/A          462100      C   scripts/pycena/pycena_run_cc           7828MiB |\n|    1   N/A  N/A            2003      G   /usr/lib/xorg/Xorg                        4MiB |\n|    2   N/A  N/A            2003      G   /usr/lib/xorg/Xorg                        4MiB |\n|    3   N/A  N/A            2003      G   /usr/lib/xorg/Xorg                        4MiB |\n+-----------------------------------------------------------------------------------------+\n\n# DGX-Spark:\nnvidia-smi \nMon Mar 30 13:11:00 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 590.48.01              Driver Version: 590.48.01      CUDA Version: 13.1     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA GB10                    On  |   0000000F:01:00.0 Off |                  N/A |\n| N/A   69C    P0             43W /  N/A  | Not Supported          |     93%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|    0   N/A  N/A            2484      G   /usr/lib/xorg/Xorg                       19MiB |\n|    0   N/A  N/A            2606      G   /usr/bin/gnome-shell                      6MiB |\n|    0   N/A  N/A          255874      C   /repo/.venv/bin/python3               22862MiB |\n+-----------------------------------------------------------------------------------------+\n```\nThank you!\nAndreas",
+ "closedAt": "2026-03-31T11:37:00Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hey, thanks you for reporting! I'll push a new container version soon (the NuRec team just released an updated version) and will ping you here, hopefully that fixes that.\n",
+   "createdAt": "2026-03-30T12:10:57Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "awesthue-iav"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for the quick reply,\n\nlooking forward, testing it. ",
+   "createdAt": "2026-03-30T12:18:49Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Can you try following command to repro the issue? I don't see the CUDA error with it.\n\nuv run alpasim_wizard +deploy=local wizard.log_dir=$PWD/muti_scenes scenes.scene_ids=['clipgt-02eadd92-02f1-46d8-86fe-a9e338fed0b6','clipgt-a309e228-26e1-423e-a44c-cb00aa7378cb','clipgt-804afc4a-fd1e-4f58-bd39-a4c486a916e5','clipgt-81b0e06d-96e6-4832-99c1-a4084b54ca97','clipgt-9b3509c2-a5fa-42c0-b0e5-feb617e9bf4e','clipgt-90d1908c-9fdc-40ea-a5a1-351240aa323e','clipgt-7c4f23b7-be14-4505-b332-6d1ceb36cd75']",
+   "createdAt": "2026-03-30T22:41:26Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "awesthue-iav"
+   },
+   "authorAssociation": "NONE",
+   "body": "Hi @daehyoungko \nThanks for suggestion. I already tried it this way. In fact I tried this before moving the clips into the deployment config file.\nMy workaround is to start the alpasim_wizard in a script that loop through the clips in data/scenes/sim_suites.csv and start each clip separately. So after each clip, the containers are restarted. This works so far.\n\nI wonder if it is possible, that the GPU memory is not sufficient (4  * 3080 GPUs with 10 GB each) for NuRec? Is there a way to configure alpasim to utilize two GPUs for one NuRec session? Can NuRec make use of more than one GPU?\nThe option  `gpuss [0,1]` in the `sensorsim` section of  the deployment config just seems to increase the number of sensorsim containers instead of assigning both GPUs to one container.\n",
+   "createdAt": "2026-03-31T07:43:00Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Good point about the memory. I'd assume the error to look different, but maybe?\nQuick question: You say you have four GPUs, but in the config you shared, you're only using the first one? \nFor reducing the memory footprint of NuRec, try setting `defines.nre_cache_size` to 1 or 2.",
+   "createdAt": "2026-03-31T07:58:51Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "awesthue-iav"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Good point about the memory. I'd assume the error to look different, but maybe? Quick question: You say you have four GPUs, but in the config you shared, you're only using the first one? For reducing the memory footprint of NuRec, try setting `defines.nre_cache_size` to 1 or 2.\n\nSorry for the confusion. I already changed the GPU config to make use of different GPUs per microservice. My current config looks like this:\n``` yaml\nservices:\n  # No driver service needed - it's external\n\n  sensorsim:\n    replicas_per_container: 1 # Number of service replicas per container\n    gpus: [1,2] # GPUs to create containers on     \n\n  physics:\n    replicas_per_container: 1\n    gpus: [0]\n```\nI hoped, that this way, sensorsim would get two GPUs that can could share the memory, but it actually creates two separate sensorsim containers:\nsensorsim-0 which uses GPU 0 and sensorsim_1 which uses GPU 1. \nIs this the desired behavior?\n\nRegarding the cache setting, I'll give it a try and report back",
+   "createdAt": "2026-03-31T08:22:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Yeah, we don't support multi-GPU containers at the moment. But each scene is only a couple of GB large, so for NuRec that shouldn't be necessary. \nBut the default cache size is 4... which _could_ be just a bit too much for 10GB. \nPlease let me know if reducing it works.",
+   "createdAt": "2026-03-31T08:24:37Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This PR updates the NuRec container, you can try it as well: #63 ",
+   "createdAt": "2026-03-31T09:11:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "awesthue-iav"
+   },
+   "authorAssociation": "NONE",
+   "body": "> But the default cache size is 4... which _could_ be just a bit too much for 10GB. Please let me know if reducing it works.\n\nLooking good! With `defines.nre_cache_size:2`.\nRunning now for 3+ hours without any crash.\n\nRegarding the PR, I will have a look later this week. \n\nThank you very much  for the help\n",
+   "createdAt": "2026-03-31T11:35:44Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Nice, happy it works. Closing the issue but feel free to reopen as needed.",
+   "createdAt": "2026-03-31T11:37:00Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-03-30T11:39:14Z",
+ "labels": [],
+ "number": 62,
+ "state": "CLOSED",
+ "title": "CUDA error, when processing multiple clips",
+ "_updatedAt": "2026-03-31T11:37:00Z"
+}

@@ -1,0 +1,58 @@
+{
+ "author": {
+  "login": "kokun66"
+ },
+ "body": "uv run alpasim_wizard deploy=local_arm topology=1gpu driver=vavam wizard.log_dir=$PWD/tutorial\nfailed as:\n! renderer-0                            The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested ",
+ "closedAt": "2026-07-14T22:58:17Z",
+ "comments": [
+  {
+   "author": {
+    "login": "kokun66"
+   },
+   "authorAssociation": "NONE",
+   "body": "I tried it on DGX Spark, which is claimed in \"local_arm.yaml\".",
+   "createdAt": "2026-07-14T19:49:40Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The root issue is that there is no public ARM image that has been released for NuRec. I spoke with that team today and they hope to have something ready by around September. In the meantime, I've created a internal change to remove this misleading file (sorry for the confusion).",
+   "createdAt": "2026-07-14T21:42:18Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Removed that file to remove the confusion. I'm closing this issue, but feel free to ask additional questions or raise other issues.",
+   "createdAt": "2026-07-14T22:58:17Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-14T18:56:38Z",
+ "labels": [],
+ "number": 117,
+ "state": "CLOSED",
+ "title": "deploy=local_arm failed",
+ "_updatedAt": "2026-07-14T22:58:17Z"
+}

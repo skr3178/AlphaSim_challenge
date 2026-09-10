@@ -1,0 +1,99 @@
+{
+ "author": {
+  "login": "mycodereview"
+ },
+ "body": "**Describe the bug**\n\nexecute :  alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial\n\ncan't download docker image, docker.io/nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 \n\nIs the image private?\n\n**To Reproduce**\n\nSteps to reproduce the behavior:\n\n1. Go to 'alpasim' direcotry\n2. source setup_local_env.sh\n3. export HF_TOKEN=my HF token'\n4. export ALPAMAYO_S3_SECRET=\"1234567\"\n5. alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial\n6. ERROR [controller-0 internal] load metadata for docker.io/nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04          30.0s \n\n**Expected behavior**\n\n simulator run \n\n**Screenshots**\n\n<img width=\"2300\" height=\"1126\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/bef356c5-07d6-4c87-951d-2896d5038cdb\" />\n\n**Desktop (please complete the following information):**\n\n- OS:\n PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\n\n- Nvidia driver/CUDA version (e.g. from `nvidia-smi`):\n-\nNVIDIA-SMI 580.95.05              Driver Version: 580.95.05      CUDA Version: 13.0 \n\n**Additional context**\n\nAdd any other context about the problem here.\n\nsame error by running below command directly:\n\ndocker compose -f docker-compose.yaml --profile sim up\n\n\n",
+ "closedAt": "2026-01-16T13:58:25Z",
+ "comments": [
+  {
+   "author": {
+    "login": "Vi0letYan"
+   },
+   "authorAssociation": "NONE",
+   "body": "same error in Ubuntu 22.04",
+   "createdAt": "2026-01-12T09:43:59Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mycodereview"
+   },
+   "authorAssociation": "NONE",
+   "body": "I fixed this issue by a workaround:\nfirst docker login\uff0c then manually execute docker\uff1a pull nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 \nthe build can continue.\n\nThere is another error:  eval-0-1  | Traceback (most recent call last):\n\neval-0-1  |   File \"/repo/.venv/bin/alpasim-eval\", line 10, in <module>\neval-0-1  |     sys.exit(main())\neval-0-1  |              ^^^^^^\neval-0-1  |   File \"/repo/src/eval/src/eval/main.py\", line 275, in main\neval-0-1  |     raise ValueError(\neval-0-1  | ValueError: No files found in /mnt/log_dir/asl/**/*.asl. This case should be handled by the wizard by not dispatching KPIs at all.\n\nand \n\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/frame.py\", line 2429, in collect\npost_eval_aggregation-0-1  |     return wrap_df(ldf.collect(engine, callback))\npost_eval_aggregation-0-1  |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  | FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet\n\n\n",
+   "createdAt": "2026-01-13T01:19:29Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "xingaoli"
+   },
+   "authorAssociation": "NONE",
+   "body": "> I fixed this issue by a workaround: first docker login\uff0c then manually execute docker\uff1a pull nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 the build can continue.\n> \n> There is another error: eval-0-1 | Traceback (most recent call last):\n> \n> eval-0-1 | File \"/repo/.venv/bin/alpasim-eval\", line 10, in eval-0-1 | sys.exit(main()) eval-0-1 | ^^^^^^ eval-0-1 | File \"/repo/src/eval/src/eval/main.py\", line 275, in main eval-0-1 | raise ValueError( eval-0-1 | ValueError: No files found in /mnt/log_dir/asl/**/*.asl. This case should be handled by the wizard by not dispatching KPIs at all.\n> \n> and\n> \n> post_eval_aggregation-0-1 | File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/frame.py\", line 2429, in collect post_eval_aggregation-0-1 | return wrap_df(ldf.collect(engine, callback)) post_eval_aggregation-0-1 | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ post_eval_aggregation-0-1 | FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet\n\nDeleting this working directory and rerunning might be helpful.",
+   "createdAt": "2026-01-13T07:46:37Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "xionghaixia-xhx"
+   },
+   "authorAssociation": "NONE",
+   "body": "> > I fixed this issue by a workaround: first docker login\uff0c then manually execute docker\uff1a pull nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 the build can continue.\n> > There is another error: eval-0-1 | Traceback (most recent call last):\n> > eval-0-1 | File \"/repo/.venv/bin/alpasim-eval\", line 10, in eval-0-1 | sys.exit(main()) eval-0-1 | ^^^^^^ eval-0-1 | File \"/repo/src/eval/src/eval/main.py\", line 275, in main eval-0-1 | raise ValueError( eval-0-1 | ValueError: No files found in /mnt/log_dir/asl/**/*.asl. This case should be handled by the wizard by not dispatching KPIs at all.\n> > and\n> > post_eval_aggregation-0-1 | File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/frame.py\", line 2429, in collect post_eval_aggregation-0-1 | return wrap_df(ldf.collect(engine, callback)) post_eval_aggregation-0-1 | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ post_eval_aggregation-0-1 | FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet\n> \n> Deleting this working directory and rerunning might be helpful.\n\ndid you fix it?",
+   "createdAt": "2026-01-15T06:43:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "xingaoli"
+   },
+   "authorAssociation": "NONE",
+   "body": "> > > I fixed this issue by a workaround: first docker login\uff0c then manually execute docker\uff1a pull nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 the build can continue.\n> > > There is another error: eval-0-1 | Traceback (most recent call last):\n> > > eval-0-1 | File \"/repo/.venv/bin/alpasim-eval\", line 10, in eval-0-1 | sys.exit(main()) eval-0-1 | ^^^^^^ eval-0-1 | File \"/repo/src/eval/src/eval/main.py\", line 275, in main eval-0-1 | raise ValueError( eval-0-1 | ValueError: No files found in /mnt/log_dir/asl/**/*.asl. This case should be handled by the wizard by not dispatching KPIs at all.\n> > > and\n> > > post_eval_aggregation-0-1 | File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/frame.py\", line 2429, in collect post_eval_aggregation-0-1 | return wrap_df(ldf.collect(engine, callback)) post_eval_aggregation-0-1 | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ post_eval_aggregation-0-1 | FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet\n> > \n> > \n> > Deleting this working directory and rerunning might be helpful.\n> \n> did you fix it?\n\nYes. When I rerun the scripts with deleting previous generated working directory, the problem (like No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet) is missing.",
+   "createdAt": "2026-01-15T07:06:54Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "xionghaixia-xhx"
+   },
+   "authorAssociation": "NONE",
+   "body": "> > > > I fixed this issue by a workaround: first docker login\uff0c then manually execute docker\uff1a pull nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04 the build can continue.\n> > > > There is another error: eval-0-1 | Traceback (most recent call last):\n> > > > eval-0-1 | File \"/repo/.venv/bin/alpasim-eval\", line 10, in eval-0-1 | sys.exit(main()) eval-0-1 | ^^^^^^ eval-0-1 | File \"/repo/src/eval/src/eval/main.py\", line 275, in main eval-0-1 | raise ValueError( eval-0-1 | ValueError: No files found in /mnt/log_dir/asl/**/*.asl. This case should be handled by the wizard by not dispatching KPIs at all.\n> > > > and\n> > > > post_eval_aggregation-0-1 | File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/frame.py\", line 2429, in collect post_eval_aggregation-0-1 | return wrap_df(ldf.collect(engine, callback)) post_eval_aggregation-0-1 | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ post_eval_aggregation-0-1 | FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet\n> > > \n> > > \n> > > Deleting this working directory and rerunning might be helpful.\n> > \n> > \n> > did you fix it?\n> \n> Yes. When I rerun the scripts with deleting previous generated working directory, the problem (like No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet) is missing.\n\nThanks! I tried it! It's very helpful!",
+   "createdAt": "2026-01-15T07:09:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thank you @xingaoli for posting the solution! \nRe issue with pulling from docker.io: Not sure what the problem there was, maybe you weren't logged in to docker.io? \nI'll add that to the docs as additional step.",
+   "createdAt": "2026-01-16T13:58:25Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-12T02:59:53Z",
+ "labels": [],
+ "number": 18,
+ "state": "CLOSED",
+ "title": "can't download docker image, docker.io/nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04",
+ "_updatedAt": "2026-01-16T13:58:25Z"
+}

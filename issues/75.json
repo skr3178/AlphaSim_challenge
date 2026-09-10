@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "CoderMoYao"
+ },
+ "body": "After GTC we will release a research integration of AlpaDreams into AlpaSim as a reference workflow for generative closed-loop simulation, enabling the community to build on it and adapt it to their own needs.\n",
+ "closedAt": "2026-04-28T17:52:08Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "AlpaDreams is a multi-team endeavor that is currently being worked on; but, I'll leave it to the product managers to relay this information. \n\nThanks for the interest and apologies that I cannot give more details.",
+   "createdAt": "2026-04-28T17:52:08Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-04-28T08:15:16Z",
+ "labels": [],
+ "number": 75,
+ "state": "CLOSED",
+ "title": "When will AlpaDream be integrated into this repository?",
+ "_updatedAt": "2026-04-28T17:52:08Z"
+}

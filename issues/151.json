@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "xyaram578"
+ },
+ "body": "Team: fyrian-migu\nTrack: nuPlan\n\nSubmission ID:\nba96a1c9-b266-4894-87d4-d8485d04572c\n\nSubmitted image:\n696254625193.dkr.ecr.us-east-1.amazonaws.com/teams/fyrian-migu:raptor-n-v3-final-20260815-191320\n\nResolved image digest:\nsha256:c0da433da1547a23d9811bf12e3d2e4797774882229d6af2e86165dccf0fe098\n\nThe submission was accepted and the expected image digest was resolved successfully.\n\nServer status:\n- failure_code: CONTESTANT_EXITED_EARLY\n- failure_reason: contestant containers exited before driver gRPC readiness completed\n- failed_stage: wait_for_driver_grpc\n- dispatch_blocked_reason: p5_ssm_not_online\n- score: null\n- metrics_s3_uri: null\n\nTimeline:\n- created_at: 2026-08-15T13:49:32Z\n- dispatch_blocked_at: 2026-08-15T13:50:52Z\n- evaluation_started_at: 2026-08-15T13:51:57Z\n- evaluation_completed_at: 2026-08-15T14:01:32Z\n\nServer contestant log URI:\ns3://alpasim-logs-s3-bucket-use1/tracks/nuplan/teams/fyrian-migu/ba96a1c9-b266-4894-87d4-d8485d04572c/runner-logs/contestant-containers.log\n\nWe reproduced startup locally using the exact same image.\n\nThe image runs:\n- as USER=alpasim\n- with a read-only root filesystem\n- with GPU enabled\n- without OOM\n- with the submission ENTRYPOINT unchanged\n\nThe same image successfully loads:\n- Transfuser model /app/checkpoints/model_0060.pth\n- RAPTOR-N adapter /app/raptor_weights/raptor_n_query_trainall.pt\n- RAPTOR-N v3 selector /app/raptor_weights/raptor_n_outcome_core_v3.pt\n\nDriver log:\nLoaded Transfuser model with 4 cameras\nRAPTOR-N adapter loaded\nRAPTOR-N active selector loaded\nInitialized transfuser model\nStarting transfuser driver on 0.0.0.0:6789\n\nWe additionally verified actual gRPC readiness from inside the container:\n\ngrpc.insecure_channel(\"127.0.0.1:6789\")\ngrpc.channel_ready_future(...).result(timeout=5)\n\nResult:\nINTERNAL_GRPC_READY=PASS\n\nHost TCP connectivity to port 6789 also passed after startup.\n\nThe container remained running for more than 120 seconds:\nrunning=true\nexit=0\noom=false\n\nThe exact image also previously completed our local closed-loop evaluation.\n\nCould you please inspect:\nrunner-logs/contestant-containers.log\n\nand determine why the contestant containers exited in the evaluation environment before driver gRPC readiness?\n\nSince no simulation started and no score/metrics were produced, if this was evaluator/infrastructure-side, could this submission be rerun without consuming another monthly submission, or could the submission count be restored?\n\nThank you.",
+ "closedAt": "2026-08-17T08:36:00Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "We inspected the archived runner artifacts for submission ba96a1c9-b266-4894-87d4-d8485d04572c. The reported gRPC-readiness failure was a consequence of the driver processes exiting during startup, rather than an evaluator networking or dispatch issue.\n\nAll 16 contestant replicas exited with code 1 (and were not OOM-killed) while loading the model. Their logs contain the same error:\n\n    Exception: Unknown GPU name: nvidia h100 80gb hbm3\n\nThe traceback originates in the RAPTOR-N/Transfuser model configuration's GPU-name handling. The evaluation host was an H100 machine, and the submitted image did not recognize that GPU name, so no driver reached gRPC readiness and no simulation or metrics were produced.\n\nThe `p5_ssm_not_online` status was an earlier dispatch-delay condition; it is unrelated to the startup failure once the evaluation began. The GPU-driver warning in the readiness-probe log is also not the cause\u2014the probe container is intentionally run without GPU access.\n\nI'm going to close this, but, if you feel like there is something else or you have other questions. please feel free to reopen",
+   "createdAt": "2026-08-17T08:36:00Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-15T14:33:26Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 151,
+ "state": "CLOSED",
+ "title": "nuPlan submission exits before driver gRPC readiness despite same image passing isolated local gRPC readiness",
+ "_updatedAt": "2026-08-17T08:36:01Z"
+}

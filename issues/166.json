@@ -1,0 +1,51 @@
+{
+ "author": {
+  "login": "alxpng"
+ },
+ "body": "## Summary\n\nFirst of all, thank you for organising the challenge and for pinning the evaluator during the soft-open period \u2014 it has made local reproduction of the per-scene score straightforward.\n\nAs the soft-open period closes, we would be grateful for some clarification on how the PAI-track leaderboard is computed. Two things we noticed in the leaderboard API snapshot of 2026-08-28 prompted the questions below; we may well be missing something, so please treat these as questions rather than reports:\n\n1. The displayed rank order does not always appear to follow `policy_capability_score`.\n2. Two of our submissions appear in the opposite order on the leaderboard from their per-scene scores on the public NuRec scenes, computed with the pinned evaluator.\n\n## Observation 1 \u2014 rank order vs. `policy_capability_score`\n\nIn the snapshot, for 34 of 99 adjacent rank pairs the lower-ranked entry shows the higher score, including at the top of the board:\n\n| Rank | `policy_capability_score` |\n| --: | --: |\n| #1 | 1637.3 |\n| #2 | 1648.1 |\n| #4 | 1604.8 |\n| #5 | 1624.8 |\n| #10 | 1581.3 |\n| #11 | 1599.0 |\n\n`best_score` equals `policy_capability_score` for every entry, so this does not seem to be a best-vs-current distinction \u2014 but we may be misreading the fields.\n\n## Observation 2 \u2014 per-scene scores vs. leaderboard order\n\nUsing the pinned evaluator (`e2e_challenge@6b24e01`) we are able to reproduce `score_rollout` per scene exactly. On the 916 public NuRec 26.01 scenes (857 with results for both policies), the two submissions below come out in the opposite order from the leaderboard:\n\n| Submission | Tag | Incidents-at-fault spacing | `dist_to_gt_trajectory` | Local mean scene score (857 public scenes) | Leaderboard score | Rank |\n| :-- | :-- | --: | --: | --: | --: | --: |\n| `297bf12d-d665-4e00-b6a5-42040fc2eadb` | `never_gonna_give_you_up` | 0.695 | 2.479 | 0.805 | 1271.9 | #47 |\n| `6f8a7bc0-42b2-49c1-895e-1ae613e400ef` | `baseline-k5-medoid` | 0.435 | 2.823 | 0.620 | 1637.3 | #1 |\n\nWe are aware that the local column is computed on the public scenes rather than the hidden set, so a different outcome is entirely possible; we include it only to show that the per-scene stage reproduces on our side. Our question is really about the aggregation step that follows.\n\n## Questions\n\n1. **Final ranking criteria.** Will the final ranking be based on `policy_capability_score` alone, or also on other columns such as `avg_dist_between_incidents_at_fault`? For the final re-runs of the top policies with the Harmonizer enabled, how will the top set be selected?\n2. **Rank computation.** What is the displayed `rank` computed from, and when is it refreshed relative to the scores?\n\n## Context\n\n- Track: PAI\n- Evaluator: `e2e_challenge@6b24e01`\n- Team: `team-alphamale` (ILoveAlpamayo)\n- Related: #133, where it was kindly confirmed that the IRT input is the per-rollout `score` from `scene_score.py` and that the algorithm is `zoib` (kesai-labs/drive-irt). The questions above concern the ranking and final-evaluation rules on top of that.\n\nThank you very much for your time \u2014 any clarification would help us, and likely other teams, iterate against the intended objective.\n",
+ "closedAt": "2026-08-28T10:09:36Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thank you for the analysis. Your observation is correct: the displayed PAI rank is not sorted by `policy_capability_score` alone.\n\nThe current leaderboard computes a posterior rank interval from the IRT model and orders entries by the better (smaller) upper bound of that interval. When entries have the same upper-bound rank, it breaks ties using average distance between at-fault incidents (higher is better), then the point-estimate rank. Consequently, a lower-ranked entry can show a higher Policy Capability Score. Additionally, the leaderboard is recomputed each time a new submission comes in and, due to the nature of the algorithm, ordering can change as more and more diverse submissions are received. We plan on publishing this in the challenge branch soon so that you can rerun the algorithm locally. Additionally, when the challenge reopens, we'll add more information to the leaderboard so as to address some of your concerns.\n\nFor the final set, it is currently not finalized and will likely depend upon the rank spreads. But, we plan to take the top ~5 (subject to change) from the PAI track for the rerun.\n\n\nI think this addresses your concerns, so I'll close the thread; but, feel free to reopen or ask more questions once we've posted the implementation.",
+   "createdAt": "2026-08-28T10:09:36Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "alexcodigo84"
+   },
+   "authorAssociation": "NONE",
+   "body": "I'm attaching myself to this discussion as I'm seeing a similar discrepancy with the policy capability score, leading to a relative ordering that is opposite from what I would have expected. My results closely mirror what @alxpng reported in Table 2 (\"Observation 2\"): locally, my model clearly outperforms the baseline (e.g., Vavam sample submission) by a wide margin \u2013 roughly 2\u00d7 better across key metrics, including mean scene score. However, on the public leaderboard, this relationship completely flips, with my submission receiving a substantially lower policy capability score than the baseline, while e.g. still achieving a good rank on avg-distance-between at-fault-incidents.\n\nWhile minor rank swaps are expected when scores are tight, here the policy capability score appears entirely decoupled from the other performance metrics. Since I believe this part of the question has not been answered yet, could you maybe shed some light on what might be causing this disconnect?",
+   "createdAt": "2026-08-31T10:42:36Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "We'll be adding the usage soon so you can take a closer look. The scene score really is the most important aspect, and it's not necessarily the average of the scene score that matters due to weighting in the fit. I would need to look more closely at your results, but there are three things that might explain what you observe:\n1. the dataset used is a private dataset not published anywhere, so the results will vary\n2. a policy can get a very high \"distance between at-fault incidents\" by simply braking hard due to the current evaluation implementation. This will not result in a very high scene score and highlights the case where the two metrics don't increase together\n3. the competition was still using an older version of the repo to keep things stable, so if you ran your tests locally on a more recent version, that could explain some of the differences you see",
+   "createdAt": "2026-08-31T11:48:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-28T09:19:40Z",
+ "labels": [],
+ "number": 166,
+ "state": "CLOSED",
+ "title": "[E2E Challenge] Question: leaderboard rank ordering and final ranking criteria (PAI track)",
+ "_updatedAt": "2026-08-31T11:48:47Z"
+}

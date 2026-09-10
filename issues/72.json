@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "crom592"
+ },
+ "body": "## Environment\n\n- **Platform**: KADaP (Korea Automotive Data Platform) \u2014 a Kubernetes-based GPU-as-a-Service platform\n- - **GPU**: NVIDIA L40S (45GB)\n- - - **CUDA Driver**: 550.90.12 (supports up to CUDA 12.4)\n- - - - **Host OS**: Ubuntu 22.04 (glibc 2.35)\n- - - - - **AlpaSim**: latest main branch\n## Problem\n\nI'm trying to run AlpaSim (Tutorial Level 3 \u2014 individual processes) on KADaP, which provides GPU pods via Kubernetes. **Docker-in-Docker is not available** on this platform due to Kubernetes security policies. This means I cannot use the standard `wizard.py` workflow that pulls and runs the NRE sensorsim Docker image (`nvcr.io/nvidia/nre/nre-ga:26.02`).\n\nI successfully run `physics`, `controller`, and `driver` (VaVAM) as individual processes. However, I'm stuck on **sensorsim (NRE)** \u2014 this is the critical missing piece.\n\n## What I've Tried\n\n### 1. Extract and run NRE from container image (using `crane` + `proot`)\n\nI used `crane export` to download and extract the NRE-GA 26.02 container image as a flat filesystem (~27GB). Then I used `proot` to chroot into the extracted rootfs and run the NRE binary:\n\n```bash\nproot -r /path/to/nre-rootfs -b /dev -b /proc -b /sys \\\n  -b /usr/lib/x86_64-linux-gnu/libcuda.so.1 \\\n  -b /usr/lib/x86_64-linux-gnu/libnvidia-ml.so.1 \\\n  -w /app/internal/scripts/pycena/runtime/pycena_run.runfiles/_main \\\n  /app/internal/scripts/pycena/runtime/pycena_run serve-grpc \\\n  --port=6001 --host=0.0.0.0 --artifact-glob='/mnt/nre-data/scenesets/**/*.usd' \\\n  --no-enable-nrend --cache-size=5 --max-workers=4\n```\n\n**Result**: The binary starts but fails with:\n- `No module named 'l1l1l1l1l1l1l1l1l1l1l1l1'` \u2014 This appears to be a **PyArmor obfuscation** module that only works within the original Docker container environment.\n- - `No CUDA runtime is found` \u2014 The NRE image requires CUDA 12.8, but the host driver only supports up to CUDA 12.4.\n### 2. Direct execution with container's ld-linux\n\nUsed the container's `ld-linux-x86-64.so.2` (glibc 2.39) to run the binary directly on the host. Same obfuscation module error.\n\n## Questions\n\n1. **Is there an officially supported way to run NRE sensorsim without Docker?** For example, as a standalone binary, via `enroot`, Singularity/Apptainer, or any other unprivileged container runtime?\n2. In Issue #27, it was mentioned that the NVIDIA team uses `enroot` for non-root environments. Could you provide guidance on how to set up `enroot` to run the NRE sensorsim image? Are there specific flags or environment variables needed?\n3. **Is there a way to disable or work around the PyArmor obfuscation** when running outside Docker? The `l1l1l1l1l1l1l1l1l1l1l1l1` module seems to be a protection mechanism that prevents execution outside the intended container.\n4. **CUDA version compatibility**: The NRE-GA 26.02 image requires CUDA 12.8, but our platform's driver (550.90.12) only supports up to CUDA 12.4. Is there an older NRE image that works with CUDA 12.4, or does NRE support CUDA forward compatibility libraries?\n5. Would it be possible to provide a **statically-linked or less restricted NRE binary** that can run in Kubernetes pods without requiring Docker-in-Docker?\n## Context\n\nThis is related to Issue #27 (running without root/Docker) and Issue #17 (NRE image references). Many cloud GPU platforms (like KADaP, Lambda, CoreWeave managed Kubernetes) don't allow Docker-in-Docker, which makes the sensorsim component impossible to run with the current setup.\n\nThank you for any guidance!",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hi, this one is tricky. I'm aware of the restrictions of deploying NRE, but unfortunately there's not too much we can do short term. \n\nRegarding your questions:\n\n1.) Not that I'm aware of, but also looping in @daehyoungko , maybe he knows more?\n2.) I'm not familiar with how enroot is set up in our cluster. The way we call it is through slurm `srun` - you can check the `slurm.py` for the exact commands.\n3.) Not that I'm aware of.\n4.) There is an older image, but it won't work with some of the other newer changes on `main`. You should be able to find it in the git history, together with a state of the simulator that works with it. Note that it also requires the `25_07` hugginface data revision. \n5.) I don't think there's much that can be done on the NRE binary side - the obfuscations are intentional atm. This is a separate team from us, so I'm not sure what their exact plans/timelines are and whether/when they will release something less restrictive. \n\nThat all being said: My (very limited) understanding of K8n is that it can run containers in pods? Is the K8n system you have able to run a single NRE container in a separate pod? Because in that case, you could run NRE in a separate pod and then connect to it from the rest of AlpaSim, which would run in a separte pod. Would that work?\n",
+   "createdAt": "2026-04-17T08:21:13Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "NuRec(NRE) released as a proprietary NVIDIA product, and it is docker container on NGC. and the obfuscations are intention as proprietary product.\n\n@crom592 \nOut of curiosity,  Can you follow  Tutorial Level 1,2 without any issue? if so, I am not sure about \"docker in docker is not available\" on your system.  Every services are docker container.",
+   "createdAt": "2026-04-17T18:07:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-04-17T04:49:00Z",
+ "labels": [],
+ "number": 72,
+ "state": "OPEN",
+ "title": "How to run NRE sensorsim without Docker? (Kubernetes GPU-as-a-Service environment)",
+ "_updatedAt": "2026-04-17T18:07:47Z"
+}

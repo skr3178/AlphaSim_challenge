@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "RyanLiu999"
+ },
+ "body": "Hi AlpaSim Challenge Team,\n\nI have a question regarding the definition of \"E2E Closed Loop\" in the AlpaSim E2E Closed Loop Challenge.\n\nDoes \"closed loop\" mean that only the ego vehicle is simulated in a closed-loop manner, while the behaviors or trajectories of other surrounding agents remain open-loop or predefined?\n\nMore specifically, are surrounding agents able to react interactively to the ego vehicle's actions and intentions?\n\nFor example, suppose the ego vehicle decides to perform a lane change and cut into a target lane where another vehicle is already driving. Would that vehicle react to the ego vehicle's cut-in behavior\u2014for example, by slowing down or adjusting its trajectory to create space\u2014or would it continue following its original predefined trajectory regardless of the ego vehicle's actions?\n\nIn other words, I would like to understand whether the simulation supports closed-loop interaction between the ego vehicle and other agents, or whether the closed-loop behavior applies only to the ego vehicle.\n\nThank you!\n\nRyan",
+ "closedAt": "2026-07-27T15:32:52Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "For this iteration of the challenge, the behaviors of the contenders are fixed based on the recording. Collisions do not result in failures when the ego is not \"at fault\" for the collision (heuristic based on the part of the ego that first collides with a contender).\n\nWhile the GitHub repo recently added traffic simulation on the main branch, this capability does not exist in the challenge. The current plan is that we might have some future iteration of the challenge where we enable the traffic model and maybe even a video model, but this is all preliminary.\n\nI'll close this, but feel free to reopen if you have additional questions.",
+   "createdAt": "2026-07-27T15:32:52Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-20T02:25:46Z",
+ "labels": [],
+ "number": 123,
+ "state": "CLOSED",
+ "title": "[AlpaSim E2E Closed Loop Challenge] Definition of \"E2E Closed Loop\"",
+ "_updatedAt": "2026-07-27T15:32:52Z"
+}

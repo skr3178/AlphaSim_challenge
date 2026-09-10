@@ -1,0 +1,70 @@
+{
+ "author": {
+  "login": "im-hashim"
+ },
+ "body": "<img width=\"1033\" height=\"544\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/f32a7b71-6570-4396-a1db-c50b5ff21119\" />",
+ "closedAt": "2026-02-03T01:14:08Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I'm not quite sure what you are trying to do; but, you're definitely outside the boundaries of what is supported for the open source code. We have included some code that might inspire others on how to use the repo on a slurm cluster but haven't gone so far as to actually support this. \n\nAt the very least, you'll need to update some paths to continue on this path.",
+   "createdAt": "2026-02-02T21:41:33Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "im-hashim"
+   },
+   "authorAssociation": "NONE",
+   "body": "@mwatson-nvidia  \n\nI was trying to run build.sh to manually complile the docker image: alpasim-vam-driver:1.0.0_dev \n\nI couldn't download the docker container over my corporate network, so found this script in source and was attempting..",
+   "createdAt": "2026-02-02T22:54:03Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "There are two containers that are probably most important:\n1. the alpasim base container (defined from the main Dockerfile). This is usually build through the docker compose command, but it seems like maybe you already built this from the screenshot, but I can't be sure because you didn't include enough information.\n2. The docker image for nurec. **If you can't download this, you won't be able to run the simulation** as there is no way to build this from source (docker.io/carlasimulator/nvidia-nurec-grpc:0.2.0)\n\n\n",
+   "createdAt": "2026-02-02T23:49:11Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "im-hashim"
+   },
+   "authorAssociation": "NONE",
+   "body": "yes, I confirm the base container is built successfully.\n\nThanks for letting me know that it cannot be built from source. \nI will try shift my focus to dowloading (hub.docker.com/r/carlasimulator/nvidia-nurec-grpc) from an external network then, and keep moving. ",
+   "createdAt": "2026-02-03T01:14:08Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-02T20:04:18Z",
+ "labels": [],
+ "number": 31,
+ "state": "CLOSED",
+ "title": "during ./build.sh: Could not resolve hostname nvpark: Name or service not known",
+ "_updatedAt": "2026-02-03T01:14:09Z"
+}

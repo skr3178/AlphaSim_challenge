@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "jenspetersen"
+ },
+ "body": "I'm wondering if you have any experience running the sensorsim service as non-root (e.g. by setting `user: $UID:$GID` in the docker-compose.yaml). If I try that, I get this ModuleNotFoundError reported [here](https://github.com/NVlabs/alpasim/issues/23). I tried building from the image and chmodding a bunch of folders, but so far no luck.\nMy goal is to read data from a NFS with root squashing. Any ideas?\n\nThanks!",
+ "closedAt": "2026-03-20T17:35:22Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Internally, we use enroot to run the containers in unprivileged environments: https://github.com/NVIDIA/enroot . I don't think anyone has done this, but maybe an outline of what you might try would be:\n1. create a sqsh file for the sensorsim image\n2. bring up that service from enroot\n3. use the alpasim wizard to create the configurations and kick off everything but the sensorsim service using \"docker compose\". https://github.com/NVlabs/alpasim/blob/main/docs/TUTORIAL.md#breakpoint-debugging-example-with-the-controller is something you might use for inspiration\n\nHope this helps!",
+   "createdAt": "2026-01-28T00:38:06Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Closing for now but feel free to reopen.",
+   "createdAt": "2026-03-20T17:35:23Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-27T17:47:49Z",
+ "labels": [],
+ "number": 27,
+ "state": "CLOSED",
+ "title": "How to run sensorsim / NuRec container as non-root",
+ "_updatedAt": "2026-03-20T17:35:23Z"
+}

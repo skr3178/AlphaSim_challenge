@@ -1,0 +1,51 @@
+{
+ "author": {
+  "login": "DavideA"
+ },
+ "body": "Hi,\nand thank you for sharing your work.\n\nIs there a tutorial on how to write a custom sensorsim environment starting from the protobuf definitions? The overall design seems to allow for a custom container, but I couldn't find any example for creating a new sensorsim specifically.\n\nThanks!",
+ "closedAt": "2026-03-20T17:34:41Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "No, there unfortunately isn't a tutorial yet. We're working on making this easier by simplifying the API, but we're not there yet. \n\nBut yes, one can swap the container out - this was one of the design goals of AlpaSim. I assume you already have a renderer that you'd want to use? ",
+   "createdAt": "2026-01-27T16:29:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "+1 to what Max said. Also, this might be a good starting point:\nhttps://github.com/NVlabs/alpasim/blob/main/docs/TUTORIAL.md#custom-container-images\n\n",
+   "createdAt": "2026-01-27T17:59:25Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Closing for now. Also see #56 as one step towards making integration of other renderers easier.\nThat MR unifieds the data interface of AlpaSim.",
+   "createdAt": "2026-03-20T17:34:41Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-27T16:23:07Z",
+ "labels": [],
+ "number": 26,
+ "state": "CLOSED",
+ "title": "Custom sensorsim environment",
+ "_updatedAt": "2026-03-20T17:34:41Z"
+}

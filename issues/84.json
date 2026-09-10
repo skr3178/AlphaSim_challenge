@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "cheundw-dot"
+ },
+ "body": "## Description\n\nIn AlpaSim 0.70.0, `GroundTruthScorer` raises a `ValueError` when the ground truth trajectory duration is slightly shorter than the simulation duration. The same scenes complete successfully in 0.57.0.\n\n## Steps to Reproduce\n\n1. Run closed-loop evaluation on a scene where GT trajectory is shorter than `n_sim_steps * step_duration` (e.g., GT = 19.8s, sim = 20s)\n2. `GroundTruthScorer` calls `interpolate_to_timestamps()` with the final simulation timestamp\n3. The Rust interpolation backend raises:\n```\nValueError: Interpolation timestamp 1552440215162591 outside range [1552440195362591, 1552440215162554)\n```\n\n## Impact\n\n- `GroundTruthScorer` and `MinADEScorer` both fail \u2192 `dist_to_gt_trajectory`, `progress`, `dist_traveled_m` columns are not generated\n- `aggregation_modifiers.max_dist_to_gt_trajectory` then references the missing column \u2192 **entire run crashes** (exit code 1)\n- In batch runs (e.g., 310 scenes), this causes the full aggregation to fail even though simulation itself completed\n\n## Expected Behavior\n\n0.57.0 handles this gracefully (likely clamping to the last available timestamp). The same scene (`waymo-10023947602400723454`) completes without error in 0.57.0.\n\n## Environment\n\n- AlpaSim: 0.70.0 (Docker `alpasim-base:0.70.0`)\n- Sensorsim: `nre-ga:26.02.00`\n- Dataset: Waymo Open Dataset (NuRec USDZ)\n- Config: `n_sim_steps: 195-200`, `force_gt_duration_us: 5000000`\n\n## Workaround\n\nPatch `src/eval/src/eval/aggregation/main.py` to skip `dist_to_gt_trajectory` modifier when the column is missing:\n\n```python\nmodifiers = []\nif \"dist_to_gt_trajectory\" in processed_dfs.df_wide_avg_t.columns:\n    modifiers.append(RemoveTimestepsAfterEvent(\n        pl.col(\"dist_to_gt_trajectory\") >= cfg.aggregation_modifiers.max_dist_to_gt_trajectory\n    ))\n```\n\n## Suggested Fix\n\nEither:\n1. Clamp interpolation timestamps to the available range (restore 0.57.0 behavior), or\n2. Catch the `ValueError` in `GroundTruthScorer.calculate()` and return partial results / skip gracefully",
+ "closedAt": "2026-05-08T04:51:20Z",
+ "comments": [
+  {
+   "author": {
+    "login": "cheundw-dot"
+   },
+   "authorAssociation": "NONE",
+   "body": "**Correction: This is not a 0.70.0 regression.**\n\nAfter further investigation, the minADE scorer returning NaN is not caused by a GroundTruthScorer interpolation regression. The same behavior occurs on AlpaSim 0.57.0.\n\n**Root cause:** The `min_ade` scorer requires the driver to report predicted future trajectories to the runtime via the gRPC API. The Alpamayo driver (both AR1 and A1.5) does not report trajectory predictions in closed-loop mode \u2014 it only sends control commands. Without predicted trajectories, the scorer has nothing to compare against GT and returns NaN.\n\n**Evidence:**\n- Same NaN result on AlpaSim 0.57.0 (verified on our 310-scene Waymo evaluation)\n- `dist_to_gt_trajectory` (ego position vs GT path) works fine (224/304 scenes)\n- The eval-config has `min_ade.target: GT` but no trajectory data is available from the driver\n\n**Resolution:** Closing as invalid. If minADE in closed-loop is desired, a feature request for driver trajectory reporting API would be appropriate.\n\nApologies for the incorrect diagnosis.",
+   "createdAt": "2026-05-08T04:51:13Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "cheundw-dot"
+   },
+   "authorAssociation": "NONE",
+   "body": "Closing - not a bug. See correction comment above.",
+   "createdAt": "2026-05-08T04:51:19Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-05-07T04:44:47Z",
+ "labels": [],
+ "number": 84,
+ "state": "CLOSED",
+ "title": "[0.70.0 regression] GroundTruthScorer crashes on scenes with GT trajectory shorter than simulation duration",
+ "_updatedAt": "2026-05-08T04:51:20Z"
+}

@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "juliene-273"
+ },
+ "body": "Hi,\nI\u2018ve seen in the documentation for the e2e challenge that the policy capability score on the leaderboard is computed with an IRT-based weighting. \nBut I couldn\u2018t find documentation about which metrics are actually used as input to the weighting. Could you share information which metrics are relevant to compute the score?\n\nThanks!",
+ "closedAt": "2026-08-03T15:03:23Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I assume you mean that you saw the link on the HF space page to https://ln2697.github.io/navhard-leaderboard-2/docs/ ?\n\nBut, in terms of the score that we are using and the IRT algorithm, the input to the IRT is a per-rollout \"score\" ( https://github.com/NVlabs/alpasim/blob/e2e_challenge/src/eval/src/eval/aggregation/scene_score.py#L75 ) and the configured IRT algorithm is currently zoib (a continuous Beta-IRT variant), applied uniformly to all eligible submissions. See https://github.com/kesai-labs/drive-irt for the implementation.\n\nI'll work on clarifying this in the documentation soon. Thanks!",
+   "createdAt": "2026-08-03T15:03:23Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-03T11:18:12Z",
+ "labels": [],
+ "number": 133,
+ "state": "CLOSED",
+ "title": "[E2E challenge] Relevant metric(s) for Policy Capability Score",
+ "_updatedAt": "2026-08-03T15:03:23Z"
+}

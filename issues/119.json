@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "kokun66"
+ },
+ "body": "I am trying to build \"Video Model Renderer\" ...\n\nIn step2 of  VIDEO_MODELmd:\ndocker build -t flashdreams-alpasim:local -f docker/Dockerfile.alpasim .\n\n\nBut where is \"Dockerfile.alpasim\"?",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "jatentaki"
+   },
+   "authorAssociation": "CONTRIBUTOR",
+   "body": "Hi @kokun66, thanks for raising that issue. I opened a PR for `flashdreams` with the missing file but this is not the end of the story - there's also a minor adjustment needed on Alpasim side and, more importantly, our latest dataset release is missing some files needed by the video model. I'll update this ticket when the pipeline works.",
+   "createdAt": "2026-07-16T19:49:16Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-15T19:05:33Z",
+ "labels": [],
+ "number": 119,
+ "state": "OPEN",
+ "title": "Dockerfile.alpasim missing?",
+ "_updatedAt": "2026-07-16T19:49:16Z"
+}

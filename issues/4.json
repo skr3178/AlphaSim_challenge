@@ -1,0 +1,40 @@
+{
+ "author": {
+  "login": "YoucanBaby"
+ },
+ "body": "",
+ "closedAt": "2025-12-02T17:33:43Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Code has been released",
+   "createdAt": "2025-12-02T17:33:43Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 2
+     }
+    },
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2025-11-25T11:42:07Z",
+ "labels": [],
+ "number": 4,
+ "state": "CLOSED",
+ "title": "code release",
+ "_updatedAt": "2025-12-02T17:33:44Z"
+}

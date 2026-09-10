@@ -1,0 +1,82 @@
+{
+ "author": {
+  "login": "luongKhaiChuong"
+ },
+ "body": "Hello author. I have some questions about the project:\n- I activated the repository on a GPU RTX 5080, but it failed due to the mismatch compute capability (mine was sm120 vs the requirement was sm90). Now we are considering alternations, but I can not find the explicit minimum requirement for the project. Would you mind provide me a list of requirement needed to run this project smoothly?\n- My team intend to use alpasim as a synthetic data generation and put it against the Carla + Cosmos Transfer 2.5 workflow.\n   + In term of scenario control, which is better?\n   + If our goal is high-fidelity and photorealistic videos, does it still stand?\nThank you for your support",
+ "closedAt": "2026-01-20T08:42:34Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I assume the error was in the NuRec container?\nI'm not an expert on that one as it's maintained by another team, but we're using the same docker container as [here](https://carla.readthedocs.io/en/0.9.16/nvidia_nurec/), so the \"Cuda 12.8 or  higher\" requirement should translate. \nWhat version are you using?",
+   "createdAt": "2026-01-08T08:06:07Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Re comparison to other simulators: I haven't run detailed comparisons and I'm not in-depth familiar with the other setup, so can't comment on that.\nCommenting on AlpaSim:\n* Alpasim is intentionally \"hackable\", so you should be able to modify anything you want if you don't mind going into the code. \n* There is a Trafficsim API to control all traffic agents, though that one is currently not extensively tested, so might be buggy. \n* Re video quality: We currently have a 3DGS based rending in AlpaSim which as the typical advantages and disadvantages: It's fast and it's realistic if you're close to the ground truth trajectory. The further away you go, the larger the artifacts. ",
+   "createdAt": "2026-01-08T08:10:19Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "luongKhaiChuong"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thank you for your reply. The last time I run the project was two weeks ago, so most of the information was lost. Fortunately, I still kept a record of one of the last runs. \n\n[message.txt](https://github.com/user-attachments/files/24491474/message.txt)\n\nBasically, I used the CUDA 12.8, matched the requirement. However, since I used a RTX 5080 at the time, I encountered the sub-optimal problem when it said the compute capability of the project was sm90, while mine was sm120 (line 41), so the sensor simulation part always stumbled into error due to no kernel image (line 126 and 162), resulting in a blank output. I supposed this was the case cause I did a controlled setup as in the tutorial. I did try to tweak the requirement in the repo to sm120 though, but it always got rejected due to the api call from a private docker from Carla in the form of binary file, rejecting any kind of modifications.\n\nAbout the capability of generating videos, I can not validate it cause there is almost none information about the video or image it created on the internet, only a small video on this repository and on the Alpamayo page (basically the same): https://huggingface.co/blog/drmapavone/nvidia-alpamayo, so I am kind of concerned about it. Would you mind provide me a short video, or some demo images about the outputs from alpasim?\n\nThank you for taking your time reading this.",
+   "createdAt": "2026-01-08T09:19:44Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The currently released NuRec (i.e. sensorsim) container doesn't support the Blackwell architecture, but the hopefully so to be released next version will. Unfortunately, there isn't a workaround that I know of in the meantime. ",
+   "createdAt": "2026-01-16T13:50:34Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "im-hashim"
+   },
+   "authorAssociation": "NONE",
+   "body": "> The currently released NuRec (i.e. sensorsim) container doesn't support the Blackwell architecture, but the hopefully so to be released next version will. Unfortunately, there isn't a workaround that I know of in the meantime.\n\n@maximilianigl  thanks for this information,\ncan you please also comment which other GPU architectures are supported at the moment? ",
+   "createdAt": "2026-02-14T04:15:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-08T02:53:57Z",
+ "labels": [],
+ "number": 15,
+ "state": "CLOSED",
+ "title": "Hardware requirement and capability of data generation",
+ "_updatedAt": "2026-02-14T04:15:27Z"
+}

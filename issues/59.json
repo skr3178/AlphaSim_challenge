@@ -1,0 +1,119 @@
+{
+ "author": {
+  "login": "longxiaofei"
+ },
+ "body": "**Describe the bug**\n`offroad` can be triggered at the first evaluation timestep, and this affects the final aggregated driving metrics in `aggregate/metrics_results.txt`.\n\n**To Reproduce**\n1. Run:\n   ```bash\n   uv run alpasim_wizard +deploy=local wizard.log_dir=/data/$TASK_ID services.driver.image=$docker_image_name\n   ```\n2. Open `aggregate/metrics_results.txt` and `aggregate/metrics_unprocessed.parquet`.\n3. Check whether `offroad` is already `1` at the first timestep.\n4. Compare the aggregated results with the raw per-timestep metrics.\n\n**Expected behavior**\n\n\n**Screenshots**\nWill attach related metric files.\n\n**Desktop (please complete the following information):**\n\n\n\n**Additional context**\nWill attach:\n- `metrics_results.txt`\n- `metrics_unprocessed.parquet`(In order to upload to github, I used the txt suffix)\n\n[metrics_results (1).txt](https://github.com/user-attachments/files/26163840/metrics_results.1.txt)\n[metrics_unprocessed.parquet.txt](https://github.com/user-attachments/files/26163841/metrics_unprocessed.parquet.txt)",
+ "closedAt": "2026-04-15T00:26:52Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Ah, interesting. Do you happen to have the clipgt id or an image from the video? \nI wonder what the correct approach here is... I believe removing the clip from the dataset would be the cleanest approach? \n@mwatson-nvidia or @longxiaofei  what do you think?",
+   "createdAt": "2026-03-22T09:54:02Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "longxiaofei"
+   },
+   "authorAssociation": "NONE",
+   "body": "> interesting. Do you happen to have the clipgt id or an image from the video?\n\nHi @maximilianigl \n\nHere are the `metrics_unprocessed.parquet` and the corresponding video for this clip, might help with the investigation.\n\n[metrics_results.txt](https://github.com/user-attachments/files/26164993/metrics_results.txt)\n\n[metrics_unprocessed.parquet.txt](https://github.com/user-attachments/files/26165000/metrics_unprocessed.parquet.txt)\n\n<img width=\"1600\" height=\"1200\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/b25ab156-2273-4a8c-99f1-bbc4756beb6e\" />\n\nhttps://github.com/user-attachments/assets/534e3cc8-3861-40ea-9fdd-e631e50e8194\n",
+   "createdAt": "2026-03-22T10:17:28Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Looks like the map is just wrong here: Black lines denote road borders, blue lines denote lane borders. \nShort term for you, I'd recommend just removing this clip from the list (check the `csv` files under `data`).\nOn our side, we'll have to figure out how to:\na) catch something like this earlier\nb) update the scenesets on an ongoing basis without creating chaos when we find problems like this.\n\nThanks for flagging this!",
+   "createdAt": "2026-03-22T10:23:37Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    },
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "longxiaofei"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks @maximilianigl \n\nAdding some additional context \u2014 this may not be fully accurate.\n\nI haven\u2019t gone through the relevant code in detail yet \u2014 I asked an AI to look into it, and it suggested that:\n\n```\nAn inconsistency in the evaluation window definition causes the initial warm-up / prerun frame to be included in the offroad evaluation. Once offroad is triggered on that first frame, the aggregation truncates subsequent timesteps, ultimately skewing the overall driving score.\n```\n\nI\u2019m not sure if this is accurate, but sharing it here in case it\u2019s helpful.",
+   "createdAt": "2026-03-22T10:30:38Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks! I think this is mostly correct, but the problem isn't the pre-run aggregation, it's that the car starts as \"offroad\" because the map thinks that the lane divider which the car is currently crossing is actually a _road_ border. \nSo even if we exclude the pre-run frames, the metrics will be wrong because we'll (wrongly) flag the car as offroad on the first \"driven\" frame.",
+   "createdAt": "2026-03-22T10:38:56Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 2
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "longxiaofei"
+   },
+   "authorAssociation": "NONE",
+   "body": "@maximilianigl  I got it, thanks.",
+   "createdAt": "2026-03-22T10:44:42Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "There have been a number of clips that we had to remove because the xodr format has some issues. My opinion is that, if this is indeed a map issue (I didn't look carefully at the data), we should bring this up with the team that manages the NuRec artifacts and remove it from the test suite.",
+   "createdAt": "2026-03-23T01:56:38Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-03-22T06:00:47Z",
+ "labels": [],
+ "number": 59,
+ "state": "CLOSED",
+ "title": "Offroad metric may be counted at the first timestep and affect aggregated driving scores",
+ "_updatedAt": "2026-04-15T00:26:52Z"
+}

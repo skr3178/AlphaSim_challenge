@@ -1,0 +1,257 @@
+{
+ "author": {
+  "login": "DavideA"
+ },
+ "body": "Hi, \nand thank you for the great work!\n\nI am interested in running the simulator on my own recordings (i.e. not in the NuRec dataset). \nIs there a tutorial on how to properly format the data? I could only find the expected USDZ structure in [this readme](https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles-NuRec#dataset-format), I was wondering whether there was further info or tutorial for it.",
+ "closedAt": "2026-03-20T17:33:51Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Would you bring your own renderer or would you want to use NuRec, but with your own data?\n\nThere isn't a tutorial for either case. The first case (i.e. bring your own renderer) is something we would like to support more explicitly and are working on it, but don't have a timeline for it yet. However, this is something you could already try yourself and we're happy to help if you have questions. \n\nFor the second case, you'd need to process your data through the NuRec pipeline, which is not yet publicly available. This might be made public in the future, but there also isn't a timeline yet, unfortunately. ",
+   "createdAt": "2026-01-27T16:27:26Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DavideA"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Would you bring your own renderer or would you want to use NuRec, but with your own data?\n\nGood question :D \nIdeally both, but I hear that the former is easier. I can get it started, but what confused me is that other services read the usdz too (e.g. eval, physics, runtime).\n\nSo it seems that in any case I need to go through the NuRec data pipeline to run them, am I right?",
+   "createdAt": "2026-01-27T16:33:33Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Yeah, the data abstraction here isn't great yet. It's one area we want to improve (which is what the `Artifact` class is meant for). \nYou do get _some_ generality because we're using [trajdata](https://github.com/NVlabs/trajdata) under the hood for maps, which support multiple formats. But for agent trajectories we're currently still relying on the usdz format. ",
+   "createdAt": "2026-01-27T16:36:43Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "If you do start working on this, let us know - there is some ongoing work in that direction (both internal and external) so we should make sure we stay in sync in that case. Or you wait a couple of months to see how far we get then :). ",
+   "createdAt": "2026-01-27T16:39:12Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "codedetermination"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Would you bring your own renderer or would you want to use NuRec, but with your own data?\n> \n> There isn't a tutorial for either case. The first case (i.e. bring your own renderer) is something we would like to support more explicitly and are working on it, but don't have a timeline for it yet. However, this is something you could already try yourself and we're happy to help if you have questions.\n> \n> For the second case, you'd need to process your data through the NuRec pipeline, which is not yet publicly available. This might be made public in the future, but there also isn't a timeline yet, unfortunately.\n\nThanks for the insights! Just to follow up on the map requirement: Since handles the maps, is a .xodr file strictly required to initialize the simulation, or is it primarily used for evaluation purposes (e.g., calculating off-road scores)?trajdata\n\nIf I successfully reconstruct the USDZ assets for the agents and environment, would that be enough to run the core simulation/visualization, or does the runtime logic rely on the underlying .xodr for lane-following or physics constraints?",
+   "createdAt": "2026-01-28T13:15:36Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "codedetermination"
+   },
+   "authorAssociation": "NONE",
+   "body": "Regarding the USDZ structure, I am specifically looking into using  3DGRUT\u2014another NVIDIA project\u2014to reconstruct 3D environments and trajectories from my own video recordings.\n\nSince 3DGRUT naturally outputs USDZ files, I was wondering if these assets would be compatible with the NuRec simulation loop? Specifically, are there any unique schemas or metadata requirements in the NuRec USDZ format that 3DGRUT might miss, or should they be theoretically interchangeable for the runtime/physics modules?",
+   "createdAt": "2026-01-28T13:19:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DavideA"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Thanks for the insights! Just to follow up on the map requirement: Since handles the maps, is a .xodr file strictly required to initialize the simulation, or is it primarily used for evaluation purposes (e.g., calculating off-road scores)?trajdata\n> \n> If I successfully reconstruct the USDZ assets for the agents and environment, would that be enough to run the core simulation/visualization, or does the runtime logic rely on the underlying .xodr for lane-following or physics constraints?\n\nI am looking into the same. In my understanding, the runtime does need the map (see [here](https://github.com/NVlabs/alpasim/blob/a54a1b58f6c43b4df9ba671b775f871b2d4e80d1/src/runtime/alpasim_runtime/loop.py#L266), whereas the physics simulation only needs the ply mesh or the ground mesh.\n\nIn my current understanding this is needed by services reading the usdz artifacts:\n\n1. eval service: map.xodr\n2. physics service: ground_mesh.ply or mesh.ply\n3. Runtime: metadata.yaml, rig_trajectories.json, sequence_tracks.json, map.xodr, ground_mesh.ply or mesh.ply\n",
+   "createdAt": "2026-01-28T13:25:18Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The primary use case for the map are indeed the metrics.\nThe runtime is using it for route generation: it projects the GT path onto the center lines, extends those into the future (to minimize information leakage through the _length_ of the route) and uses that as route for the policy.\nThat being said, one can use the GT directly (set `route_generator_type=RECORDED` in `base_config.yaml`), so the map isn't required.\n\nI know that people have run AlpaSim without maps and only a subset of metrics (e.g. collisions). It's possible that the route generator change alone is enough, but it's also possible that there's a couple of additional hickups to work through. But there shouldn't be any large obstacles. @karkuspeter might know more. \n\nRe USDZ structure: Let me find someone from the NuRec team that can hopefully answer this - we're just using their library. \n\nThe ground mesh is needed to project the vehicle(s) onto the ground (which is what we call physics). You can disable physics (see `physics/disabled.yaml`).\n\n`rig_trajectories` and `sequence_tracks` are needed, those provide the GT positions for the Ego and other agents (including initial positions)",
+   "createdAt": "2026-01-28T19:58:57Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DZiYou"
+   },
+   "authorAssociation": "NONE",
+   "body": "> The primary use case for the map are indeed the metrics. The runtime is using it for route generation: it projects the GT path onto the center lines, extends those into the future (to minimize information leakage through the _length_ of the route) and uses that as route for the policy. That being said, one can use the GT directly (set `route_generator_type=RECORDED` in `base_config.yaml`), so the map isn't required.\n> \n> I know that people have run AlpaSim without maps and only a subset of metrics (e.g. collisions). It's possible that the route generator change alone is enough, but it's also possible that there's a couple of additional hickups to work through. But there shouldn't be any large obstacles. [@karkuspeter](https://github.com/karkuspeter) might know more.\n> \n> Re USDZ structure: Let me find someone from the NuRec team that can hopefully answer this - we're just using their library.\n> \n> The ground mesh is needed to project the vehicle(s) onto the ground (which is what we call physics). You can disable physics (see `physics/disabled.yaml`).\n> \n> `rig_trajectories` and `sequence_tracks` are needed, those provide the GT positions for the Ego and other agents (including initial positions)\n\n@maximilianigl Hi,\n\nThanks again for the help! Just wanted to follow up\u2014have you had a chance to connect with anyone from the NuRec team regarding the USDZ requirements?\n\nI am currently experimenting with NuRec's rendering using my own data. I have generated a .ply file via 3DGS (3D Gaussian Splatting) and converted it to a .usdz asset using the scripts provided in the 3DGRUT repository.\n\nHowever, I noticed that the standard NuRec scene structure seems to expect additional files that are missing from my 3DGRUT output, specifically parsed_config.yaml and checkpoints. This has left me a bit stuck on how to properly initialize the renderer for a custom scene.\n\nCould you clarify (or ask the NuRec team):\n\nHow can I adapt a custom 3DGS-based .ply or .usdz for the NuRec rendering pipeline?\n\nAre parsed_config.yaml and specific checkpoints strictly required for rendering, or is there a way to run a \"vanilla\" render of the reconstructed geometry?\n\nThank you so much for your support!",
+   "createdAt": "2026-02-04T03:21:06Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DZiYou"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Regarding the USDZ structure, I am specifically looking into using 3DGRUT\u2014another NVIDIA project\u2014to reconstruct 3D environments and trajectories from my own video recordings.\n> \n> Since 3DGRUT naturally outputs USDZ files, I was wondering if these assets would be compatible with the NuRec simulation loop? Specifically, are there any unique schemas or metadata requirements in the NuRec USDZ format that 3DGRUT might miss, or should they be theoretically interchangeable for the runtime/physics modules?\n@codedetermination \nHi,\n\nI suspect you might have already tried generating USDZ files using 3DGRUT, but as I've found, the output structure differs significantly from what NuRec expects.\n\nThe most prominent gaps are the missing parsed_config.yaml and checkpoints files. Furthermore, I haven't been able to find any detailed documentation regarding the NuRec rendering image (docker/environment), which makes it very difficult to adapt my custom data to their specific rendering pipeline.\n\nIf you have made any progress on aligning these two projects or have any insights on the renderer's requirements, I\u2019d love to sync up. Looking forward to hearing from you!",
+   "createdAt": "2026-02-04T03:21:30Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Sorry for not getting back to you sooner! I'm not familiar myself with the internals of Nurec unfortunately, but I just forwarded the questions to someone from their team.\n\nThe lack of information about the container's internals is currently intentional (it's an obfuscated version).",
+   "createdAt": "2026-02-04T07:56:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DZiYou"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for forwarding the questions. I understand the internals are obfuscated for security; I\u2019m just looking to render some general 3DGS scenes. Looking forward to the update.",
+   "createdAt": "2026-02-04T09:41:58Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "habibian"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Sorry for not getting back to you sooner! I'm not familiar myself with the internals of Nurec unfortunately, but I just forwarded the questions to someone from their team.\n> \n> The lack of information about the container's internals is currently intentional (it's an obfuscated version).\n\nThanks for the context @maximilianigl . Any insights on why the nurec is being obfuscated? Not being able to run simulations (beyond the provided canned scenes) drastically limits the usability of such a great tool",
+   "createdAt": "2026-02-04T14:25:52Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I can't really comment on NuRec as it's another team, and also has more \"customers\" than just AlpaSim.\nHowever, we realize that \"Bring your own data\" would be super useful and it's something we hope to enable in the future. ",
+   "createdAt": "2026-02-04T19:56:15Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "shikhar4"
+   },
+   "authorAssociation": "NONE",
+   "body": "Hi @DZiYou !\n\n> However, I noticed that the standard NuRec scene structure seems to expect additional files that are missing from my 3DGRUT output, specifically parsed_config.yaml and checkpoints. This has left me a bit stuck on how to properly initialize the renderer for a custom scene.\n\nThe parsed_config.yaml + checkpoint file is required for compatibility with the current nurec distribution. This workflow (using 3dgrut) is incompatible with the artifacts necessary for Alpasim. \n\nBut stay tuned though, I confirmed today we will be publishing workflows for users to bring their own data soon. ",
+   "createdAt": "2026-02-05T06:49:09Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 4
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "shikhar4"
+   },
+   "authorAssociation": "NONE",
+   "body": "Hi @habibian ! \n\n> Any insights on why the nurec is being obfuscated?\n\nThe obfuscation is intentional mainly for security purposes to protect IP. ",
+   "createdAt": "2026-02-05T06:50:00Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "habibian"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Hi [@DZiYou](https://github.com/DZiYou) !\n> \n> > However, I noticed that the standard NuRec scene structure seems to expect additional files that are missing from my 3DGRUT output, specifically parsed_config.yaml and checkpoints. This has left me a bit stuck on how to properly initialize the renderer for a custom scene.\n> \n> The parsed_config.yaml + checkpoint file is required for compatibility with the current nurec distribution. This workflow (using 3dgrut) is incompatible with the artifacts necessary for Alpasim.\n> \n> But stay tuned though, I confirmed today we will be publishing workflows for users to bring their own data soon.\n\nOh that is awesome! Looking forward to that. Any rough timeline?",
+   "createdAt": "2026-02-06T09:17:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I believe relatively soon, but not sure.\nRe bringing your own renderer: See #56 for a unified data interface. \nI'm closing the issue for now but feel free to reopen if you have questions.",
+   "createdAt": "2026-03-20T17:33:51Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "masanori-yokota-jq"
+   },
+   "authorAssociation": "NONE",
+   "body": "It seems that sensorsim image is changed to \"nvcr.io/nvidia/nre/nre-ga:26.02\".\n\n> The parsed_config.yaml + checkpoint file is required for compatibility with the current nurec distribution. This workflow (using 3dgrut) is incompatible with the artifacts necessary for Alpasim.\nIs this still unresolved?",
+   "createdAt": "2026-04-28T08:57:49Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-27T16:19:43Z",
+ "labels": [],
+ "number": 25,
+ "state": "CLOSED",
+ "title": "Simulating with custom sequences",
+ "_updatedAt": "2026-04-28T08:57:49Z"
+}

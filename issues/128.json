@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "amtellezfernandez"
+ },
+ "body": "Digging into the external-driver integration, noticed session seeds are always freshly randomized with no way to override:\n\n```python\n# runtime/services/driver_service.py:73\nrandom_seed=random.randint(0, 2**32 - 1)\n```\n\nSame in `traffic_service.py:94`. Checked `DriverSessionConfig`, `UnboundRollout`, and the `RolloutSpec` proto (`scenario_id`, `nr_rollouts`, `session_uuids`) - none of them have a seed field. `session_uuids` is just a caller-supplied label, never used as a seed.\n\n`nr_rollouts` gives you N independent runs so you can get a distribution, and `force_determinism=true` makes inference reproducible given whatever seed a session happened to get - but neither lets you pick or reproduce a specific seed after the fact.\n\nSaw in the changelog that `RolloutSpec.random_seed` used to exist and got replaced by `nr_rollouts` during the daemon refactor. Before assuming this is just a missing feature - was that intentional? Is there another way to reproduce a specific rollout that I'm not seeing?\n\nIf it's wanted: IsaacLab has an `int | None` seed field that falls back to random when unset (`envs/manager_based_env_cfg.py`, `utils/seed.py`'s `configure_seed()`) - could be a reasonable pattern to mirror on `RolloutSpec`, though `nr_rollouts` would need to expand one base seed into N reproducible ones somehow, and the traffic side would need actual wiring since its `random_seed` is only logged right now (`servicer.py:213`), not used for anything.\n\nHappy to take a stab at this if useful.\n",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "There is an ability internally to support random seed specification for specific cases that was recently added but not yet released (targeting only the alpasim drivers). This does not support things like the traffic model, and I believe that NuRec might have had some small run to run variation--just a head's up in case what you are looking for is repeatability to numerical precision. \n\nIf you are interested in adding such a feature, that would definitely be welcome!\n\nAs a hint to what is going to be released soon, the current implementation adds\n```\nforce_determinism: bool = False\n```\n\nunder `ModelConfig` in `src/driver/src/alpasim_driver/schema.py` and it looks like the seed is always set to 0 (not yet hooked up to the interface, it looks like).\n",
+   "createdAt": "2026-07-28T11:06:41Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "amtellezfernandez"
+   },
+   "authorAssociation": "CONTRIBUTOR",
+   "body": "Apologies for the slow reply, and thanks for the force_determinism pointer.\n\nThe piece you described has landed since: `force_determinism` is in `ModelConfig`, and per-inference seeds now derive deterministically from the session seed (`inference_seed = session.seed + session.inference_count`, `main.py:713`, covered by `test_inference_seeding.py`). That's the hookup you mentioned wasn't done yet in July.\n\nWhat's still missing is upstream of it. `session.seed` comes from `random_seed=random.randint(0, 2**32 - 1)` in `driver_service.py:75` (same in `traffic_service.py:94`), and `RolloutSpec` has no seed field, so there's no way to pick a seed or recover the one a rollout used. Everything downstream derives from that value, so making it selectable is what turns the determinism that already shipped into reproducibility across runs.\n\nI went ahead and built it, so this doesn't stay abstract:\n\n- `fixed64 random_seed = 5;` on `RolloutSpec`, with `0` (default) meaning the runtime picks a random one, same convention `start_time_offset_us` already uses in that message. Nothing changes for existing callers.\n- Rollout *k* of a spec gets `random_seed + k` as its session seed, mirroring the additive derivation `inference_seed` already uses, so a single rollout can be re-run on its own.\n- The value travels the exact path `start_time_offset_us` takes (spec, job, `UnboundRollout`, session config, session request), and both the driver and traffic services fall back to `random.randint` when it's unset.\n- Tests for the derivation and for both services honouring a configured seed; targeted suites pass.\n\nDeliberately out of scope: making trafficsim actually consume its seed. Today `request.random_seed` only shows up in a log line (`trafficsim/grpc/servicer.py:213`), and I'd want to understand how much reproducibility is realistically achievable there before touching it. Also noting the video-model renderer path has its own sampling, so this covers the driver and traffic session seeds, not bit-exact replay, which matches your NuRec caveat anyway.\n\nOpened it as #149 so it's concrete to look at. Happy to adjust the shape there if you'd do any of it differently.\n",
+   "createdAt": "2026-08-13T16:00:04Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-26T14:04:13Z",
+ "labels": [],
+ "number": 128,
+ "state": "OPEN",
+ "title": "Is there a way to reproduce a specific rollout's random seed, or was that intentionally dropped?",
+ "_updatedAt": "2026-08-13T16:15:02Z"
+}

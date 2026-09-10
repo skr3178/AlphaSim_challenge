@@ -1,0 +1,106 @@
+{
+ "author": {
+  "login": "iiizen"
+ },
+ "body": "\"My SensorSim crashes with CUDA error: no kernel image on RTX 4000 Ada (Arch 8.9). The docker image seems to lack support for Ada architecture. Is there an updated image?\"\nplease help thx alot",
+ "closedAt": "2026-03-20T17:19:49Z",
+ "comments": [
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "\"You need an NVIDIA GPU with at least 24 GB VRAM for inference. Tested configurations include RTX 3090, A100, and H100. Running on GPUs with less memory (e.g., 16 GB) will likely result in CUDA out-of-memory errors.\"\n\nIt is from https://github.com/NVlabs/alpamayo?tab=readme-ov-file#frequently-asked-questions-faq \nand it is applicable to alpasim as well. \n",
+   "createdAt": "2026-02-13T17:58:15Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "iiizen"
+   },
+   "authorAssociation": "NONE",
+   "body": "Hi  @daehyoungko,\n\nThanks for the reply. However, the issue I am encountering is not an Out-of-Memory (OOM) error.\n\nThe crash happens specifically with the error no kernel image is available for execution on the device. This indicates an architecture mismatch. It appears that the pre-compiled nvidia-nurec-grpc:0.2.0 docker image (specifically the TinyCUDA-NN module inside) was compiled for sm_80 (A100) or sm_90 (H100), but completely lacks the binary code for Compute Capability 8.9 (Ada Lovelace architecture).\n\nBecause of this missing architecture flag during your build process, the kernel fails to load on any RTX 4000/6000 Ada GPUs, regardless of how much VRAM they have. Since the NuRec SensorSim component is closed-source docker image, I cannot recompile it locally for sm_89 (unlike the rest of the open-source Alpasim components, which I have already successfully built and run on my local machine by bypassing the renderer).\n\nMy question is: > Could the team please consider adding sm_89 to your TORCH_CUDA_ARCH_LIST (or equivalent build flags) and releasing an updated nvidia-nurec-grpc image? Or alternatively, is there a way for us to build the SensorSim component from source?\n\nThanks again for your time and the great work on Alpasim!\n\n> \"You need an NVIDIA GPU with at least 24 GB VRAM for inference. Tested configurations include RTX 3090, A100, and H100. Running on GPUs with less memory (e.g., 16 GB) will likely result in CUDA out-of-memory errors.\"\n> \n> It is from https://github.com/NVlabs/alpamayo?tab=readme-ov-file#frequently-asked-questions-faq and it is applicable to alpasim as well.\n\n",
+   "createdAt": "2026-02-23T01:54:37Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Here is example you need to fill with bug report.\nand someone run the alpasim without issue with following setup here.\n\nDesktop :\nOS: Ubuntu (based on terminal appearance)\nNvidia driver version: 570.124.06\nCUDA version: 12.8\nGPU: 2x NVIDIA GeForce RTX 3090",
+   "createdAt": "2026-02-24T17:40:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "iiizen"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Here is example you need to fill with bug report. and someone run the alpasim without issue with following setup here.\n> \n> Desktop : OS: Ubuntu (based on terminal appearance) Nvidia driver version: 570.124.06 CUDA version: 12.8 GPU: 2x NVIDIA GeForce RTX 3090\n\nHi @daehyoungko,\n\nThank you for your response. Here is the bug report information you requested:\n\n- **OS:** Ubuntu 22.04 LTS\n- **Nvidia driver version:** 590.48.01\n- **CUDA version:** 13.1\n- **GPU:** 1x NVIDIA RTX PRO 4000 Ada Generation (24GB VRAM)\n\nRegarding the RTX 3090 example you provided: The RTX 3090 uses the older **Ampere architecture (sm_86)**, which is likely already included in your pre-compiled docker image. \n\nHowever, my GPU is the **RTX Pro 4000 Ada Generation**, which uses the newer **Ada Lovelace architecture (sm_89)**. \n\nThe exact error I am getting is `CUDA error: no kernel image is available for execution on the device`. In PyTorch/CUDA ecosystems, this specific error strictly means that the pre-compiled binaries in your `nvidia-nurec-grpc:0.2.0` docker image do not contain the compiled code for `sm_89`.\n\nSince the `sensorsim` component is closed-source and distributed only via Docker, I cannot compile it locally to fix this architecture mismatch. \n\nCould the team please consider adding `sm_89` (and ideally `sm_89a`) to the `TORCH_CUDA_ARCH_LIST` (or your internal build script) for the next release of the Docker image? This would immediately resolve the issue for all users with RTX 4000/6000 Ada workstation GPUs.\n\nThank you again for your support!",
+   "createdAt": "2026-02-25T01:49:35Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "My setup has following, and it works at my end, Can you please try cuda version 12.X rather than 13.1? I assume that this issue is due to cuda version conflict.\nNvidia driver version : 535.274.02\nCUDA Version :12.2\nGPU :NVIDIA RTX 6000 Ada \n\n",
+   "createdAt": "2026-02-27T17:53:22Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "iiizen"
+   },
+   "authorAssociation": "NONE",
+   "body": "> My setup has following, and it works at my end, Can you please try cuda version 12.X rather than 13.1? I assume that this issue is due to cuda version conflict. Nvidia driver version : 535.274.02 CUDA Version :12.2 GPU :NVIDIA RTX 6000 Ada\n\nHi @daehyoungko,\n\nThank you for the suggestion and sharing your setup!\n\nI double-checked my hardware and realized my GPU is actually the newer NVIDIA RTX PRO 4000 Blackwell generation (not the Ada generation).\n\nCurrently, my host is using driver version 590.48.01 with CUDA 13.1. Since Blackwell is a newer architecture, I cannot downgrade my driver to 535.274.02 as the older driver would not recognize this new GPU.\n\nCould you confirm if the current sensorsim Docker image has been compiled with support for the Blackwell architecture (Compute Capability 12.0)? If not, is there any workaround or an ETA for Blackwell support?\n\nThank you!",
+   "createdAt": "2026-03-01T06:57:13Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Ok, It makes more sense.\nPlease refer to https://github.com/NVlabs/alpasim/issues/17 for Blackwell.",
+   "createdAt": "2026-03-02T22:54:14Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-12T03:15:47Z",
+ "labels": [],
+ "number": 37,
+ "state": "CLOSED",
+ "title": "CUDA error: no kernel image on RTX Pro 4000 Ada (Arch 8.9)",
+ "_updatedAt": "2026-03-20T17:19:49Z"
+}

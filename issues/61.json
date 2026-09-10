@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "moonzerokevin"
+ },
+ "body": "#59 \nSimilar question of this issue with further experiments.\n\n## Summary\n\nWe observe systematic inconsistencies between BEV lane semantics and real-world driving rules in AlpaSim, which lead to incorrect offroad detection. This directly affects evaluation metrics such as `avg_dist_between_incidents` (AlpaSim score).\n\nThe issue is particularly evident in:\n1. Rural / narrow roads without explicit centerline markings\n2. Incorrect classification of dashed vs solid lane boundaries\n\n---\n\n## Observations\n\nWe manually inspected several dozen rollout videos and found the following recurring issues:\n\n### 1. Rural / narrow road scenarios (no centerline in reality)\n\nIn many cases:\n- The real-world road has **no visible centerline**\n- Vehicles (human drivers) would normally drive near or over the center when necessary (e.g., narrow roads with parked cars)\n\nHowever, in BEV:\n- The road center is interpreted as a **non-drivable solid boundary**\n\nThis leads to frequent false-positive offroad events.\n\nhttps://github.com/user-attachments/assets/1e9a76e4-bace-4413-8122-01ed3b65e8c0\n\nhttps://github.com/user-attachments/assets/9bd0b206-f20b-408b-b69f-187f3ede0a8f\n\n---\n\n### 2. Dashed line incorrectly treated as non-crossable (solid)\n\nWe observed multiple cases where:\n- A **white dashed line (lane divider)** is present in the RGB view.\n- But in BEV / drivability logic, it is treated as **non-crossable (solid boundary)**\n\nhttps://github.com/user-attachments/assets/032ad683-7416-4531-be94-846c4b5b12dd\n\n---\n\n### 3. Solid line incorrectly treated as crossable\n\nConversely, we also observed at least one case where:\n- A **white solid line** appears in the scene\n- But BEV treats it as **crossable**\n\nhttps://github.com/user-attachments/assets/4e3925f5-1a80-44a0-b4b3-b651f58688e7\n\n---\n\n### 4. Simple bad BEV.\n\nhttps://github.com/user-attachments/assets/928ec879-cb3e-45c5-b2f4-93fe2750a1ad\n\n## Impact on Evaluation\n\nThis issue has a direct impact on key metrics:\n\n- `offroad` detection becomes unreliable\n- `avg_dist_between_incidents` (used as AlpaSim score, also reported in Alpamayo paper) becomes biased\n\nSince many policies (including Alpamayo) already achieve low collision rates,  \n**offroad becomes also a significant failure signal**, and thus its correctness is important.\n\n",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hi, thanks a lot for your effort in finding these examples, having them will be helpful in figuring out the issue!\nI won't have time over the weekend but will have a look on Monday to figure out whether this is a data issue or a problem of our implementation in `trajdata` for reading the files (the problem there is that XODR is a weird format and doesn't really support road boundaries well, so our implementation is a bit hacky). ",
+   "createdAt": "2026-03-27T17:41:52Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-03-26T22:19:59Z",
+ "labels": [],
+ "number": 61,
+ "state": "OPEN",
+ "title": "Inconsistent BEV lane semantics causing incorrect offroad detection (dashed/solid line misclassification)",
+ "_updatedAt": "2026-03-27T17:41:52Z"
+}

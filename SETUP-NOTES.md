@@ -2712,3 +2712,35 @@ one that determines PCS.
 **Actionable consequence.** The next submission should be selected on **progress/scene score**, not on at-fault
 count. cand#2 drives 7.4 % further, has progress 1.0204 vs 0.9565, and is already in ECR — on this analysis it is
 the better bet for the official set despite losing to WA-JEPA locally.
+
+## 6.52 The corridor failures are a GRADUAL divergence, not a handover fault (09-10)
+
+Tested the central premise of `ROBUSTNESS-PLAN.md` (a peer session's proposal to sanitise the trajectory and
+blend the first 0.5–1.0 s from the current ego state). Median lateral dist-to-GT over time, `wajepa-s2-400`,
+policy takes over at **t = 0.5 s** (`force_gt_duration_us: 500_000`):
+
+| group | t=0.5 s | t=1.0 s | t=1.5 s | t=2.5 s | t=4.0 s |
+|---|---:|---:|---:|---:|---:|
+| corridor-exit (24) | 0.00 | **0.03** | 0.13 | 1.07 | **4.76** |
+| clean 1.0 (60) | 0.00 | 0.01 | 0.02 | 0.12 | 0.34 |
+
+**At handover and through the first second, failing scenes are indistinguishable from clean ones** (0.03 vs
+0.01 m). Divergence begins around t≈1.5 s and compounds to 4.76 m by t=4 s — roughly a lane and a half.
+That is a **slow accumulating separation**, i.e. the model commits to a different path than the human took, and
+tracks it faithfully (§6.47: steering commanded−achieved 0.010 rad, no oscillation, no saturation).
+
+**Consequences.**
+- The plan's **handover blend targets a window where nothing is wrong**. Sanitising the first 0.5–1.0 s cannot
+  touch a divergence that starts at 1.5 s and is driven by plan *content*, not plan *feasibility*.
+- Both motivating mechanisms are now empirically refuted on our data: harsh-braking swerve (§6.47 — 0/24 scenes
+  below −5 m/s², no zig-zag) and handover discontinuity (this section).
+- The plan's own hedge was correct — *"plausible ... not proof without private per-scene traces"*. These local
+  traces are the best evidence available and they do not support it.
+- What IS supported: the plans are dynamically fine and go somewhere else. A feasibility guard is the wrong
+  instrument; this is a path-choice problem (lane selection / turn interpretation), which is why the route-command
+  work kept looking relevant even though our specific fix (§6.46) was wrong.
+
+**The plan's SECOND half stands and should be built** — it is methodologically sound and independent of the
+mechanism claim: recording-block confidence intervals (our 400 clips come from only 4 source recordings, so
+treating them as 400 independent units overstates significance — plausibly why +0.0434 looked solid and did not
+transfer), explicit public-suite coverage reporting, and no synthetic local PCS.

@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "rdesc"
+ },
+ "body": "https://github.com/NVlabs/alpasim/blob/dcf52855b4e90c6efb13fddc7aed0a8bef89cecc/docs/ONBOARDING.md?plain=1#L8",
+ "closedAt": "2026-05-26T16:53:53Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks--it looks like the 25.07 release was removed. https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles-NuRec/tree/25.07/sample_set/25.07_release should work while we work on updating this",
+   "createdAt": "2026-05-26T16:30:21Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-05-24T21:01:45Z",
+ "labels": [],
+ "number": 87,
+ "state": "CLOSED",
+ "title": "Link to data in onboarding is broken",
+ "_updatedAt": "2026-05-26T16:53:53Z"
+}

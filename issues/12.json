@@ -1,0 +1,87 @@
+{
+ "author": {
+  "login": "DXWK73"
+ },
+ "body": "Hello, author. When deploying, I am unable to download the alpasim image and it shows that I do not have permission. Could you please advise on how to resolve this?",
+ "closedAt": "2026-01-07T07:48:15Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "When you let it run, does it build it automatically? ",
+   "createdAt": "2026-01-06T11:35:38Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DXWK73"
+   },
+   "authorAssociation": "NONE",
+   "body": "### Specifically, I encountered the following two issues during my attempts, and I\u2019m not sure if they are caused by the same reason.\n\n1. After pulling the latest code, when I ran `alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial`, it prompted me to enter `ALPAMAYO_S3_SECRET`, but I don\u2019t know where to obtain `ALPAMAYO_S3_SECRET`. The error message is as follows:\n\n```\n(base) wk73@DESKTOP-HHP4RJI:~/wm/alpasim$ alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial \nError executing job with overrides: ['+deploy=local', 'wizard.log_dir=/home/wk73/wm/alpasim/tutorial']\nTraceback (most recent call last):\n  File \"/home/wk73/wm/alpasim/src/wizard/alpasim_wizard/__main__.py\", line 18, in run_wizard\n    AlpasimWizard.create(cfg).cast()\n    ~~~~~~~~~~~~~~~~~~~~^^^^^\n  File \"/home/wk73/wm/alpasim/src/wizard/alpasim_wizard/wizard.py\", line 43, in create\n    context = WizardContext.create(cfg)\n  File \"/home/wk73/wm/alpasim/src/wizard/alpasim_wizard/context.py\", line 173, in create\n    artifact_list, sceneset_path = fetch_artifacts(cfg)\n                                   ~~~~~~~~~~~~~~~^^^^^\n  File \"/home/wk73/wm/alpasim/src/wizard/alpasim_wizard/context.py\", line 41, in fetch_artifacts\n    manager = USDZManager.from_cfg(cfg.scenes)\n  File \"/home/wk73/wm/alpasim/src/wizard/alpasim_wizard/scenes/sceneset.py\", line 188, in from_cfg\n    s3=S3Connection.from_env_vars(),\n       ~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"/home/wk73/wm/alpasim/src/wizard/alpasim_wizard/s3_api.py\", line 141, in from_env_vars\n    aws_secret_access_key=os.environ[\"ALPAMAYO_S3_SECRET\"],\n                          ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen os>\", line 717, in __getitem__\nKeyError: 'ALPAMAYO_S3_SECRET'\n\nSet the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.\n```\n\n2. Additionally, I tried to run the old code with `alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial`, but it showed an error saying the download failed. The error message is as follows:\n\n```\n(base) wk73@DESKTOP-HHP4RJI:~/wm/alpasim$ alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial \nFound 1 GPUs on system.\n[2026-01-06 18:48:07,763][alpasim_wizard.context][DEBUG] - Found 1 GPUs on system.\nCreating log directory at path: /home/wk73/wm/alpasim/tutorial\n[2026-01-06 18:48:07,764][alpasim_wizard.context][DEBUG] - Creating log directory at path: /home/wk73/wm/alpasim/tutorial\nFound available port: 6000\n[2026-01-06 18:48:07,765][alpasim_wizard.context][DEBUG] - Found available port: 6000\nFound available port: 6001\n[2026-01-06 18:48:07,769][alpasim_wizard.context][DEBUG] - Found available port: 6001\nFound available port: 6002\n[2026-01-06 18:48:07,773][alpasim_wizard.context][DEBUG] - Found available port: 6002\nSkipping service trafficsim (marked as skip)\n[2026-01-06 18:48:07,777][alpasim_wizard.services][DEBUG] - Skipping service trafficsim (marked as skip)\nFound available port: 6003\n[2026-01-06 18:48:07,777][alpasim_wizard.context][DEBUG] - Found available port: 6003\nFound available port: 6004\n[2026-01-06 18:48:07,782][alpasim_wizard.context][DEBUG] - Found available port: 6004\nFound available port: 6005\n[2026-01-06 18:48:07,787][alpasim_wizard.context][DEBUG] - Found available port: 6005\nBuilt 4 simulation containers\n[2026-01-06 18:48:07,789][alpasim_wizard.services][INFO] - Built 4 simulation containers\nBuilt 1 evaluation containers\n[2026-01-06 18:48:07,789][alpasim_wizard.services][INFO] - Built 1 evaluation containers\nBuilt 1 aggregation containers\n[2026-01-06 18:48:07,789][alpasim_wizard.services][INFO] - Built 1 aggregation containers\nWriting docker compose YAML to /home/wk73/wm/alpasim/tutorial/docker-compose.yaml\n[2026-01-06 18:48:07,796][alpasim_wizard.deployment.docker_compose][INFO] - Writing docker compose YAML to /home/wk73/wm/alpasim/tutorial/docker-compose.yaml\nGenerated run script: /home/wk73/wm/alpasim/tutorial/run.sh\n[2026-01-06 18:48:07,799][alpasim_wizard.deployment.docker_compose][INFO] - Generated run script: /home/wk73/wm/alpasim/tutorial/run.sh\nDocker Compose configuration generated in /home/wk73/wm/alpasim/tutorial\n[2026-01-06 18:48:07,799][alpasim_wizard.deployment.docker_compose][INFO] - Docker Compose configuration generated in /home/wk73/wm/alpasim/tutorial\nGenerated run script: /home/wk73/wm/alpasim/tutorial/run.sh\n[2026-01-06 18:48:07,799][alpasim_wizard.deployment.docker_compose][INFO] - Generated run script: /home/wk73/wm/alpasim/tutorial/run.sh\nFound available port: 6006\n[2026-01-06 18:48:07,799][alpasim_wizard.context][DEBUG] - Found available port: 6006\nFound available port: 6007\n[2026-01-06 18:48:07,803][alpasim_wizard.context][DEBUG] - Found available port: 6007\nFound available port: 6008\n[2026-01-06 18:48:07,806][alpasim_wizard.context][DEBUG] - Found available port: 6008\nSkipping service trafficsim (marked as skip)\n[2026-01-06 18:48:07,809][alpasim_wizard.services][DEBUG] - Skipping service trafficsim (marked as skip)\nFound available port: 6009\n[2026-01-06 18:48:07,810][alpasim_wizard.context][DEBUG] - Found available port: 6009\nFound available port: 6010\n[2026-01-06 18:48:07,814][alpasim_wizard.context][DEBUG] - Found available port: 6010\nFound available port: 6011\n[2026-01-06 18:48:07,817][alpasim_wizard.context][DEBUG] - Found available port: 6011\nBuilt 4 simulation containers\n[2026-01-06 18:48:07,819][alpasim_wizard.services][INFO] - Built 4 simulation containers\nBuilt 1 evaluation containers\n[2026-01-06 18:48:07,819][alpasim_wizard.services][INFO] - Built 1 evaluation containers\nBuilt 1 aggregation containers\n[2026-01-06 18:48:07,819][alpasim_wizard.services][INFO] - Built 1 aggregation containers\nGenerating all configurations...\n[2026-01-06 18:48:07,819][alpasim_wizard.configuration][INFO] - Generating all configurations...\nGenerated runtime config: generated-user-config-0.yaml\n[2026-01-06 18:48:07,821][alpasim_wizard.configuration][DEBUG] - Generated runtime config: generated-user-config-0.yaml\nGenerated network config\n[2026-01-06 18:48:07,822][alpasim_wizard.configuration][DEBUG] - Generated network config\nGenerated trafficsim config\n[2026-01-06 18:48:07,822][alpasim_wizard.configuration][DEBUG] - Generated trafficsim config\nGenerated eval config\n[2026-01-06 18:48:07,823][alpasim_wizard.configuration][DEBUG] - Generated eval config\nGenerated avmf config\n[2026-01-06 18:48:07,823][alpasim_wizard.configuration][DEBUG] - Generated avmf config\nGenerated run metadata\n[2026-01-06 18:48:07,823][alpasim_wizard.configuration][DEBUG] - Generated run metadata\nGenerated driver config\n[2026-01-06 18:48:07,824][alpasim_wizard.configuration][DEBUG] - Generated driver config\n[2026-01-06 18:48:07,887][root][INFO] - Validating saved wizard config against schema...\nValidated saved config at /home/wk73/wm/alpasim/tutorial/wizard-config-loadable.yaml against schema successfully.\n[2026-01-06 18:48:08,116][alpasim_wizard.utils][INFO] - Validated saved config at /home/wk73/wm/alpasim/tutorial/wizard-config-loadable.yaml against schema successfully.\nSaved wizard configurations\n[2026-01-06 18:48:08,116][alpasim_wizard.configuration][DEBUG] - Saved wizard configurations\nGenerated 7 configuration files\n[2026-01-06 18:48:08,116][alpasim_wizard.configuration][INFO] - Generated 7 configuration files\nExecuting docker compose run script: /home/wk73/wm/alpasim/tutorial/run.sh\n[2026-01-06 18:48:08,116][alpasim_wizard.deployment.docker_compose][INFO] - Executing docker compose run script: /home/wk73/wm/alpasim/tutorial/run.sh\nStarting simulation phase...\n[+] up 1/1\n ! Image alpasim-base:0.1.0 pull access denied for alpasim-base, repository does not exist or may require 'docker login'                                                                                     3.6s \n[+] Building 0.1s (1/1) FINISHED                                                                                                                                                                                  \n[+] up 0/1nal] load local bake definitions  \n```",
+   "createdAt": "2026-01-06T12:44:59Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for flagging this, that's a bug. \nIf you don't mind, could you please check if it works on the branch `dev/migl/make_s3_init_lazy`? This should get rid of the `ALPAMAYO_S3_SECRET` error (you don't need the secret).\n\nThe second error (`pull access denied for alpasim-base`) shouldn't be a problem, docker should just build the the image instead (we haven't released the images yet, but building locally should work).\n",
+   "createdAt": "2026-01-06T15:53:53Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Merged to `main` now, lmk if it still doesn't work! ",
+   "createdAt": "2026-01-06T16:35:12Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "DXWK73"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for your reply. I tried the `dev/migl/make_s3_init_lazy` code and it works well.\n\nThis is a great project. I was wondering whether the code related to scene reconstruction is also open-sourced, or if there are any plans to release it.",
+   "createdAt": "2026-01-07T02:03:52Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Great, closing the issue then. \nRe reconstruction: Can't say, sorry. ",
+   "createdAt": "2026-01-07T07:48:15Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-06T11:10:19Z",
+ "labels": [],
+ "number": 12,
+ "state": "CLOSED",
+ "title": "Could not download the alpasim Image",
+ "_updatedAt": "2026-01-07T07:48:15Z"
+}

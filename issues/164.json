@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "xhghhh"
+ },
+ "body": "The PAI track fixes the sensor suite to 4 cameras (front wide, front tele, cross left, cross right). There is no rear-facing camera at all, so anything happening behind the ego is completely invisible to submitted models.\n\nAs far as I can tell from the repo, this limit is just a preset choice, not a simulator limitation \u2014 the scenes run on the Hyperion rig (`hyperion_8_1`), sensorsim already exposes all available cameras per scene, and local runs can freely configure the camera set. Contestants just can't, since we only submit a driver container.\n\nCould you either expose the full camera set on the PAI track (like the nuPlan track does), or at least add a rear camera?",
+ "closedAt": "2026-08-27T10:36:32Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I'll test out adding the rear cross cameras. It's not quite accurate to say that local runs can freely configure the camera set. There are two things to note there:\n1. There is some limitation with the current public nurec image that prevents adding arbitrary cameras (I think a future release will change that)\n2. Even with harmonizer enabled, new camera views (e.g. from different heights) can be challenging to for nurec to render accurately\n\nThis being said, I'll test adding those two I mentioned on the private set and, assuming it all works out, see about adding them. I'm not sure that they are available in the public dataset, though. So that might be something to keep in mind.",
+   "createdAt": "2026-08-26T13:52:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "It seems like the scenes have what is needed. So, those two cameras will be added for the competition once we reopen. Closing the thread for now.\n\nThanks for the suggestion!",
+   "createdAt": "2026-08-27T10:36:32Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-24T18:46:32Z",
+ "labels": [],
+ "number": 164,
+ "state": "CLOSED",
+ "title": "[PAI track] Fixed 4-camera sensor suite has no rear FOV \u2014 expose the full rig or allow per-submission camera configuration",
+ "_updatedAt": "2026-08-27T10:36:32Z"
+}

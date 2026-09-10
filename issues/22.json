@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "hitmaster888-gif"
+ },
+ "body": "When running alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial,a main.py error occurred: 'FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet', causing the process to fail.\nThe error logs are as follows:\n`Starting aggregation phase...\nAttaching to post_eval_aggregation-0-1\npost_eval_aggregation-0-1  | No array job, don't need to check counter.\npost_eval_aggregation-0-1  | Running post-eval aggregation. Found 1 job directories in /mnt/array_job_dir: /mnt/array_job_dir\npost_eval_aggregation-0-1  | Traceback (most recent call last):\npost_eval_aggregation-0-1  |   File \"/repo/.venv/bin/alpasim-aggregation\", line 10, in <module>\npost_eval_aggregation-0-1  |     sys.exit(main())\npost_eval_aggregation-0-1  |              ^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/src/eval/src/eval/aggregation/main.py\", line 252, in main\npost_eval_aggregation-0-1  |     processed_dfs = _aggregate_metrics(job_dirs, aggregate_dir, modifiers)\npost_eval_aggregation-0-1  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/src/eval/src/eval/aggregation/main.py\", line 48, in _aggregate_metrics\npost_eval_aggregation-0-1  |     dfs.append(pl.read_parquet(file))\npost_eval_aggregation-0-1  |                ^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/_utils/deprecation.py\", line 128, in wrapper\npost_eval_aggregation-0-1  |     return function(*args, **kwargs)\npost_eval_aggregation-0-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/_utils/deprecation.py\", line 128, in wrapper\npost_eval_aggregation-0-1  |     return function(*args, **kwargs)\npost_eval_aggregation-0-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/io/parquet/functions.py\", line 289, in read_parquet\npost_eval_aggregation-0-1  |     return lf.collect()\npost_eval_aggregation-0-1  |            ^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/_utils/deprecation.py\", line 97, in wrapper\npost_eval_aggregation-0-1  |     return function(*args, **kwargs)\npost_eval_aggregation-0-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/opt_flags.py\", line 324, in wrapper\npost_eval_aggregation-0-1  |     return function(*args, **kwargs)\npost_eval_aggregation-0-1  |            ^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  |   File \"/repo/.venv/lib/python3.12/site-packages/polars/lazyframe/frame.py\", line 2429, in collect\npost_eval_aggregation-0-1  |     return wrap_df(ldf.collect(engine, callback))\npost_eval_aggregation-0-1  |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\npost_eval_aggregation-0-1  | FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet\npost_eval_aggregation-0-1  |\npost_eval_aggregation-0-1  | This error occurred with the following context stack:\npost_eval_aggregation-0-1  |    [1] 'parquet scan'\npost_eval_aggregation-0-1  |    [2] 'sink'\npost_eval_aggregation-0-1  |\npost_eval_aggregation-0-1 exited with code 1`\nhow to fix it,thanks",
+ "closedAt": "2026-01-22T19:43:52Z",
+ "comments": [
+  {
+   "author": {
+    "login": "hitmaster888-gif"
+   },
+   "authorAssociation": "NONE",
+   "body": "Re-pulled the Alpasim code from GitHub and ran: \n1. source setup_local_env.sh \n2. 2. alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial \nThe previous Python error no longer occurs",
+   "createdAt": "2026-01-22T06:24:54Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "hitmaster888-gif"
+   },
+   "authorAssociation": "NONE",
+   "body": "issue resolved",
+   "createdAt": "2026-01-22T06:26:50Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-22T05:29:37Z",
+ "labels": [],
+ "number": 22,
+ "state": "CLOSED",
+ "title": "When running alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial, a main.py error occurred: 'FileNotFoundError: No such file or directory (os error 2): /mnt/array_job_dir/eval/metrics_unprocessed.parquet', causing the process to fail.",
+ "_updatedAt": "2026-01-22T19:43:52Z"
+}

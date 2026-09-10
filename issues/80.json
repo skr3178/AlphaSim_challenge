@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "dennisdarrow"
+ },
+ "body": "Describe the bug\nAttributeError: 'RenderableTrajectory' object has no attribute 'poses' when rendering REASONING_OVERLAY video with the alpamayo1_5 driver. The simulation completes successfully and the ASL file is written, but video rendering fails after processing ~15 frames.\nTo Reproduce\n\nClone NVlabs/alpasim and run source setup_local_env.sh\nDownload nvidia/Alpamayo-1.5-10B and nvidia/Cosmos-Reason2-8B via huggingface-cli\nRun:\n\nuv run alpasim_wizard deploy=local topology=1gpu driver=alpamayo1_5 \\\n  wizard.log_dir=$PWD/test_ar15 \\\n  eval.video.video_layouts=[REASONING_OVERLAY]\n\nSimulation completes successfully but no mp4 is written\n\nExpected behavior\nA REASONING_OVERLAY mp4 should be generated in rollouts/{scene_id}/{uuid}/ as it is with driver=alpamayo1.\nScreenshots\nN/A\nDesktop (please complete the following information):\n\nOS: Ubuntu 22.04\nNvidia driver/CUDA version: Driver 580.105.08, CUDA 13.0\nGPU: NVIDIA H100 80GB HBM3 (Lambda Labs cloud instance)\nAlpaSim version: 0.66.0\n\nAdditional context\nFull traceback from stdout log:\nruntime-0-1 | Error rendering video: 'RenderableTrajectory' object has no attribute 'poses'\n  File \"/repo/src/eval/src/eval/video.py\", line 146, in render_video_from_eval_result\n  File \"/repo/src/eval/src/eval/video.py\", line 83, in render_and_save_video\n  File \"/repo/src/eval/src/eval/video_reasoning_overlay_utils.py\", line 545, in render_reasoning_overlay_style_video\n  File \"/repo/src/eval/src/eval/video_reasoning_overlay_utils.py\", line 448, in _render_single_reasoning_overlay_frame\nAttributeError: 'RenderableTrajectory' object has no attribute 'poses'\nRendering starts (15/198 frames) then crashes. The bug does not occur with driver=alpamayo1. Likely a data structure change introduced with the 1.5 integration.\n",
+ "closedAt": "2026-05-06T18:04:25Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I think maybe you got unlucky in that you tried it just before the most recent sync. I think this issue is solved on TOT. If you disagree, please, reopen.",
+   "createdAt": "2026-05-06T18:04:25Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-05-04T20:01:26Z",
+ "labels": [],
+ "number": 80,
+ "state": "CLOSED",
+ "title": "[Bug] REASONING_OVERLAY video rendering fails with AttributeError when using alpamayo1_5 driver",
+ "_updatedAt": "2026-05-06T18:04:25Z"
+}

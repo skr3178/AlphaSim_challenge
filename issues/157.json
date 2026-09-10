@@ -1,0 +1,63 @@
+{
+ "author": {
+  "login": "0ttwhy4"
+ },
+ "body": "Dear Developers,\n\nHi! I have been following the AlpaSim Challenge and saw on the website that it is planned to be held in conjunction with NeurIPS 2026. However, I couldn't find the challenge listed among either the [official NeurIPS 2026 competitions](https://blog.neurips.cc/2026/07/28/neurips-2026-competitions-announced/) or [workshops](https://blog.neurips.cc/2026/08/10/announcing-the-neurips-2026-workshops/).\n\nMay I ask whether the AlpaSim Challenge is still affiliated with NeurIPS 2026, or whether it will be held independently of NeurIPS?\n\nIn addition, the challenge [dataset](https://huggingface.co/datasets/nvidia/PhysicalAI-Autonomous-Vehicles) seems to be missing some necessary labels for road elements and has not been updated for quite some time. Are there any plans to update the dataset, or is there an expected timeline for releasing the missing components? (Sorry for asking again, but this repo seems to be the only place with active updates and responses)\n\nThanks for your contribution for this great project! :-)",
+ "closedAt": "2026-08-19T08:20:18Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for the correction. We plan to present our results during NeurIPS, but the challenge does not have any association with the conference. I've updated the wording on the HF space to avoid the confusion. \n\nAs to the dataset, the group managing that is separate from this team. I reached out to someone internally for more information and will post if I hear any news. For the time being, though, I'll close this thread.",
+   "createdAt": "2026-08-19T08:20:18Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "0ttwhy4"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for your efforts! We are looking forward to the follow-ups! And much appreciation for this project!",
+   "createdAt": "2026-08-19T08:22:17Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Update--no one is working on adding additional labels to the PAI dataset at the moment.",
+   "createdAt": "2026-08-20T09:45:49Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "0ttwhy4"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for the update! We\u2019re still looking forward to the release of the remaining components to complete the dataset. But anyway, thanks again! :-)",
+   "createdAt": "2026-08-20T10:50:22Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-19T06:53:37Z",
+ "labels": [],
+ "number": 157,
+ "state": "CLOSED",
+ "title": "On the Neurips 2026 Alpasim E2E Closed Loop Challenge",
+ "_updatedAt": "2026-08-20T10:50:22Z"
+}

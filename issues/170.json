@@ -1,0 +1,89 @@
+{
+ "author": {
+  "login": "alexcodigo84"
+ },
+ "body": "Hi, thanks for creating this exciting challenge! I have the following 3 questions:\n\n**1. Challenge downtime** -- has the maintenance week already started, or is it still possible to submit containers today? The leaderboard on the Huggingface website appears to be offline already. My assumption was that this would start tomorrow since the website mentioned _\"These changes are expected in early September; we will share exact dates and implementation details with participants ahead of time\"_. Would be a pity to lose unused submission attempts due to this, especially since the limit will be reduced to 3 in September.\n\n**2. Handling of failed rollouts** -- the currently available metrics in the leaderboard do not allow to distinguish between a model that is just performing badly (e.g. causing lots of accidents), versus a model that is intermittently failing for technical reasons (exception / empty trajectory returned, leading to rollout abort by the controller / etc.); this could for example happen if the model is not robust to varying image resolutions, or due to other \"surprises\" of the eval server setup which one cannot reproduce locally.\n\nWould it maybe make sense to include an additional metric that reports how many rollouts have been processed successfully by a submission (i.e. regardless of the \"driving skill\" of the model)?\n\n**3. Observed wall time / wall time limit** -- how does this metric provided by the evaluation server relate to the mean drive RPC latency that can also be computed offline? During my offline testing, I am using only 25% of the computation budget (on a similar GPU type, and with 4 driver replicas). But according to the evaluation server, I used up almost 80% of the available time.\n\nDoes the number reported by the submission CLI include additional start-up times, or where does this big difference to the local testing come from? Do the renderer/physics engine maybe consume all the available CPU resources?\n\nThanks :)!",
+ "closedAt": "2026-08-31T13:34:30Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "1. Yes--we're in the maintenance downtime period right now (the date was in the timeline but never confirmed--sorry about the miscommunication). There will be more tools for you to run stuff locally so to offset this\n2. Missing/malformed rollout results now cause `RESULTS_INCOMPLETE`. I'll add an output to the competitor cli submission results.\n3. I'm not sure I understand your point, but the description can be found here: https://github.com/NVlabs/alpasim/tree/e2e_challenge/e2e_challenge#submission-image-requirements-and-constraints . There's no way to measure this directly, so we just enforce this through a throughput limit.\n\n\nClosing thread, but feel free to reopen if you have qusetions.\n\n",
+   "createdAt": "2026-08-31T13:34:30Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "xyaram578"
+   },
+   "authorAssociation": "NONE",
+   "body": "Hi, I have one follow-up question regarding the maintenance downtime and monthly submission quota.\n\nOur team currently has 4 unused August submissions remaining (5 monthly limit / 1 used / 4 remaining), but the competition API is already CLOSED due to the Aug 31\u2013Sep 6 maintenance period.\n\nSince we can no longer use those August attempts before the month ends, will the unused August quota be carried over or compensated after maintenance?\n\nThis is especially important because the September submission limit is planned to be reduced to 3.\n\nThanks for clarifying.",
+   "createdAt": "2026-08-31T14:09:54Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 2
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "No--in order to maintain fairness going forward, all team allocations will be reset. There are significant changes to the competition (including the evaluation approach and the tests) so the leaderboard will be wiped clean. The soft open was a time to work out the kinks in the submission process and allow teams to get comfortable with the mechanics.",
+   "createdAt": "2026-08-31T14:16:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "skr3178"
+   },
+   "authorAssociation": "NONE",
+   "body": "@mwatson-nvidia when does the submissions portal for the challenge open up again?\nThanks",
+   "createdAt": "2026-09-07T10:09:25Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I updated the HF page a little bit ago to indicate this, but, the legal team at Nvidia was reviewing the management of the competition and asked us to hold off on reopening until terms and conditions are finalized. Once we have those from them, we are ready to reopen. In the meantime, you can take a look at some of the changes with the updated challenge branch. We'll be adding a few more resources, but hope not to change the code going forward.",
+   "createdAt": "2026-09-07T10:27:41Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-31T13:11:14Z",
+ "labels": [],
+ "number": 170,
+ "state": "CLOSED",
+ "title": "[e2e challenge] Maintenance downtime, failed rollouts & observed wall time",
+ "_updatedAt": "2026-09-07T10:27:42Z"
+}

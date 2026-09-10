@@ -1,0 +1,14 @@
+{
+ "author": {
+  "login": "xyaram578"
+ },
+ "body": "Hi, I have one follow-up question regarding the maintenance downtime and monthly submission quota.\n\nOur team currently has 4 unused August submissions remaining (5 monthly limit / 1 used / 4 remaining), but the competition API is already CLOSED due to the Aug 31\u2013Sep 6 maintenance period.\n\nSince we can no longer use those August attempts before the month ends, will the unused August quota be carried over or compensated after maintenance?\n\nThis is especially important because the September submission limit is planned to be reduced to 3.\n\nThanks for clarifying.",
+ "closedAt": "2026-08-31T14:19:39Z",
+ "comments": [],
+ "createdAt": "2026-08-31T14:19:06Z",
+ "labels": [],
+ "number": 171,
+ "state": "CLOSED",
+ "title": "[e2e challenge] Unable to use remaining August submissions due to planned maintenance downtime",
+ "_updatedAt": "2026-08-31T14:19:39Z"
+}

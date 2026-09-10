@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "Masakichi210"
+ },
+ "body": "Running the full `public_2507` suite (910 scenes), one scene consistently fails during NRE backend creation, so the run completes with 909 scenes.\n\nEnvironment:\n\n- AlpaSim: `01d6a5c`\n- NRE image: `nvcr.io/nvidia/nre/nre-ga:26.02`\n- Scene: `clipgt-b0ca8b13-0362-45e7-a1d1-f40d22f3340c`\n- Dataset: `sample_set/25.07_release`\n- NRE version: `25.7.9-b85d0efd`\n\nError:\n\n```text\n[ERROR] Failed to create backend for clipgt-b0ca8b13-0362-45e7-a1d1-f40d22f3340c\nTraceback (most recent call last):\n  File \"nre/grpc/<unknown>\", line 0, in get_backend\n  File \"nre/grpc/<unknown>\", line 0, in put_with_retries\n  File \"nre/grpc/<unknown>\", line 0, in <lambda>\n  File \"nre/grpc/<unknown>\", line 0, in from_artifact\n  File \"nre/render/<unknown>\", line 0, in load_from_artifact\n  File \"nre/render/<unknown>\", line 0, in _load_model_and_upgrade\n  File \"nre/render/<unknown>\", line 0, in _load_model_gaussians_composite_and_upgrade\n  File \"nre/models/gaussians/<unknown>\", line 0, in load_state_dict\n  File \".../torch/nn/modules/module.py\", line 2593, in load_state_dict\n    raise RuntimeError(\nRuntimeError: Error(s) in loading state_dict for GaussiansComposite:\n    Unexpected key(s) in state_dict: \"gaussians_nodes.dynamic_rigids.time_embed.timestamps_us_ranges\".\n```\n\nFrom the upgrade log, our hypothesis is that there may be an internal inconsistency around `dynamic_rigids`: the upgrade path adds `time_embed.timestamps_us_ranges`, but the layer's only track is then filtered out (`1 available tracks \u2192 Filtered to 0 tracks`). The layer is skipped afterward (`positions tensor not found`), leaving an orphaned key that fails strict `load_state_dict`.\n\nThis is deterministic across 3 independent runs.\n\nIs this a known issue? Is there anything we should do on our side, such as denylisting this scene or enabling a flag to tolerate empty `dynamic_rigids`, or is this fixed in a newer NRE image / asset revision?",
+ "closedAt": "2026-07-09T16:27:20Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks! This is not a known issue. I'll forward the info to the nurec team.\n\nIn the meantime, if this is blocking you, you can remove that entry from the scene set `data/scenes/sim_scenes.csv`",
+   "createdAt": "2026-05-26T16:32:09Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 2
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "jarcherNV"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I think this is no longer relevant for current `main`. The default public suite now uses the `public_2601` catalog and NRE-GA 26.04, and this scene points to a newer `26.01_release` asset.\n\nThe original report was against the legacy `public_2507` / `25.07_release` asset, which may still fail if someone explicitly opts into the legacy 2505/2507 CSVs. Since that legacy catalog is no longer the default, I\u2019m going to close this as superseded. Please reopen if the same scene fails with the current `public_2601` catalog.",
+   "createdAt": "2026-07-09T16:27:20Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-05-26T09:28:05Z",
+ "labels": [],
+ "number": 88,
+ "state": "CLOSED",
+ "title": "public_2507 scene fails during NRE backend creation with unexpected dynamic_rigids key",
+ "_updatedAt": "2026-07-09T16:27:20Z"
+}

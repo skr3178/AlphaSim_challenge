@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "tissuemother"
+ },
+ "body": "I am trying to execute alpasim using a custom USDZ file. My dataset includes camera intrinsics, extrinsics, poses, timestamps, and Gaussian .ply files.\n\nI have successfully generated the following without any None values:\n\n- volume.nurec & volume.usda (via 3dgrut repository)\n\n- rig_trajectories.json\n\n- datasource_summary.json\n\n- Parsed config and data info (based on my custom calibration and tracking results).\n\nThe Problem: Despite having all files in place, I keep encountering the following error when running the simulator:\n\n```AssertionError: Missing camera camera_front_wide_120fov@clipgt-05bb8212-63e1-40a8-b4fc-3142c0e94646 in camera calibration```\n\n I have formatted the camera calibration data in rig_trajectories.json by referencing the original nurec USDZ structure.(also for datasource_summary) The error suggests that Alpasim might be attempting to read the calibration list from a source other than rig_trajectories.json.\n\nQuestions:\n\n- Is there a specific metadata field in the USDZ or a separate sidecar file where Alpasim expects to find the camera calibration?\n\n- Does the camera naming convention (e.g., the @clipgt-... suffix) need to match a specific entry in default nurec camera list?\n\n- How can I ensure the simulator properly fetches calibration data from a custom USDZ?",
+ "closedAt": "2026-02-05T00:56:48Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This workflow (using 3dgrut) is incompatible with the artifacts necessary for Alpasim. This is a known limitation of the current distribution, although I just heard from a PM: \"we will be publishing workflows for people to bring in their own data soon.\" So, stay tuned. ",
+   "createdAt": "2026-02-04T21:34:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "tissuemother"
+   },
+   "authorAssociation": "NONE",
+   "body": "Ok thanks",
+   "createdAt": "2026-02-05T00:56:48Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-04T02:01:08Z",
+ "labels": [],
+ "number": 32,
+ "state": "CLOSED",
+ "title": "I cannot fetch calibration information during implement custom alpasim environment",
+ "_updatedAt": "2026-02-05T00:56:48Z"
+}

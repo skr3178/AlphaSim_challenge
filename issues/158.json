@@ -1,0 +1,77 @@
+{
+ "author": {
+  "login": "Eashwar93"
+ },
+ "body": "Hi,\n\nI recently made a submission that stopped because I had a typo in my docker image name. This is however counted as a submission in my limits. Is this really intended? The failed submission ID here for reference `028d2702-81c0-4ae1-93b3-ea7c85b68b63`\n\nIt would be nice to have an alternate submission possible for every failed sumission atleast for the one that never started.",
+ "closedAt": "2026-08-24T10:10:24Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This was harsher than desired, for sure. I've added a check (will release soon) in the CLI that ensures the docker image exists before allowing a submission request to be made",
+   "createdAt": "2026-08-20T10:18:00Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Eashwar93"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thank you for fixing this properly. Would you also be willing to provide an alternate submission attempt that we lost due to this? ",
+   "createdAt": "2026-08-21T13:47:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "It seems like your team might have still had another attempt? The competition is going to be overhauled shortly and the slate wiped clean. The point of giving teams extra submissions during this soft open period was to work out these sorts of kinks, and we are somewhat leery about teams using the results as feedback into their solutions (aside from capacity, this is another reason for the relatively low number of submissions per month(3) once the competition moves to the final version). \n\nWhen we reopen, we'll also give teams some additional tooling to run on the public dataset locally and therefore have more transparency into the metric handling.",
+   "createdAt": "2026-08-24T08:32:46Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Eashwar93"
+   },
+   "authorAssociation": "NONE",
+   "body": "Sounds good! More transparency into metric handling would be great. Please feel free to close the issue as you desire",
+   "createdAt": "2026-08-24T09:52:58Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-19T19:20:06Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 158,
+ "state": "CLOSED",
+ "title": "[E2E CHALLENGE]: submission limits",
+ "_updatedAt": "2026-08-24T10:10:24Z"
+}

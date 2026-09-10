@@ -1,0 +1,87 @@
+{
+ "author": {
+  "login": "luzijian2003114"
+ },
+ "body": "When running AlpaSim with the Transfuser model across all scenarios, multiple scenarios fail with two types of errors:\ngRPC session errors: ValueError: Local camera definitions ['camera_rear_left_70fov'] are not available in sensorsim for scene 'clipgt-8196e111-df23-4129-933d-b998b80ba245'\n\nGeometry processing errors: InsufficientPointsFitPlane: There are only 0 points in 3 dimensions in the alpasim_physics.backend module\n\n<img width=\"886\" height=\"818\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/f9ca51ee-75dd-4738-a9e6-8883c760994d\" />\n\n<img width=\"1847\" height=\"667\" alt=\"Image\" src=\"https://github.com/user-attachments/assets/0b1e9833-3c0a-449d-9e78-c71f437c7bcc\" />\n\nDesktop :\nOS: Ubuntu (based on terminal appearance)\nNvidia driver version: 570.124.06\nCUDA version: 12.8\nGPU: 2x NVIDIA GeForce RTX 3090 ",
+ "closedAt": "2026-03-20T17:29:25Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I suspect that certain scenes may be incompatible with transfuser due to missing cameras in the data. But, the physics one might be more surprising to me. Can you provide one of the scenes for which alpasim_physics fails?",
+   "createdAt": "2026-02-02T18:31:43Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "luzijian2003114"
+   },
+   "authorAssociation": "NONE",
+   "body": "@mwatson-nvidia Regarding the alpasim_physics failure:\nThe physics errors (InsufficientPointsFitPlane: There are only 0 points in 3 dimensions) occur in multiple scenes. Here are the specific scene IDs where this error appears:\n\nbab186e6-002e-11f1-8575-6bb1b100ea5b\nbb45aa1a-002e-11f1-8575-6bb1b100ea5b ",
+   "createdAt": "2026-02-03T07:47:48Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Those look like the session ids, which are randomized uuids for the run and different from the scene ids. Can you either check for the scene id in your logs, or attach the full log as a text file?",
+   "createdAt": "2026-02-04T00:42:15Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "@luzijian2003114 ,\n\nBased on your comment, \n\nI confirmed that scene clipgt-8196e111-df23-4129-933d-b998b80ba245,\u00a0 clipgt-35b7b92a-b64d-4b54-afbb-d23f0b4df598 have 4 cameras ['camera_cross_left_120fov', 'camera_cross_right_120fov', 'camera_front_tele_30fov', 'camera_front_wide_120fov'] which is good to run alpamayo, but it is not OK for transfuser driver model.\n\nYou can check data_info.json under /data/nre-artifacts/all-usdzs/, if you unzip it, \nscene_id                                                                             uuid\nclipgt-35b7b92a-b64d-4b54-afbb-d23f0b4df598 --> 092f1d0c-38dc-4108-9eaf-dca881361384.usdz\nclipgt-8196e111-df23-4129-933d-b998b80ba245 --> 626e1e62-48b8-405a-b8f5-6ff4d607ec86.usdz\n\nIt looks like some of scenes are not ready for transfuser.\n",
+   "createdAt": "2026-02-11T22:47:35Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I saw the physics error message today `InsufficientPointsFitPlane` bringing up some other model, and basically this happens when the vehicle drives far from the road. So, I would say that this is somewhat expected behavior for the transfuser model, which does not appear to drive well in Alpasim.",
+   "createdAt": "2026-02-25T18:21:22Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Just to add: The Transfuser model integration has recieved the least amount of debugging effort from our side (didn't find time for it so far unfortunately), so it's quite likely it's the integration and not the model.",
+   "createdAt": "2026-02-25T18:43:56Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-02T12:14:48Z",
+ "labels": [],
+ "number": 30,
+ "state": "CLOSED",
+ "title": "Errors when running Transfuser on all scenarios",
+ "_updatedAt": "2026-03-20T17:29:25Z"
+}

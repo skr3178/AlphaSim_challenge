@@ -1,0 +1,71 @@
+{
+ "author": {
+  "login": "adarsh-nl"
+ },
+ "body": "Team: na-la \u00b7 Track: nuPlan \u00b7 Submission ID: 9f49b1ac-c979-4759-8d63-9bccf4976221 \u00b7 Backend: direct-p5\nOur nuPlan submission failed during eval-environment setup, before our container ran.\nTimeline:\n\ndispatch_blocked_at: 2026-07-18T15:11:52Z (dispatch_blocked_reason: p5_ssm_not_online)\nevaluation_started_at: 15:12:57Z\nevaluation_completed_at: 15:15:29Z (~2.5 min \u2014 far shorter than a full evaluation)\n\nFailure:\n\nfailure_code: DIRECT_P5_COMMAND_FAILED\nfailure_reason: the runner's aws s3 sync --delete s3://alpasim-scene-data-use1/nuplan/worldengine/ /mnt/alpasim-data/nuplan/worldengine/ exited 1\nmetrics_s3_uri and result_summary_s3_uri are both null \u2014 no evaluation output was produced.\n\nThis is on the eval-runner's scene-data sync step (staging nuPlan world-engine data onto the P5 instance), not our image. Our container was never started. The image resolved fine: sha256:b6e1e2a55d0f324cc51ed084ff561d5728f6adfef469e5b10f2bb5020eb98030 (~305 MB).\nLogs (under our artifact prefix):\n\nrunner-logs/sync-nuplan-data.log (the failing sync)\nrunner-logs/docker-compose-up.log\nrunner-result.json\n\nContext: Our earlier submission :sub1 (2026-07-15, nuPlan) showed the same p5_ssm_not_online at dispatch but recovered and scored successfully. And existing leaderboard entries ran fine on the same direct-p5 backend. So this looks like an intermittent P5/SSM or S3-sync failure rather than a persistent outage.\nAsks:\n\nSince our container never executed (infra-side data-sync failure), could this submission be re-run without counting against our monthly submission limit?\nIs p5_ssm_not_online / the scene-data sync a known transient issue, and is there anything on the submitter side to mitigate (we believe not)?\n\nHappy to provide any further IDs or logs.",
+ "closedAt": "2026-08-17T16:53:01Z",
+ "comments": [
+  {
+   "author": {
+    "login": "CreaV"
+   },
+   "authorAssociation": "NONE",
+   "body": "We encountered the same evaluator-side failure.\n\nSubmission ID: 40ce656a-4cff-42f1-b7f5-dd220f19095c\nTrack: nuplan\n\nThe image resolved successfully, but the organizer-side sync of s3:alpasim-scene-data-use1/nuplan/worldengine/ failed before container execution. No metrics, throughput limit, or score were generated.\n\nThe submission was still counted against our monthly quota.",
+   "createdAt": "2026-07-20T11:54:21Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "CONFUSED",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Apologies for this--I was out last week for vacation and had uploaded a few things to the runner just before leaving for vacation that caused the system to run out of space.\n\nI'll work on fixing it with a migration to the \"final\" nuplan scenes (the previous ones were for the soft open), and rerun all the successful submissions/remove the records of the older submissions so that the usage count is removed. This should probably be ready later this week.\n\nSorry for the inconvenience, and thanks for letting us know, here!",
+   "createdAt": "2026-07-27T10:31:02Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    },
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "adarsh-nl"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks a lot!  @mwatson-nvidia ",
+   "createdAt": "2026-07-27T13:00:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-07-18T15:33:46Z",
+ "labels": [],
+ "number": 122,
+ "state": "CLOSED",
+ "title": "nuPlan submission fails on scene-data sync before container start (DIRECT_P5_COMMAND_FAILED / p5_ssm_not_online)",
+ "_updatedAt": "2026-08-17T16:53:01Z"
+}

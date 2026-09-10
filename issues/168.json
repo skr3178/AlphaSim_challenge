@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "YoucanBaby"
+ },
+ "body": "How to download trafficsim-models?\n\n data/trafficsim-models/catk_v120/config.yaml          (8 KB)\ndata/trafficsim-models/catk_v120/latest.ckpt          (67 MB)\ndata/trafficsim-models/tokens/cabs_tc_base_agent_vocab_c1024.pkl  (576 KB)\ndata/trafficsim-models/tokens/cabs_tc_map_vocab_c2048_t1000.pkl   (48 KB)",
+ "closedAt": "2026-08-28T15:58:55Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Those are lfs files and you should be able to grab them with something like `git lfs pull`  assuming they aren't already pulled.\n\nClosing, but let me know if this doesn't work for you",
+   "createdAt": "2026-08-28T15:58:55Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "YoucanBaby"
+   },
+   "authorAssociation": "NONE",
+   "body": "> Those are lfs files and you should be able to grab them with something like `git lfs pull` assuming they aren't already pulled.\n> \n> Closing, but let me know if this doesn't work for you\n\nThanks a lot. That is work for me!",
+   "createdAt": "2026-08-28T16:12:47Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-28T15:41:00Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 168,
+ "state": "CLOSED",
+ "title": "How to download trafficsim-models?",
+ "_updatedAt": "2026-08-28T16:12:59Z"
+}

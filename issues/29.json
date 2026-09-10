@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "zzz5y"
+ },
+ "body": "Hello Author,I wonder if i Can only use one front 120fov camera for alpamayo?",
+ "closedAt": "2026-01-29T07:17:54Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Unfortunately not - the model is trained with multiple cameras.",
+   "createdAt": "2026-01-29T07:17:55Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-01-29T05:50:25Z",
+ "labels": [],
+ "number": 29,
+ "state": "CLOSED",
+ "title": "Can alpamayo only use 1camera to inferencer?",
+ "_updatedAt": "2026-01-29T07:17:55Z"
+}

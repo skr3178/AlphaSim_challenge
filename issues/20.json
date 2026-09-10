@@ -1,0 +1,202 @@
+{
+ "author": {
+  "login": "dennisdarrow"
+ },
+ "body": "Describe the bug\nAlpamayo-R1-10B (nvidia/Alpamayo-R1-10B) produces inverted trajectories: Chain-of-Causation reasoning outputs \"nudge LEFT\" decisions while the actual trajectory curves RIGHT, causing collisions. This reproduces on both distributed (DGX\u2192Lambda) and single-machine (A100 local) setups.\nTo Reproduce\n\nRun AlpaSim wizard with 4-camera AR1 config:\n\nbash   uv run alpasim_wizard +deploy=local_oss \\\n     defines.filesystem=/home/ubuntu/alpasim/data \\\n     \"scenes.scene_ids=[clipgt-fa0379c6-d60e-48b7-b157-11bf5b63039d]\" \\\n     wizard.log_dir=/home/ubuntu/alpasim/test_run\n\nObserve Chain-of-Causation logs showing \"Nudge left to pass...\" decisions\nObserve video showing trajectory curving RIGHT instead of LEFT\nResult: lateral collision or offroad\n\nExpected behavior\nWhen Chain-of-Causation outputs \"Nudge left to pass the parked car on the right\", the trajectory should curve LEFT, not RIGHT.\nScreenshots\n[Attach alpamayo_4cam_test_run8.gif and alpamayo_local_a100.gif]\nDesktop\n\nOS: Ubuntu 22.04\nCUDA: 12.4.1\nGPU: Tested on both A10 (24GB) and A100 (40GB)\nDocker: alpasim-base:0.1.3\n\nAdditional context\nFull investigation documented: code analysis shows both AlpaSim and Alpamayo use positive Y = LEFT convention. Math is consistent. Suggests VLM reasoning and action head output are misaligned at the model training level.\n\n![Image](https://github.com/user-attachments/assets/a46083a1-ea25-400d-b749-6a68b04967c7)\n\n![Image](https://github.com/user-attachments/assets/3f65d1fc-051d-4227-a19c-806cbc7a807c)",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Do you mean the `Command: LEFT/RIGHT` in the top left corner?  That's actually not the CoC, but a \"meta action\" command which I believe is unused by AR1 (it was implemented for VaVam and the likes). ",
+   "createdAt": "2026-01-20T07:52:13Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for the clarification regarding the overlay! That clears up the visual confusion.\n\nHowever, looking at my driver terminal output (the text-based Chain-of-Causation), the model explicitly outputted multiple decisions to \"Nudge left to pass...\". Despite this reasoning, the vehicle consistently executed a hard right turn, resulting in collisions on both my distributed and local A100 setups.\n\nSince the overlay is legacy/unused, is there a recommended way to visualize the actual active trajectory output? I want to better understand this divergence between the VLM's stated intent (Left) and the controller's action (Right).",
+   "createdAt": "2026-01-20T11:57:59Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "Update: Steering Offset/Bias Confirmed \u2014 May Coexist with Inversion\n\n I re-ran the collision scene (clipgt-fa03...) and monitored the logs closely to isolate the behavior.\n\n The \"Brain\" was Silent: The CoC logs showed zero lateral commands (no \"Nudge Left/Right\"). The model only issued longitudinal commands (speed/distance).\n\n The \"Body\" Still Failed: Despite having no instruction to turn, the vehicle drifted right and went offroad at 16% progress (metrics: offroad: 1.00, dist_to_gt_trajectory: 1.6m).\n\nCurrent Hypothesis: This confirms a Constant Steering Bias independent of the previously observed command inversion. The agent cannot maintain a straight trajectory even when the VLM implicitly requests \"Keep Lane.\"\n\nHowever, the original inversion bug (where explicit \"Nudge LEFT\" text commands produced a RIGHT trajectory in my previous runs) likely still exists on top of this baseline drift.\n\n I will generate a GIF of this specific \"silent drift\" later to demonstrate the mechanical nature of the failure.",
+   "createdAt": "2026-01-20T16:08:35Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "karkuspeter"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "@dennisdarrow thanks for doing this investigation! \n\nYou can generate videos with CoC overlay following this https://github.com/NVlabs/alpasim/blob/main/docs/TUTORIAL.md#alpamayo-r1\n\nspecifically: `alpasim_wizard +deploy=local wizard.log_dir=$PWD/tutorial_alpamayo driver=[ar1,ar1_runtime_configs] eval.video.video_layouts=[REASONING_OVERLAY]`\n\nYou might want to run a couple of different scenes to check whether this is a mis-alignment between text and trajectory output in a specific scene or a consistent bug.",
+   "createdAt": "2026-01-20T19:27:57Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "@karkuspeter Thank you so much! I'll try that tonight or tomorrow morning and let you know.",
+   "createdAt": "2026-01-21T01:01:11Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "@karkuspeter Thanks for the tip \u2014 I ran it with eval.video.video_layouts=[REASONING_OVERLAY] and captured the mismatch.\nVideo with overlay: [attach reasoning_overlay.gif]\nThe overlay shows Command: STRAIGHT while the vehicle drifts right and goes offroad (dist_to_gt_trajectory: 7.23m).\n\nCoC logs during the run:\n[03:02:07] AR1 Chain-of-Causation: ['Keep at the center of the lane to continue driving...']\n...\n[03:04:16] AR1 Chain-of-Causation: ['Keep at the center of the lane to continue driving...']\n\nReproducibility: Consistent rightward drift across 3 runs on 2 different scenes \u2014 all ending in offroad: 1.00 with no lateral commands (\"Nudge Left/Right\") issued. The reasoning says \"keep center\" but the trajectory drifts right.\n\n![Image](https://github.com/user-attachments/assets/eb3dd246-8f92-4790-b333-97817ded6018)",
+   "createdAt": "2026-01-21T03:40:41Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "@karkuspeter \n# [Alpamayo R1] Critical VLA Alignment Failure: Reasoning & Trajectory Heads Decoupled\n\n**Severity:** Critical (Safety Violation)\n**Component:** VLA Architecture (Reasoning/Policy Alignment)\n**Simulation:** AlpaSim\n**Session IDs:**\n* `53670e3c-f6cb-11f0-8473-c527fbe38642` (test_run3)\n* `b19b8eec-f6d5-11f0-9266-17dd73ad6b34` (test_run5)\n\n## Executive Summary\nWe have identified a critical bug in Alpamayo R1 where the **Reasoning Head (Chain of Command)** and **Trajectory Head (Action)** are functionally decoupled.\n\nThe model demonstrates a \"Split-Brain\" failure:\n1.  **Reasoning Correctness:** The reasoning head correctly identifies scene semantics and safety maneuvers (e.g., \"Nudge Left,\" \"Stop for Red Light\").\n2.  **Action Failure:** The trajectory head ignores this reasoning context, leading to either **Action Inertia** (refusing to steer) or **Trajectory Collapse** (hallucinating undrivable paths).\n\nThis is not a calibration issue; the model explicitly *states* an intent to maneuver but generates tensor outputs that contradict that intent.\n\n---\n\n## Evidence A: Action Inertia (The \"Nudge\" Failure)\n**Run ID:** `test_run3` (`53670e3c-f6cb-11f0-8473-c527fbe38642`)\n**Clip:** `clipgt-05bb8212`\n\n### Metrics\n| Metric | Value | Note |\n| :--- | :--- | :--- |\n| `collision_rear` | **1.00** | Critical Failure |\n| `wrong_lane` | **1.00** | Critical Failure |\n| `plan_deviation` | **2.77** | High Deviation |\n\n### 1. The Reasoning (CoC)\nThe model correctly identifies obstacles and commands a lateral shift:\n> * \"Nudge to the left to increase clearance from the parked car ahead.\"\n> * \"Nudge to the left to pass the vehicle pulling out from the right curb.\"\n\n### 2. The Action (Trajectory)\nDespite the explicit CoC tokens to \"Nudge Left,\" the Trajectory Prediction (visualized in attached media) remains biased Straight/Right.\n\n### 3. Result\nThe trajectory output contradicts the reasoning output. The vehicle maintains a collision course, resulting in a rear-end impact with the obstacle it claimed to be avoiding.\n\n---\n\n## Evidence B: Trajectory Collapse (The \"Intersection\" Failure)\n**Run ID:** `test_run5` (`b19b8eec-f6d5-11f0-9266-17dd73ad6b34`)\n**Clip:** `clipgt-fa0379c6`\n\n### Metrics\n| Metric | Value | Note |\n| :--- | :--- | :--- |\n| `offroad` | **1.00** | Critical Failure |\n| `offroad_at_fault`| **1.00** | Critical Failure |\n| `plan_deviation` | **4.91** | **Massive Deviation** |\n\n### 1. The Reasoning (CoC)\nThe model correctly parses the traffic light logic:\n> * \"Stop for the red traffic light.\"\n> * \"Accelerate to proceed through the intersection since the straight traffic light is green.\"\n\n### 2. The Action (Trajectory)\nWhile the reasoning is temporally correct, the Trajectory Head loses spatial coherence. A `plan_deviation` of **4.91 meters** indicates a total collapse of the lane-keeping manifold.\n\n### 3. Result\nThe vehicle attempts to execute the \"Accelerate\" command without valid lane constraints, driving off-road immediately upon entering the intersection.\n\n---\n\n## Root Cause Analysis\nThe failure indicates a breakdown in the conditionality between the LLM latent state and the Policy Head. The Trajectory Head appears to default to a \"prior\" (go straight) or exhibits instability when scene complexity increases, ignoring the explicit safety constraints generated by the language model.\n\n## Environment & Reproduction\n**Hardware/Sensor Config:**\n* 4-camera configuration:\n    * `camera_front_wide_120fov`\n    * `camera_front_tele_30fov`\n    * `camera_cross_left_120fov`\n    * `camera_cross_right_120fov`\n* **Connection:** AlpaSim with remote brain via gRPC tunnel\n\n**Steps to Reproduce:**\n1.  Load **Clip `clipgt-05bb8212`** (Parked Cars) in AlpaSim using the config above.\n2.  Observe CoC output: Confirm generation of \"Nudge Left\" tokens.\n3.  Observe Trajectory output: Confirm vector remains neutral/right-biased.\n4.  **Result:** Vehicle collides with parked car despite verbalizing avoidance.\n\n## Attachments\n* `test_run3.gif`: Shows valid CoC generation but invalid trajectory execution (Action Inertia).\n* `test_run5.gif`: Shows valid traffic light detection but massive spatial deviation (Trajectory Collapse).\n\n![Image](https://github.com/user-attachments/assets/8b89d7a9-150c-47d4-89a0-80a502d2fa58)\n\n![Image](https://github.com/user-attachments/assets/bfb10586-9c34-4254-9a1e-d013d2bbe82b)",
+   "createdAt": "2026-01-21T16:38:04Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "ROCKET",
+     "users": {
+      "totalCount": 3
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "@karkuspeter \n\nAdditional testing confirms this is not hardware or latency related:\n- DGX Spark (ARM64): collision_lateral\n- Cloud A100 40GB (local brain+sim): collision + offroad\n- Cloud A10 (distributed via tunnel): offroad\n\nSame rightward drift observed on all configs. Bug is in the model weights/architecture.",
+   "createdAt": "2026-01-21T22:06:59Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "Verified model works correctly on PhysicalAI-AV real data:\n- 4 random clips tested via inference.py\n- minADE: 0.48m - 2.56m (reasonable)\n- CoC consistently aligns with trajectory output\n\nBug only manifests in AlpaSim closed-loop simulation.",
+   "createdAt": "2026-01-22T00:24:16Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "## Update: Testing on 4x H100 80GB (320GB VRAM, fully colocated)\n\nI ran additional tests on a Lambda Labs 4x H100 SXM5 instance to rule out hardware/resource constraints.\n\n### Test 1: Scene clipgt-05bb8212 (parked car scenario)\n\n**Hardware:** 4x H100 80GB, fully colocated (no distributed setup, no network latency)\n\n**Metrics:**\n- collision_any: 0.00 - No collision\n- wrong_lane: 1.00 - Lane violation\n- dist_to_gt_trajectory: 4.22m\n\n**CoC Analysis:** When reasoning says \"Nudge left\", the trajectory produces the smallest lateral movement (+0.08-0.10m). When reasoning says generic \"Keep distance\", trajectory predicts wild lateral drift (-12m). The actual ego position stayed within -0.2m to +0.4m range.\n\n### Test 2: Scene clipgt-fa0379c6 (intersection scenario)\n\n**Metrics:**\n- collision_any: 1.00 - Crashed\n- collision_lateral: 1.00 - Side collision\n- duration_frac_20s: 0.36 - Only completed 36% of simulation\n\n**CoC Analysis:** Model flip-flops between contradictory decisions:\n- Step 51: \"Stop, straight light is RED\"\n- Step 54: \"Turn RIGHT, light is green\"\n- Step 58: \"Stop, straight light is RED\"\n- Step 60: \"Accelerate, light is GREEN\"\n- Step 62: \"Stop, straight light is RED\"\n- Step 68: \"Turn right\" with -19m lateral prediction\n- Step 69: \"Turn right\" with +0.14m lateral prediction\n\n### Conclusion\n\nTesting on 4x H100 confirms this is a model-level issue, not hardware/latency/resources. The reasoning and trajectory heads are decoupled.\n\n![Image](https://github.com/user-attachments/assets/74b3d6d0-dad4-4e54-8351-675355f7cc34)\n\n![Image](https://github.com/user-attachments/assets/b44ccb27-9e92-496e-8d3f-85b3693ca963)",
+   "createdAt": "2026-01-24T19:06:32Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "After further investigation, this behavior appears to be a known limitation of the released model rather than a simulator or configuration bug.\nPer the Alpamayo-R1 paper (arXiv:2511.00088), the model uses a 3-stage training pipeline:\n\n1. Action Modality Injection\n2. Supervised Fine-Tuning to elicit reasoning (CoC dataset)\n3. RL-based Post-Training to enforce reasoning-action consistency\n\nThe paper claims RL post-training improves \"reasoning-action consistency by 37%\" \u2014 which is precisely what's broken here (reasoning says left, trajectory goes right).\nHowever, the GitHub FAQ confirms: \"The current 10B model release has not undergone RL post-training... this release focuses on the supervised learning components.\"\nReproduced on:\n\nDGX Spark (ARM64) with distributed Lambda Labs setup\n4x H100 (x86) single-machine clean run\n\nThis suggests the reasoning-trajectory decoupling is inherent to the SFT-only release, not a deployment issue.\nRequest: Could NVIDIA clarify whether:\n\nThis is expected behavior for the non-RL release?\nThere are plans to release the RL-aligned checkpoint?\nAny workarounds exist for the current release?\n\nFull investigation and video evidence: https://github.com/NVlabs/alpasim/issues/20",
+   "createdAt": "2026-01-26T22:36:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "karkuspeter"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hi @dennisdarrow \n\nThank you for your detailed investigation!\n\nI believe the observed behavior can be attributed to the following factors:\n\n1. As you mention, some amount of misalignment is expected between the trajectory and CoC output.\n2. Rendering artifacts arising from neural reconstruction also contribute to degrading prediction quality.\n3. Finally it is also possible there are some bugs remaining in our model-simulator integration. We will do some more investigation around this and report back if we find any issue. \n\nRe: plans for future model releases please ask in https://github.com/NVlabs/alpamayo ",
+   "createdAt": "2026-02-03T08:08:09Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "shant0602"
+   },
+   "authorAssociation": "NONE",
+   "body": "I recently tried the sim on [clipgt-fa0379c6-d60e-48b7-b157-11bf5b63039d] and the simulations seemed to have become fine in the duration, where the ego vehicle went to the wrong side earlier, however towards the very end of video there is divergence b/w GT and predicted trajectory @dennisdarrow , @karkuspeter \n\nDid anything change recently. As I understand the model is still not RL post trained, right?\n\n`alpasim_wizard +deploy=local scenes.scene_ids=[clipgt-fa0379c6-d60e-48b7-b157-11bf5b63039d] wizard.log_dir=/home/ubuntu/alpasim/test driver=[ar1,ar1_runtime_configs] eval.video.video_layouts=[DEFAULT,REASONING_OVERLAY]`\n\n(Ran on 1x H100 instance on Lambda)\n\n\n![Image](https://github.com/user-attachments/assets/3216975d-2c44-4dac-a2c2-8aace4c17784)\n\n",
+   "createdAt": "2026-02-20T08:42:11Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "bhanu-iav"
+   },
+   "authorAssociation": "NONE",
+   "body": "How did you set AlpaSim wizard with 4-camera AR1 config?",
+   "createdAt": "2026-03-12T23:41:23Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dennisdarrow"
+   },
+   "authorAssociation": "NONE",
+   "body": "@bhanu-iav The 4-camera config is the default AR1 setup in AlpaSim\u2019s colocated mode. When you run the wizard, use:\n\ndriver=[ar1,ar1_runtime_configs]\n\nThe four cameras (front_tele_30fov, front_wide_120fov, cross_left_120fov, cross_right_120fov) are defined in the AR1 runtime configs. I didn\u2019t modify the camera setup \u2014 it\u2019s what ships with AlpaSim out of the box.\nOne important note: the model\u2019s reasoning_text field in the ASL logs is always empty. CoC text is only available from stdout, so you need to capture it with tee during the run.",
+   "createdAt": "2026-03-13T02:06:20Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-01-20T01:12:51Z",
+ "labels": [],
+ "number": 20,
+ "state": "OPEN",
+ "title": " [Alpamayo 1 Critical VLA Alignment Failure: Reasoning & Trajectory Heads Decoupled",
+ "_updatedAt": "2026-03-13T02:06:20Z"
+}

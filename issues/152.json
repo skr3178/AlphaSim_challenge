@@ -1,0 +1,58 @@
+{
+ "author": {
+  "login": "juliene-273"
+ },
+ "body": "Hi! I've noticed that in last week's PR #135, the default controller used by the E2E challenge was switched from linear to non-linear MPC.\n \n### Problem description\n \nAfter this change, it seems that the existing straight line driver from the starter kit example is now struggling in a lot of scenes: Instead of driving straight ahead, it now often performs a very sharp left or right turn (>100 deg/s yaw rate) exactly in the moment when the handover from the GT driver to the ego driver occurs.\n \n### How to reproduce\n \nTry the starter kit example e.g. on the following scenes:\n \n```\nclipgt-8ecf02e3-860b-4ad1-ab9a-8ce031d73c6f\nclipgt-9dfc06b4-f46d-42ef-a552-d71ef221e0b5\nclipgt-954c1983-7ed6-4f06-af5b-3672e1d8b77f\n```\n \nWith the non-linear MPC controller, the driver is steering hard left/hard right (up to ~90\u00b0) after the 1.7s warmup phase, and immediately crashes into an obstacle or goes offroad (leading to a scene score of 0).\n \nWith the previous linear MPC, this did not happen.\n \n### Open questions\n \n1. Is this change of behavior of the straight-line example driver intended?\n2. Are the changes from PR #135 already active on the public evaluation server? I.e. will current/future submissions all use the non-linear MPC? If not, when will this change become active? During the planned mid-September leaderboard reset?\n3. How are past submissions being treated? Will they be re-run using the new controller?\n\nThanks!",
+ "closedAt": "2026-08-17T16:33:06Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "1. Not intended. I have a suspicion about what could be happening based on things I've seen in the past (essentially, really harsh braking type events can cause the controller to find an \"optimal\" solution that uses swerves to artificially shrink the path). I'll take a closer look at this, though, and let you know that we are currently exploring a few options for user choice of controller when we move out of the initial soft-open phase\n2. No, no updates have been made to the actual server since the opening. Sorry for the lack of clarity on this. Once we are more stable, we'll revisit this.\n3. Top submissions will be rerun and the leaderboard will be reset/seeded\n\nPlease, check out the Announcements & Upcoming Changes section on https://huggingface.co/spaces/nvidia/AlpasimE2EClosedLoopChallenge2026 for more information on upcoming changes. I'll add some notes there about the current configuration as well.",
+   "createdAt": "2026-08-17T13:06:18Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "juliene-273"
+   },
+   "authorAssociation": "NONE",
+   "body": "Great, thanks for the quick reply and for looking into it!",
+   "createdAt": "2026-08-17T13:33:19Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Should be fixed with: https://github.com/NVlabs/alpasim/pull/153  . I ran those three scenes and the tracking behavior seemed reasonable to me.\n\nAdditionally, the HF space now identifies the currently pinned version of the repo being used for the competition.\n\nI'm closing this, but if you have concerns, feel free to re-open.",
+   "createdAt": "2026-08-17T16:33:06Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-17T12:57:44Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 152,
+ "state": "CLOSED",
+ "title": "[E2E challenge] Issues with non-linear MPC controller and straight-line driver",
+ "_updatedAt": "2026-08-17T16:33:06Z"
+}

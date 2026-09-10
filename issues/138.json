@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "0ttwhy4"
+ },
+ "body": "Hi, thanks for open-sourcing this project. I have a question regarding the route generation logic in `src/runtime/alpasim_runtime/route_generator.py`.\n\nAs I understand it, the runtime provides a `route` based on the lane centerline associated with the ego's **current lane**. Starting from the projection of the current ego position onto the lane centerline, the implementation samples points ahead and eventually keeps approximately the future 40\u201380 m segment, which is sent to the driver through `submit_route`. In these cases, the ego's actual position several seconds later may differ substantially from the position obtained by simply looking 40\u201380 m ahead along the current lane. This seems particularly relevant because 40 m already corresponds to roughly 2-4 seconds of driving under typical urban speeds. A lane change or turning maneuver can easily happen within this interval. In addition, the navigation is also computed in a similar way, by computing the lateral shift at 40m. \n\nMy concern is that the current implementation may provide a geometrically valid look-ahead of the **current lane**, while still being inconsistent with the **ego's actual future route**, especially for lane changes, turns, and intersections. In addition, I found that the simulation could fail to render effectively when the ego trajectory is drifting away from the replay trajectory, which makes the routing information even more critical.",
+ "closedAt": "2026-08-07T16:17:03Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "It seems like you are referring to the way things work for the competition (given the 40-80m segment comment). The way that the route discovery works is that it looks at the recorded path taken by the ego vehicle over the full (usually 20s) and creates a a set of waypoints once on initialization that, using heuristics, tries to match the lane choice. Extrapolation is only done after the end of the recording (for which no data exists).\n\nIf there is a bug in the implementation, please let us know, but I believe it should work a little differently from the description you provided.\n\nAs to the poor rendering after drifting, this is a known issue, and one that is addressed (at least for now) by throwing out portions of rollouts that diverge too far from the recording (no incidents that occur count against the score, but no progress is counted).\n\nI'll close this, but feel free to reopen if you think I missed something or disagree. And thanks for the interest in the project!",
+   "createdAt": "2026-08-07T16:17:03Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "0ttwhy4"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks a lot for your explanation! We will further check the details!",
+   "createdAt": "2026-08-08T15:33:36Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-07T15:52:07Z",
+ "labels": [],
+ "number": 138,
+ "state": "CLOSED",
+ "title": "Route generation may not provide a reliable navigation signal",
+ "_updatedAt": "2026-08-08T15:33:36Z"
+}

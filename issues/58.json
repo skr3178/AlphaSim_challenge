@@ -1,0 +1,46 @@
+{
+ "author": {
+  "login": "longxiaofei"
+ },
+ "body": "**Is your feature request related to a problem? Please describe.**\n`aggregate/metrics_results.txt` is useful for humans, but hard to consume programmatically.\n\nFor scripting, dashboards, or run-to-run analysis, I currently need to either parse the formatted txt output or re-implement the aggregation logic from `metrics_unprocessed.parquet`.\n\n**Describe the solution you'd like**\nPlease emit a machine-readable aggregate metrics artifact, ideally:\n\n- `aggregate/metrics_results.parquet`\n\nThis should contain the same final aggregated metrics shown in `metrics_results.txt`, but in a structured format suitable for Polars/Pandas/etc.\n\n**Describe alternatives you've considered**\n- Parsing `metrics_results.txt`\n- Recomputing aggregates from `metrics_unprocessed.parquet`\n\nBoth workarounds are fragile or duplicative.\n\n**Additional context**\nParquet seems like the most natural format since the project already uses it elsewhere.\n",
+ "closedAt": "2026-04-06T23:49:09Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Yeah, that's a good point. One reason we didn't add it was that the aggregate results depend on _how_ the unprocessed metrics were aggregated, e.g. which filters were applied. And we didn't want to have \"free floating\" `aggregated_metrcis.parquet` lying around without that info attached to them. \nBut I guess by now we haven't changed the filtering in a while, so we can consider it stable...? \n@mwatson-nvidia - what do you think?",
+   "createdAt": "2026-03-22T09:56:58Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Sounds reasonable to me",
+   "createdAt": "2026-03-23T01:51:45Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-03-22T05:52:25Z",
+ "labels": [],
+ "number": 58,
+ "state": "CLOSED",
+ "title": "Emit machine-readable aggregated metrics alongside metrics_results.txt",
+ "_updatedAt": "2026-04-06T23:49:09Z"
+}

@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "usherbob"
+ },
+ "body": "I ran the e2e-challenge sampled scene, and got the rendered video, which had a lot of artifact. So is it fair to be an evaluation benchmark? Or I got some wrong rendered results.\n\nhttps://github.com/user-attachments/assets/368b81f2-28d5-4d7e-a67c-e97345bfafcc",
+ "closedAt": "2026-07-16T17:14:41Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This is an important issue, and one we need to write a little more on formally, especially for the competition. At the heart of the issue is that Nurec fails when one diverges too far from the original recording pose. Our solution to this problem is to crop the scenario rollout in the evaluation stage to only the duration which we deem valid through this modifier  https://github.com/NVlabs/alpasim/blob/e2e_challenge/src/eval/src/eval/aggregation/main.py#L139 . The modifier prevents evaluation on artifact-heavy frames, while progress scores are computed against the full simulation duration to provide an incentive to remain valid (close to the original human trajectory) throughout. \n\nHopefully this addresses your concern, and look out for a more formal description of the evaluation process (including a post on the Item Response Theory ranking approach).",
+   "createdAt": "2026-07-02T17:26:23Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-07-02T05:37:20Z",
+ "labels": [],
+ "number": 115,
+ "state": "CLOSED",
+ "title": "Rendered RGB not good",
+ "_updatedAt": "2026-07-16T17:14:41Z"
+}

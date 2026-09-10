@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "Dingrui-Wang"
+ },
+ "body": "# Linear MPC is infeasible above its hard-coded 35 m/s speed bound\n\n## Bug\n\n`linear_mpc.py` constrains `vx <= 35.0 m/s`. Some NuRec 26.01 cases start faster, so OSQP reports `primal infeasible` and the controller silently returns `[0, 0]`, including zero steering.\n\nAffected examples:\n\n- `clipgt-29fb826a-9b22-4a1d-8e51-b8d5bee542e5` / `996c556c-93c5-11f1-849d-e66908b82790` (median 36.13 m/s; all 198 steering commands are zero)\n- `clipgt-63844633-ef7c-4c48-8a61-a50af34b9e09` (36.06 m/s)\n- `clipgt-4b673ab0-c718-4e65-b6a7-89d85608fdec` (35.71 m/s)\n\n## Minimal reproduction\n\nReplaying the same recorded controller request (`vx=36.128 m/s`):\n\n- max `vx=35`: `primal infeasible` -> `[0, 0]`\n- max `vx=40`: solved -> `[-0.0067, -9.0]`\n\nThe infeasibility is caused by the initial state violating the hard bound, independent of the submitted reference trajectory.\n\n## Expected / suggested fix\n\n- Use a configurable dynamic bound (`>= initial_vx + margin`) or a soft speed constraint.\n- Surface solver status and use an explicit safe fallback instead of silently returning zero control.\n",
+ "closedAt": "2026-08-12T09:35:54Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks for identifying this! Would it not be a simpler fix to just increase the bounds? Presumably the same gains should continue to work reasonably above 35 mps, and, if we really needed something different, we could do some gain scheduling, instead.",
+   "createdAt": "2026-08-10T09:22:31Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Dingrui-Wang"
+   },
+   "authorAssociation": "CONTRIBUTOR",
+   "body": "Agreed \u2014 I replaced #141 with the simpler fixed-bound change in #144: raise the limit from 35 to 40 m/s and cover the boundary in the existing lateral-control test. The maximum observed speed in our public_2601 evaluation was 36.204 m/s, and the MPC remained feasible with correctly directed lateral control at 40 m/s.",
+   "createdAt": "2026-08-10T15:42:02Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-09T13:55:26Z",
+ "labels": [],
+ "number": 140,
+ "state": "CLOSED",
+ "title": "Linear MPC is infeasible above its hard-coded 35 m/s speed bound",
+ "_updatedAt": "2026-08-12T09:35:54Z"
+}

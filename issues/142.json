@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "Dingrui-Wang"
+ },
+ "body": "### Problem\n`RouteGeneratorMap` derives heading from a single >1 cm frame-to-frame displacement. Stationary localization jitter can flip that heading and make map matching jump between opposing lanes. Independent lane-center projection can then create an artificial ~180\u00b0 foldback, aborting the rollout before the policy runs.\n\nExample (NuRec 26.01, `clipgt-37ca44b5-43c4-4ff9-9106-fc4bef41be49`):\n```\nValueError: Waypoint 59 fails sanity check: route folds back on itself with angle 180.00 deg\n```\nThe recorded ego trajectory passes the same foldback check; only the map-projected route fails. We observed this on 12 scenes.\n\n### Expected\nStationary jitter should not change route heading, and an invalid map projection should not prevent a valid recorded scene from running.\n",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I think there are a few items to cover here:\n1. what do we do when there are issues like this, where the map has irregularities?\n2. was this particular version with the map failure in one of the published suites?\n\nFor (1), we have generally taken a conservative approach (where feasible) and decided that if the map contains lane continuations that fold back on eachother, perhaps it is better to avoid using those maps altogether (it adds additional doubt to the evaluation). This was especially true when only the xodr maps were published as they contained a larger quantity of these types of errors. Our thinking was that, if it was desired to run these scenes, it would be better to run them without the map-based route generator.\n\nFor (2), if you are seeing this in one the published scenesets that we have, I think I'd prefer removing it from the sceneset (this is what we have done in the past and why we don't include all the scenes from the nurec huggingface set).",
+   "createdAt": "2026-08-10T09:44:42Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-10T02:47:27Z",
+ "labels": [],
+ "number": 142,
+ "state": "OPEN",
+ "title": "RouteGeneratorMap rejects valid routes after lane projection foldback",
+ "_updatedAt": "2026-08-10T09:44:42Z"
+}

@@ -1,0 +1,63 @@
+{
+ "author": {
+  "login": "s0002359"
+ },
+ "body": "Hi, I'd like to open up for a discussion around the choice of scene id usage to understand the reasoning from your side as well as proposing an alternative approach to open up for more possibilities.\n\nCurrently, alpasim framework requires the usdz filename to match the scene id, is there a reason for this coupling?\nIn the code scene id sometimes refers to the metadata entry and sometimes the filename. Another vendor that provides a \"sensorsim\" neural reconstruction server and scenes, might want to construct their scene id differently from the usdz filename.\n\nA suggestion would be to make a distinction between `scene_name` and `scene_id`, where the former refers to the filename and the latter is the entry in the metadata. In fact, we can already see this distinction in some of the tests where the two (filename and metadata entry) don't match [test_sceneset.py#L320](https://github.com/NVlabs/alpasim/blob/196d21ab86593af121b055995d0185bb786d1f70/src/wizard/tests/test_sceneset.py#L320). The changes needed to conform to this new convention would result in a breaking interface change and potentially a lot of refactoring, but I thought it would be good to open up for discussion at the very least. What was your reasoning when designing the framework?",
+ "closedAt": "2026-06-15T07:57:39Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "> alpasim framework requires the usdz filename to match the scene id\n\nOne correction--this isn't accurate. In fact, internally, they are different and multiple files can point to the same scene id (the unique identifier is the UUID). It's just that the team that maintains the public PAI Nurec scenes has chosen to name the files based on the scene id.\n\nAs to other approaches, internally, we have had some discussions and plan to move to including the UUID in the sceneset definitions. Would this address your concerns?",
+   "createdAt": "2026-06-10T18:33:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "s0002359"
+   },
+   "authorAssociation": "NONE",
+   "body": "Okay, that's good to know I made the wrong assumption, but then I'm curious about the physics container [here](https://github.com/NVlabs/alpasim/blob/196d21ab86593af121b055995d0185bb786d1f70/src/physics/alpasim_physics/server.py#L60). In this case, there seems to be an assumption that the filename is the same as the scene id. But maybe you don't consider this as part of the \"alpasim framework\", which would be understandable. This is the part that has been the main blocker for us (although we can modify the code in a fork), as far as I've noticed at least. I think if we can get some clarity about why the physics container reads handles it this way as well, there's no need for bringing in UUID.\n\nAlso, I just realized I had completely missed that there is a discussion tab, I'll remember that for next time. Sorry for posting under issues",
+   "createdAt": "2026-06-11T11:19:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "The physics service is also aware that the filename is not equivalent to the scene id through the `Artifact`'s `scene_id` property:\n\n```\n  0     @property\n  1     def scene_id(self) -> str:\n  2         \"\"\"\n  3         The name used to identify the scene via `scene_id=` when requesting\n  4         \"\"\"\n  5         return self.metadata.scene_id\n```\n\nBut, let us know if we missed something else, and hopefully, once we get to those changes, you're work will be a bit easier",
+   "createdAt": "2026-06-11T17:08:28Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "s0002359"
+   },
+   "authorAssociation": "NONE",
+   "body": "Ah, I had misinterpreted the output of `Artifact`'s `discover_from_glob` method. Then the physics container shouldn't be a blocker either. Thanks for the help, and again, sorry for opening it has an issue.",
+   "createdAt": "2026-06-15T07:57:39Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-06-10T09:10:52Z",
+ "labels": [],
+ "number": 100,
+ "state": "CLOSED",
+ "title": "Separation of scene id",
+ "_updatedAt": "2026-06-15T07:57:39Z"
+}

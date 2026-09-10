@@ -1,0 +1,39 @@
+{
+ "author": {
+  "login": "junhyeokp0"
+ },
+ "body": "I am sorry to bother you again with another inquiry.\n\nI am writing to inquire about an issue with a recent submission for the alpasim-end2end-2026 competition.\n\nWhile the evaluation appeared to run, the status ended up as FAILED with the code AGGREGATION_FAILED, and no score was produced.\n\nAccording to the log response, the failure reason is stated as follows:\n\n`\"failure_reason\": \"simulation did not write /opt/dlami/nvme/alpasim-runs/48beb367-eb73-441e-81da-a8eef1f9d9f9/aggregate/results-summary.json\"`\n\nCould you please help us understand why the results-summary.json file was not created or aggregated properly? We would appreciate any insights or guidance on whether this was caused by an issue within our submission container or an environment issue during the aggregation step.\n\n`Submission ID: 48beb367-eb73-441e-81da-a8eef1f9d9f9`\n\n\nMoreover, \n\n> The 0.1 second target corresponds to a 10 Hz driving loop: a policy should be able to produce each driving decision within one control tick. Official evaluation enforces this with a per-track throughput budget. Submission status reports the observed throughput wall time and the applicable limit.\n> \n> Both tracks use the ec2 preset (see src/wizard/configs/{e2e_challenge,e2e_challenge_nuplan}). The EC2 configs start 16 replicas of the submitted image across GPUs 4-7 with 2 concurrent rollouts per replica.\n\nJust to clarify, does this imply submitting a model capable of generating 2 rollouts in under 100ms?\n\n\nThank you very much for your time and support.",
+ "closedAt": "2026-08-10T16:01:01Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "We reviewed submission 48beb367-eb73-441e-81da-a8eef1f9d9f9 (PAI track). This was not an aggregation-service failure. The submitted image's PyTorch installation is not compatible with the evaluator's NVIDIA H100 GPUs: it reports that the H100's CUDA capability (sm_90) is unsupported and repeatedly emits CUDA-kernel fatal errors (for example, \"this function is for sm80, but was built for sm370\").\n\nAs a result, the DriveSuprim model did not finish loading within 600 seconds. Runtime drive calls consequently failed with gRPC UNAVAILABLE and the message \"DriveSuprim did not finish loading within 600s.\" The simulation subsequently reached its 13,500-second (3 h 45 m) timeout without producing aggregate/results-summary.json.\n\nPlease rebuild the submission image with a PyTorch and any CUDA extensions compatible with NVIDIA H100 (sm_90), then resubmit.\n\nOn throughput: the evaluation runs 16 replicas with up to 2 concurrent rollouts each, for 32 concurrent driver slots. This is a concurrency/load setting, not a requirement to generate two rollouts together in 100 ms. The enforced check is an evaluation-level wall-clock budget amortized across those 32 slots, rather than a strict per-request 100 ms limit. Basically, due to the architecture of the simulation, it's not possible to enforce a strict 100ms execution; but, if your code can return trajectories in less than 100ms, you should be fine.\n\nI'm going to close this, but let me know if you think there are additional issues I need to address. And apologies for keeping the logs/feedback tight--we feel that this is a requirement to maintain fairness and not leak any information.",
+   "createdAt": "2026-08-10T16:01:01Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "junhyeokp0"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thank you. I appreciate it a lot!",
+   "createdAt": "2026-08-11T03:58:48Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-08T07:54:16Z",
+ "labels": [],
+ "number": 139,
+ "state": "CLOSED",
+ "title": "[E2E Challenge] Inquiry regarding submission failure (AGGREGATION_FAILED)",
+ "_updatedAt": "2026-08-11T04:23:43Z"
+}

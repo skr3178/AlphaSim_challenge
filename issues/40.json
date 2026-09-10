@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "atonderski"
+ },
+ "body": "Hi and thanks for this excellent work! \n\nI am plugging in a custom sensor sim service to alpasim, but have encountered a few problem with the lidar rendering interface.\n \n**Is your feature request related to a problem? Please describe.**\n\nCurrently the sensorsim interface does not make it possible to distinguish between two different lidars of the same type (e.g. 2 different PANDAR128 lidars mounted at different locations with different settings). It also does not expose any `get_available_lidars` function.\n\n**Describe the solution you'd like**\n\nAdd first-class support for lidar, similar to what is there for rgb. The minimal case would be a logical_id per unique lidar, regardless of type, and a  way to list available lidars. Since it's tricky to enumerate all possible lidar types, one could add a catch-all OTHER type or something like that.\n\n**Describe alternatives you've considered**\n\nAssuming a one-to-one mapping between lidar type and logical id, but this is quickly problematic for multi-lidar setups.\n\nAs hinted at above, a logical_id field would also serve as a temporary workaround for supporting additional lidar types, since the sensorsim service could keep track of the beam patterns internally, and alpasim only needs to request renderings from lidar X, not caring about the type. \n\nIdeally this would also be accompanied by \n\n```\nservice SensorsimService {\n    ...\n    rpc get_available_lidars (AvailableLidarsRequest) returns (AvailableLidarReturn);\n}\nmessage AvailableLidarsRequest {\n    string scene_id = 1;\n}\n\nenum LidarDeviceType {\n    PANDAR128 = 0;\n    AT128 = 1;\n    // Optional: any additional predefined types\n    OTHER = 2;\n}\n\nmessage LidarSpec {\n    LidarDeviceType lidar_type = 2;\n    string logical_id = 3;\n}\n\nmessage AvailableLidarsReturn {\n    message AvailableLidar {\n        LidarSpec intrinsics = 1;\n        common.Pose rig_to_lidar = 2;\n        string logical_id = 3;\n    }\n\n    repeated AvailableLidar available_lidars = 1;\n}\n```\n\nLooking forward to hearing your thoughts on the matter.\n\nCheers, \nAdam",
+ "closedAt": "2026-02-24T17:33:30Z",
+ "comments": [
+  {
+   "author": {
+    "login": "daehyoungko"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thank you for the feature request,  it\u2019s a very reasonable suggestion. \nWhile I\u2019m advocating for this internally, I can't comment directly on the NuRec roadmap as it is managed by a separate core team and serves a much broader customer base than just AlpaSim. \n\nTo ensure we get you the most accurate technical answer, I\u2019ve reached out to their product experts to see how this fits into their wider implementation standards. I\u2019ll follow up with you as soon as I have their input.\n\nI'm going to close this ticket for now.",
+   "createdAt": "2026-02-24T17:33:30Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-02-17T15:06:13Z",
+ "labels": [],
+ "number": 40,
+ "state": "CLOSED",
+ "title": "Add better lidar support to sensorsim interface",
+ "_updatedAt": "2026-02-24T17:33:30Z"
+}

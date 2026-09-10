@@ -1,0 +1,34 @@
+{
+ "author": {
+  "login": "Titou78"
+ },
+ "body": "Hello !\nWhen running the tutorial with the following cmd:\n\nuv run alpasim_wizard \\\n  deploy=local \\\n  topology=1gpu \\\n  driver=vavam \\\n  wizard.log_dir=$PWD/test_vavam\n\nAnd running on the initial clipgt-01d503d4-.... of the base_config.yaml, I'm having several warnings:\n- NRESHGaussianModel : missing parameters tensor\n- Max error in cubic spline approximation: 1.242282 m\n\nAnd overall poor performances (I've tried several clipgt-...) and all failed with collisions and very strange trajectory prediction (both with Alpamayo1 and VaVam models)\nAm I missing something here from the Onboarding?\n\nSpecs:\nOS: Ubuntu24.04\nGPU: A100 (40GB)\nCUDA: Driver Version: 570.211.01  CUDA Version: 12.8\n\nThanks !\n",
+ "closedAt": "2026-06-12T16:44:38Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Those warnings that you mentioned are normal. As to the poor performance issues cited (collisions, strange trajectory predictions) can occur. I'll close out this thread, but if there is anything specific you think should be addressed or fixed to help, let us know!",
+   "createdAt": "2026-06-12T16:44:38Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-06-12T13:45:25Z",
+ "labels": [],
+ "number": 103,
+ "state": "CLOSED",
+ "title": "NRESHGaussianModel : missing parameters tensor",
+ "_updatedAt": "2026-06-12T16:44:38Z"
+}

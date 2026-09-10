@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "amtellezfernandez"
+ },
+ "body": "Using a custom route source (an external routing service, hand-authored scenario routes) currently means editing core code: `RouteGeneratorType` is a closed enum and `RouteGenerator.create()` dispatches to the two built-in generators directly.\n\nPLUGIN_SYSTEM.md states the direction for this kind of extension: \"Any installed package can register models, configs, or tools without modifying the core codebase.\" Route generators aren't one of the extension points today, and I can't tell from the outside whether that's a deliberate boundary or just not built yet, hence a question before any PR.\n\nIf you'd take it, the shape I have in mind follows the doc's guideline that plugins extend components and never replace built-in ones: an `alpasim.route_generators` registry plus an optional `route_generator_plugin` config field that resolves through it when set. Unset keeps the enum dispatch untouched, so existing configs see no change. I would deliberately not migrate the two built-in generators to entry points in the same change; `RouteGenerator` is an ABC, and retrofitting a uniform construction contract onto both existing classes is more than this needs.\n\nI have a working version of this, small and strictly additive, and can open a PR if the direction sounds right, or build a different shape if you'd draw the boundary elsewhere.\n",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This is not a deliberate omission. The plugin idea was added relatively late in the development and so there are cases like this where we haven't changed over.\n\nSo, yes, we would welcome additional submissions, and maybe the only question I would ask is, does the work belong in a plugin or as a built-in route generation strategy?",
+   "createdAt": "2026-08-17T12:46:43Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-08-13T19:01:45Z",
+ "labels": [],
+ "number": 150,
+ "state": "OPEN",
+ "title": "Support custom route generators through the plugin system?",
+ "_updatedAt": "2026-08-17T12:46:43Z"
+}

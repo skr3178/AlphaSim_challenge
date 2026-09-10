@@ -1,0 +1,27 @@
+{
+ "author": {
+  "login": "cheundw-dot"
+ },
+ "body": "## Summary\n\n`--enable-nrend` cannot be used with scenes containing dynamic objects (cuboid tracks) on NRE 26.02 (`nre-ga:26.02`).\n\n## Reproduction\n\n**USDZ**: NuRec Direct Training output (official ncore converter, 5cam + nrend + 80 cuboid tracks)\n\n**Case 1**: `--enable-nrend` + `--enable-editing-actors`\n```\nsensorsim | [ERROR] CuboidTracks: invalid tracks_poses_start size\n```\n\n**Case 2**: `--enable-nrend` without `--enable-editing-actors`\n```\nsensorsim | Got render request with DynamicObject updates but actor editing is disabled on the server.\nRestart serve-grpc with --enable-editing-actors.\n```\n\n**Case 3** (works): `--no-enable-nrend` + `--enable-editing-actors`\n- Dynamic objects render correctly with the non-NRend renderer.\n\n## Environment\n\n- AlpaSim: 0.70.0\n- NRE sensorsim: `nvcr.io/nvidia/nre/nre-ga:26.02` (latest as of 2026-05-08)\n- USDZ: Official ncore converter output with `renderer: 3dgut-nrend` in parsed_config.yaml\n- `sequence_tracks.json`: 80 tracks, standard format (same as custom converter output which works with `--no-enable-nrend`)\n\n## Context\n\nAlpaSim 0.70.0 CHANGELOG mentions:\n> New flag `--enable-editing-actors` added to the base sensorsim command, required by NRE 26.3\n\nThis suggests NRE 26.3 may resolve this. Is there an ETA for NRE 26.3, or a workaround for NRend + dynamic objects on 26.02?\n\n## Workaround (current)\n\nUse `--no-enable-nrend` (volume.nurec renderer) when scenes have cuboid tracks. NRend can only be used with empty `sequence_tracks.json` (no dynamic objects), which limits its usefulness for closed-loop evaluation.",
+ "closedAt": null,
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "I forwarded this to the relevant internal group.",
+   "createdAt": "2026-05-08T22:54:58Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-05-08T06:05:27Z",
+ "labels": [],
+ "number": 85,
+ "state": "OPEN",
+ "title": "NRend + dynamic objects incompatible on NRE 26.02 (tracks_poses_start size error)",
+ "_updatedAt": "2026-05-08T22:54:58Z"
+}

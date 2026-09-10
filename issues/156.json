@@ -1,0 +1,134 @@
+{
+ "author": {
+  "login": "Eashwar93"
+ },
+ "body": "I believe for the nuPlan track the data is still provisional. However, I wanted to make sure to communicate some artefacts that I noticed when running alpasim evaluation locally on the complete set of scenarios on the navtest split. \n\nPlease refer to the video below. I see some cross traffic in the scenario which should not be the case if the aim is log replay simulation. Even if the simulation doesn't follow strict log replay, the correspoinding information (like bounding boxes) is missing in the BEV space which makes the evaluation error prone. Maybe you are aware of such issues but if you could also share how these scenarios will be resolved, that would be great!\n\nhttps://github.com/user-attachments/assets/b7deb027-e129-443b-901f-dc5ea9c10e5d\n\n",
+ "closedAt": "2026-08-26T10:25:47Z",
+ "comments": [
+  {
+   "author": {
+    "login": "WCJ-BERT"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for reporting this and for sharing the video.\n\nWe did a preliminary cross-check with the same rendering assets in another codebase, and the assets appear to render correctly there. So this does not currently look like a corrupted asset file.\n\nhttps://github.com/user-attachments/assets/d9adbf0a-64a0-4b8f-9470-b62266e65da8\n\nOur current hypothesis is that the issue may come from the AlpaSim/NRE rendering path, possibly related to dynamic actors being incorrectly activated/replayed or a timestamp/state mismatch with the BEV annotations. We will investigate the actor states, renderer timestamps, and rendering/annotation alignment more closely.",
+   "createdAt": "2026-08-19T13:44:21Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "Eashwar93"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks a lot for taking a look into this. I atleast can't view the video you posted. However , this is not the only scenario where this happens, there are multiple instances. My  guess is that the complete scene from which the scenario is derived is probably affected or in the worst case the complete log.",
+   "createdAt": "2026-08-19T19:26:48Z",
+   "includesCreatedEdit": true,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "Eashwar93"
+   },
+   "authorAssociation": "NONE",
+   "body": "@WCJ-BERT I also found a counter example. There is a false collision given the rendered image but valid when you look at the BEV labels. This scene penalises the network for the correct driving behavior\n\nhttps://github.com/user-attachments/assets/88b535ae-0101-453e-9a5d-09cc083d1585",
+   "createdAt": "2026-08-21T13:41:52Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "WCJ-BERT"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks for the follow-up and for taking a closer look. A fix for the ghost-rendering issue reported earlier has been merged in [#111](https://github.com/NVlabs/alpasim/pull/111), and we are continuing to validate it.\n\nFor this example, our preliminary finding is that the residual actors visible in the BEV are likely caused by incomplete filtering of pedestrian and bicycle actors in the scenario files. We are working on improving the filtering accordingly.\n\nThanks again for the detailed feedback!",
+   "createdAt": "2026-08-24T14:35:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "WCJ-BERT"
+   },
+   "authorAssociation": "NONE",
+   "body": "https://github.com/user-attachments/assets/c0799290-1ac7-412a-b841-2094fb62677a\n\nQuick update: we have updated the nuPlan trajdata cache in the [AlpaSim Challenge nuPlan track dataset](https://huggingface.co/datasets/OpenDriveLab/AlpasimChallenge2026_nuplan_track).\nWith the updated cache, the residual/ghost actors observed in the reported scenarios are no longer present. Please download the latest trajdata_cache/nuplan_test.tar.gz before rerunning the evaluation.\nIf you still encounter similar issues with the updated cache, please let us know and share the corresponding clip ID. Thanks again for the detailed feedback!",
+   "createdAt": "2026-08-26T05:49:53Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thanks @WCJ-BERT for the fix/update to the cached data! I've also taken the updated cache for the private/final set we plan to use for the competition after the re-open.\n\nI'm going to mark this as complete given the fix, but if you guys see something else open, feel free to reopen.",
+   "createdAt": "2026-08-26T10:25:47Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  },
+  {
+   "author": {
+    "login": "Eashwar93"
+   },
+   "authorAssociation": "NONE",
+   "body": "@WCJ-BERT, I tested locally with the updates. The resukts look much more reliable now. Thanks for taking care of it.",
+   "createdAt": "2026-08-27T15:03:04Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "HEART",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-18T10:13:20Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 156,
+ "state": "CLOSED",
+ "title": "[E2E CHALLENGE NUPLAN TRACK] Simulation artefacts",
+ "_updatedAt": "2026-08-27T15:03:04Z"
+}

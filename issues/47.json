@@ -1,0 +1,63 @@
+{
+ "author": {
+  "login": "TheNeeloy"
+ },
+ "body": "Hi, thanks for releasing this awesome simulator! I was able to evaluate Alpamayo in some scenarios.\nI was hoping to add perturbations to the sensors and language instructions to see how Alpamayo reacts in the simulator. As such, I had a few questions below:\n\n1. Is there a way to receive next state information from the simulator without actually stepping the simulator? In other words, if I have a trajectory predicted by my model, is there a way I can get the next state of the simulator if I had hypothetically taken that trajectory action, without stepping the actual rollout forward? \n2. Is there a way to reset the simulator to a specific state? Let's say for example, I ran Alpamayo in the simulator and I have a particular state that I want to see how perturbations would impact the model's predictions. Could I save that state information and evaluate how the model reacts under different perturbations? \n3. Where would be the best (recommended) place to apply perturbations to the sensors before passing them to the model? Would it be before `_run_batch` in `src/driver/src/alpasim_driver/main.py`? Types of perturbations I have been considering include adding adding noise or changing weather patterns in camera images, changing the language instruction phrasing, adding noise to the pose history, etc.\n4. My understanding is that, currently, there is no way to control the non-ego vehicles in the simulator. Is this correct?\n\nThanks for your time!",
+ "closedAt": "2026-03-20T09:30:15Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Hey, interesting questions!\n1.) No, unfortunately not - and I'm not sure how to implement this nicely. \n2.) No, but later today we'll push a change to how the core loop works that should make this a lot easier to hack in, because the sim state with be encapsulated in a `RolloutState` dataclass\n3.) Hard to say. If you do it in `alpasim_driver` that works for the model, but what's logged in the `asl` files is the message that the runtime sends to the driver, so you won't have the change reflected in the generated videos. For that somewhere in the runtime would be better (but admittedly less clean - depends a bit on how hacky you're ok with it). \n4.) There is actually an API for it and it is checked via CICD - but it is not actively used at the moment, so stuff might have broken. We intend to support it more in the future (including publishing a trained traffic model to serve the API), but had (and still have) some other stuff that was higher priority for us. ",
+   "createdAt": "2026-03-16T17:09:32Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "TheNeeloy"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks so much for your quick response! I'll start by incorporating changes for 3 because it seems the most doable at this time. In terms of logging, I'll add logic to save the perturbed state from the model side, leaving the original logging alone for the time being. I'll keep updating this chain as I make progress with it. \n\nLooking forward to the updates for the RolloutState dataclass and future work on the trafficsim!",
+   "createdAt": "2026-03-16T18:27:23Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Just merged it (sorry for the massive MR, going forward we'll stay closer in sync :) ).",
+   "createdAt": "2026-03-16T22:44:46Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "TheNeeloy"
+   },
+   "authorAssociation": "NONE",
+   "body": "Thanks so much, and no worries! Really appreciate your responsiveness and help! \ud83d\ude0a",
+   "createdAt": "2026-03-16T22:49:24Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-03-16T16:11:05Z",
+ "labels": [],
+ "number": 47,
+ "state": "CLOSED",
+ "title": "Stress testing policies in Alpasim",
+ "_updatedAt": "2026-03-20T09:30:15Z"
+}

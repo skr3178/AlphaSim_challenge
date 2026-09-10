@@ -1,0 +1,41 @@
+{
+ "author": {
+  "login": "Eashwar93"
+ },
+ "body": "The current simulation timestep for the challenge is 500ms. Is this fixed or will it be adapted to 100ms? I understand that this choice of 500ms keeps the compute requirement lower but it also influences the the closed loop performance. Also, given the fact that the scenarios in nuplan are short with 6s it really gives very few iterions to build some temporal context. Any clarification on this topic would be great!\n\nI know it is too harsh to call it a bug bug but I also don't find a proper label for the issue I want to raise. Please let me know if I have raise such issues somewherer else.\n\nThanks",
+ "closedAt": "2026-08-18T09:35:27Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "No--the purpose of the nuplan track is to give teams who might have participated in the NAVSIM challenge a quicker entrypoint and so we have retained those parameters. Note that there are additional requirements about data usage, here.\n\nIn contrast, the PAI track does use a 10Hz step.",
+   "createdAt": "2026-08-18T09:35:27Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "THUMBS_UP",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-08-18T09:23:15Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACMCv2Rw",
+   "name": "bug",
+   "description": "Something isn't working",
+   "color": "d73a4a"
+  }
+ ],
+ "number": 155,
+ "state": "CLOSED",
+ "title": "[E2E CHALLENGE NUPLAN TRACK] Simulation Frequency",
+ "_updatedAt": "2026-08-18T09:35:27Z"
+}

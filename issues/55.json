@@ -1,0 +1,58 @@
+{
+ "author": {
+  "login": "sandorplosz"
+ },
+ "body": "Hey there,\n\nI encountered the following error when the video frames are rendered. I used AR1 model with reasoning overlay.\n\nruntime-0-1     | Error rendering video: 'RenderableTrajectory' object has no attribute 'poses'\nruntime-0-1     | Stacktrace: Traceback (most recent call last):\nruntime-0-1     |   File \"/repo/src/eval/src/eval/video.py\", line 155, in render_video_from_eval_result\nruntime-0-1     |     render_and_save_video(\nruntime-0-1     |   File \"/repo/src/eval/src/eval/video.py\", line 89, in render_and_save_video\nruntime-0-1     |     render_reasoning_overlay_style_video(\nruntime-0-1     |   File \"/repo/src/eval/src/eval/video_reasoning_overlay_utils.py\", line 545, in render_reasoning_overlay_style_video\nruntime-0-1     |     combined_frame = _render_single_reasoning_overlay_frame(\nruntime-0-1     |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nruntime-0-1     |   File \"/repo/src/eval/src/eval/video_reasoning_overlay_utils.py\", line 448, in _render_single_reasoning_overlay_frame\nruntime-0-1     |     ego_qvec = ego_pose_at_time.poses[0]\nruntime-0-1     |                ^^^^^^^^^^^^^^^^^^^^^^\nruntime-0-1     | AttributeError: 'RenderableTrajectory' object has no attribute 'poses'\n\nI noticed the changes to eval/src/data.py in d175589, however it seems the changes in video_reasoning_overlay_utils.py were not included in the commit.\n",
+ "closedAt": "2026-07-09T16:31:54Z",
+ "comments": [
+  {
+   "author": {
+    "login": "maximilianigl"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Thank you for reporting, looking into it! Currently travelling so might only be merged next week.",
+   "createdAt": "2026-03-20T09:08:41Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "dodarshancode"
+   },
+   "authorAssociation": "NONE",
+   "body": "Is this issue resolved ? Because I see error too. The reasoning overlay video is written but it is corrupt, can't open it. \n\nIs there any local solution ? @maximilianigl ",
+   "createdAt": "2026-05-09T14:23:00Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "jarcherNV"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This specific crash should now be fixed on current `main`. The reasoning overlay renderer now uses the `RenderableTrajectory` API directly rather than accessing `.poses`, and there is a regression test for this path.\n\nI\u2019m going to close this issue as fixed. If anyone is still seeing corrupt reasoning-overlay MP4 output on latest `main`, please open a new issue with the exact command, AlpaSim commit, and video/log output, since that appears to be a separate video writer/codec problem.",
+   "createdAt": "2026-07-09T16:31:54Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  }
+ ],
+ "createdAt": "2026-03-19T14:26:16Z",
+ "labels": [
+  {
+   "id": "LA_kwDOP7zcm88AAAACcGnBIA",
+   "name": "github",
+   "description": "So we can see in linear which issues come from github.",
+   "color": "c306be"
+  }
+ ],
+ "number": 55,
+ "state": "CLOSED",
+ "title": "Error rendering frames with reasoning overlay",
+ "_updatedAt": "2026-07-09T16:31:54Z"
+}

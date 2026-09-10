@@ -1,0 +1,58 @@
+{
+ "author": {
+  "login": "juliene-273"
+ },
+ "body": "Hi,\n\nI\u2019ve got a question regarding the PAI track: We noticed that in the 1600 sequence NuRec dataset the ego vehicle dimensions differ quite significantly, with vehicle length differences of 70cm and width differences of 16cm.\n\nHowever, in alpasim, this information is not provided to the driver, so the ego-vehicle does not know how large it is - this feels like a bit of an unnatural limitation that may lower system performance.\n \nFeature request:\nEgo vehicle dimensions of the current scene are available to the driver.\n \nWould it be possible to include this in the near future?\n\nThanks!",
+ "closedAt": "2026-09-08T10:27:19Z",
+ "comments": [
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "This seems like a fair request to me. I think a minimal change to the competition would be to add the vehicle bbox parameters to the driver session request message so that the driver can understand the evaluation footprint. It's not feasible at this point to change the wfov hood masks or propagate those parameter changes to the vehicle dynamics, which will continue to use what exists, today. So, the motion will remain the same, but the driver will have insight into the size of the vehicle.",
+   "createdAt": "2026-09-07T13:50:43Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "juliene-273"
+   },
+   "authorAssociation": "NONE",
+   "body": "Great, thank you!",
+   "createdAt": "2026-09-08T07:35:48Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": []
+  },
+  {
+   "author": {
+    "login": "mwatson-nvidia"
+   },
+   "authorAssociation": "COLLABORATOR",
+   "body": "Ok--it's been added. Let me know if you have concerns about the changes. Closing thread for now.",
+   "createdAt": "2026-09-08T10:27:19Z",
+   "includesCreatedEdit": false,
+   "isMinimized": false,
+   "minimizedReason": "",
+   "reactionGroups": [
+    {
+     "content": "ROCKET",
+     "users": {
+      "totalCount": 1
+     }
+    }
+   ]
+  }
+ ],
+ "createdAt": "2026-09-07T11:24:59Z",
+ "labels": [],
+ "number": 174,
+ "state": "CLOSED",
+ "title": "[E2E Challenge] Information about ego vehicle dimensions",
+ "_updatedAt": "2026-09-08T10:27:19Z"
+}

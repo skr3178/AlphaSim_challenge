@@ -2579,3 +2579,42 @@ The organizers' announced "re-run best submissions on a new scene set" has happe
 - **Encouraging comparison, not a prediction:** the #1 entry has avg scene score **0.9057** and at-fault km **0.87**.
   WA-JEPA scored **0.9247** with **5.40 km** on *our* 400 — different scene set, so not comparable, but the same
   order on score and ~6× on the tiebreak metric.
+
+## 6.49 OFFICIAL RESULT (09-10) — rank 6/11, PCS 986. Local measurements did NOT transfer.
+
+`1340e69a` **SUCCEEDED**. 1000/1000 rollouts valid (rate 1.0), no inference failures, no failure code.
+
+| | official | our local 400 |
+|---|---:|---:|
+| **average scene score** | **0.7748** | **0.9247** |
+| at-fault km | 1.08 | 5.40 |
+| dist_to_gt | 1.85 | 0.50 (lateral) |
+| **PCS** | **986** (95 % 943–1030), **rank 6 of 11** (rank interval 6–7) | — |
+
+**1. The headline: our local number over-predicted by ~0.15 of mean scene score.** 0.9247 → 0.7748. Every
+projection built on the local 400 (§6.40's 26.1 PCS/0.01, §6.41's 1702, §6.43's 1815) was wrong, and wrong in the
+same direction. The local 400 is **not** a representative sample of the official set — this is the single most
+important fact learned today, and it invalidates the local ladder as an absolute predictor. Paired *comparisons*
+on the same local set may still be usable; absolute levels are not.
+
+**2. We rank below `go_straight_with_delay_v2`** (0.8194 avg scene, PCS 1369, rank 4–5). A trivial baseline beats
+our model on scene score by 0.045. That means WA-JEPA is *actively doing something worse than driving straight* on
+a substantial share of official scenes — a far sharper statement of the corridor problem than anything the local
+set showed.
+
+**3. Safety transferred; progress did not.** at-fault km **1.08** is the **2nd best on the board** (leader 0.87,
+#2 1.72) and `dist_to_gt` 1.85 beats every Host baseline (2.30–3.94). So the collision-avoidance win is real and
+generalises. What does not generalise is scene score, which is what drives PCS.
+
+**4. ⚠️ Throughput was never a constraint — my §6.44 analysis was badly wrong.**
+`observed_wall_time_s 1249.3` vs `limit_wall_time_s 3000.0` ⇒ **margin 1750.7 s (58 %)**. I projected 2352 s
+against a 2485 s limit (5.4 % margin). Both inputs were stale: the limit is now **3000 s, not 2485 s**, and the
+eval is **1000 rollouts**, not the 14,850 Drive calls I extrapolated from. **Consequence: s4 (511 ms) and even
+s12 (1516 ms) would have passed comfortably** — and s12 scored *highest* of the three arms locally (0.9667 on the
+100). Rejecting s12 on throughput grounds (§6.44) was based on obsolete numbers.
+
+**5. The `score` field in `submissions`/`status` is `dist_to_gt_trajectory`, not PCS and not at-fault km** —
+1.8536 here matches the board's `dist_to_gt` 1.85 exactly (and the Aug-29 entry's 3.045 was its d2gt). Do not read
+it as a score.
+
+**Standing:** 2 of 3 monthly slots remain. The board has 11 entries; `py123d-garage` holds the top three.

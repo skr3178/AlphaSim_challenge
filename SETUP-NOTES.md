@@ -2489,3 +2489,59 @@ story attached to something the data cannot support.
 **The 15 corridor exits remain unexplained** and are still the largest actionable defect (0.0375, ~87 % of the
 +0.0434 margin). Peer d0 is screening WA-JEPA's own nav rule (`arc_length` 20 m + lateral 2.5 m AND heading 0.15 rad,
 ported from `WA-JEPA/datasets/nav_command_infer.py`) as `WAJEPA_ROUTE_MODE=arc_length`, default unchanged.
+
+## 6.47 WA-JEPA's own nav rule screened (09-05, recorded 09-10): no effect either — the command is not the lever
+
+Arm `wajepa-wjrule-100`: image `alpasim-e2e-wajepa-driver:local-wjrule` (e359f5d6793a, cu128 twin, tree == image verified),
+`WAJEPA_STEPS=2 WAJEPA_ROUTE_MODE=arc_length`, navtest_local100 / dev_fast2_wajepa, 746 s wall. Driver log records the
+RESOLVED rule: `route_rule=arc_length forward_m=20.0 lateral_m=2.5 heading_rad=0.15 combine=and`. The port was checked
+against `WA-JEPA/datasets/nav_command_infer.py` on 3000 random polylines (identical commands) before the build.
+
+| arm (same 100 scenes, steps=2, 4-cam) | rule | mean | ones | corridor zeros |
+|---|---|---:|---:|---:|
+| wajepa-s2-100 | GTRS 5 m hypot / 2 m | **0.9499** | 93 | 5 |
+| wajepa-fix-100 | VaVAM 20 m x / 3 m | 0.9399 | 92 | 6 |
+| wajepa-wjrule-100 | WA-JEPA arc 20 m / 2.5 m AND 0.15 rad | **0.9499** | 93 | 5 |
+
+Paired vs wajepa-s2-100: 98 unchanged, 0 better, 2 worse (both < 0.01), Δ −0.0030; 0 corridor exits repaired, 0 new.
+**The same 5 corridor-exit scenes are zero under all three rules.** On captured real routes (first waypoint ≈ 42 m ahead,
+|y| ≤ 1.5 m over 4.5 s) all three rules emit STRAIGHT on every tick. Conclusion: the route→command rule is not the
+lever for the corridor exits on this set; the 15 exits in the 400 need a different mechanism (candidates: the model's
+own lateral drift on straights, or the 2 Hz plan cache — untested). Default rule stays GTRS (6.46); `arc_length` mode
+remains available via env for any future arm. `submit-s2` (cf33b1399a2d) unaffected.
+
+## 6.47 Upstream moved again: "Candidate Final V2" (09-05, reviewed before submitting)
+
+`origin/e2e_challenge` `54952f4 → cd713e0`: **#177 "Candidate Final V2"** + **#178** (local nuPlan eval docs).
+22 files, +435/−45. Reviewed specifically for submission risk.
+
+**Our submission image stays valid.** The only contract change is **additive** to `egodriver.proto` — two new
+fields on the ego message, `common.AABB bounding_box = 4` and `common.Pose rig_to_bounding_box = 5` (the ego's
+own bounding box and its pose in the rig frame). Protobuf ignores unknown fields, so an image built against the
+older generated code simply does not see them. **`scene_score.py` is byte-identical**; nothing under
+`e2e_challenge_nuplan*`, `nuplan_scenes`, or `controller` configs changed. So all our measurements still stand and
+`cf33b1399a2d` needs no rebuild.
+*(New capability, not required: the sim now tells the driver its own vehicle dimensions — previously we had to
+assume them.)*
+
+⚠️ **The reference bundle IS published — but PAI only.** `data/pai/` now ships `reference_manifest.json` plus
+`alpamayo1`, `vavam-linear`, `vavam-nonlinear` and `alternative_1..5`. **There is no `data/nuplan/`.** So our track
+still has no organizer anchors, and §6.41/§6.43's locally-anchored PCS remains the best available — indicative,
+not board-comparable. Worth re-checking after each upstream move.
+
+**🔑 NEW LEAD on the 15 corridor exits — organizer-documented, and it beats both of our standing hypotheses.**
+The new `e2e_challenge/CONTROLLER_TUNING.md` states: *"we have occasionally observed a failure mode when a
+reference trajectory requests extremely harsh, physically unrealistic braking. In this case, the nonlinear
+optimization can produce a zig-zagging solution as it tries to reduce longitudinal progress. The resulting
+steering response can be harsh, and the vehicle may not recover during the rollout."* It also says explicitly that
+the MPC **is not a trajectory validator, repair system, or safety filter**, and that robust recovery from
+dynamically infeasible policy output is **out of scope** — i.e. the burden is on the driver.
+This fits our corridor evidence better than the drift or plan-cache hypotheses: those scenes show **3.4× the
+steering command** of clean scenes while the vehicle *achieves* commanded steering faithfully (|cmd−achieved|
+0.010 rad). Harsh steering from a zig-zagging optimizer is exactly that signature. **Testable without a GPU run:**
+look for harsh decelerations in the emitted plans and steering reversals in the controller CSV for the 24
+corridor scenes. My earlier sign-flip check used a 0.01 rad deadband and found none — too coarse to rule this out.
+
+**Also new:** `CONTROLLER_TUNING.md` explains *why* gains are tunable (closed-loop distribution shift), the
+NAVSIM adaptation guide is now linked from the challenge README, and `test_e2e_challenge_nuplan_configs.py` (+68)
+adds config tests for our track.

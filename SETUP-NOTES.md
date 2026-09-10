@@ -2618,3 +2618,43 @@ s12 (1516 ms) would have passed comfortably** — and s12 scored *highest* of th
 it as a score.
 
 **Standing:** 2 of 3 monthly slots remain. The board has 11 entries; `py123d-garage` holds the top three.
+
+## 6.50 The official nuPlan scene set is PRIVATE and is no longer navtest (09-10) — supersedes part of §6.49
+
+§6.49 attributed the 0.9247 → 0.7748 miss to our local 400 being an unrepresentative sample of navtest. That is
+true but it is the *smaller* half of the problem.
+
+**The public suite is unchanged and now test-pinned.** `cd713e0` adds
+`src/wizard/tests/test_e2e_challenge_nuplan_configs.py`, which asserts of the `full` preset:
+`len(cfg.scenes.scene_ids) == 1485`, no duplicates, `cfg.scenes.test_suite_id is None`, `limit_to_first_n == 0`.
+`navtest_full` = **1485**, `navtest_dev` = 9. Those are the only two nuPlan groups upstream ships.
+
+**The official evaluation is not that suite.** Our run reported `rollout_coverage: {expected_rollout_count: 1000,
+valid_scored_rollout_count: 1000, rate 1.0}` — **1000, not 1485.**
+
+| | Aug-29 (`6ba9c546`) | Sep-10 (`1340e69a`) |
+|---|---|---|
+| scenes / rollouts | 1485 (14,850 Drive calls) | **1000 rollouts** |
+| wall limit | 2485.438 s (a computed value) | **3000.0 s** (flat cap) |
+| `rollout_coverage` | absent from the response | **new field** |
+| board presence | **gone** (not re-scored, kept its original numbers) | rank 6 |
+| backend | `direct-p5` | `direct-p5` (unchanged) |
+
+The old submission keeping its original metrics *and* disappearing from the board only makes sense if the new set
+is not comparable to the old. `test_suite_id is None` on the public preset suggests the official runner sets a
+suite id pointing at a **private** suite. `data/nuplan/` in the reference bundle remains empty (PAI got curated
+public splits; nuPlan got none), which is consistent with the nuPlan set being held out.
+
+**Undetermined:** whether 1000 rollouts means 1000 scenes × 1, or fewer scenes with repeats. nuPlan
+`base.yaml` sets `n_rollouts: 1`, but the organizers demonstrably use `n_rollouts=3` for the PAI references.
+
+**Consequences for how we work.**
+1. **No local setup can replicate the official set.** Full navtest is the closest *public* proxy and is worth
+   building (1485 ≫ 400, and our 400 covers only 4 of navtest's 9 log-dates — **630 scenes, 42 %, never driven**),
+   but it is an approximation by construction, not a replica. Stop expecting any local absolute level to predict.
+2. **The transfer is model-dependent, so it must be measured per model.** Stock transferred *upward*
+   (0.58 km local → 1.62 official); WA-JEPA transferred *downward* (5.40 → 1.08). One calibration point cannot
+   give a transfer function.
+3. ⇒ **Submitting cand#2 is now the highest-value use of a slot**: zero prep (already in ECR as
+   `…:vavam-b-mup-20260831b`, digest `bbe3a0af…`), and it yields the second point needed to estimate transfer for
+   the VaVAM family, whose direction we already know differs from WA-JEPA's.

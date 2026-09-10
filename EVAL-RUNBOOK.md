@@ -8,6 +8,38 @@ Merged 2026-09-01 from `SHARDS-RUNBOOK.md` and `LOCAL-PLAN.md` (both retired).
 
 ---
 
+## 0. Read every local result as a local result
+
+The final official result for `wajepa-s2-400` demonstrated that a public local
+mean must **not** be converted to PCS or treated as an official score forecast:
+the same policy scored 0.9247 on this 400-scene public sample and 0.7748 on the
+private 1,000-rollout board.  Local evaluation is still the right way to make a
+paired A/B decision, but only on the same `clipgt_id`s.
+
+After every valid run, use the board-shaped report:
+
+```bash
+cd ~/Downloads/alpasim_challenge
+python3 tools/eval-report.py <run-name> --baseline <paired-baseline-run>
+```
+
+It prints the evaluator's exact mean `rollouts[].score`, zero causes, mean
+`dist_to_gt_trajectory` (the board-compatible number), medians/p90s only as
+diagnostics, worst-city and worst-recording stress views, and a paired delta.
+It does not invent a PCS.  The active `run-eval.sh` invokes it automatically
+after a valid run; set `EVAL_BASELINE=<run>` for the paired block and
+`EVAL_CALIBRATION=<json>` only to display a factual prior official result.
+
+The public local 400 has 38 source recordings and an exceptionally easy Vegas
+slice (the submitted WA-JEPA scored 0.9978 there).  The report's
+recording-block interval is more honest than treating its 400 clips as iid, but
+neither interval covers unseen recordings or the private final-set shift.  A
+candidate must improve the paired mean, the zero count, and the worst
+non-Vegas/recording cells; it should not be promoted solely on its raw local
+mean.
+
+---
+
 ## 1. Scene sets — inventory and download
 
 ### Shard inventory  (updated 2026-08-31)

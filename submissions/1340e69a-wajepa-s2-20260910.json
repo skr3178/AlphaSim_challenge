@@ -1,0 +1,33 @@
+{
+  "competition_id": "alpasim-end2end-2026",
+  "controller_gains": null,
+  "created_at": "2026-09-10T05:41:42+00:00",
+  "evaluation_completed_at": "2026-09-10T06:09:06+00:00",
+  "evaluation_started_at": "2026-09-10T05:42:19+00:00",
+  "failure_code": null,
+  "failure_diagnostics": null,
+  "failure_reason": null,
+  "image_digest": "sha256:7bcc9e69179ea5271de06f18d7c9c11c74b82c0e55ed0537d29c97a9472022fa",
+  "image_size_bytes": 4654134587,
+  "image_uri": "696254625193.dkr.ecr.us-east-1.amazonaws.com/teams/team-lucifer:wajepa-s2-20260904",
+  "resolved_image_uri": "696254625193.dkr.ecr.us-east-1.amazonaws.com/teams/team-lucifer@sha256:7bcc9e69179ea5271de06f18d7c9c11c74b82c0e55ed0537d29c97a9472022fa",
+  "rollout_coverage": {
+    "expected_rollout_count": 1000,
+    "valid_scored_rollout_count": 1000,
+    "valid_scored_rollout_rate": 1.0
+  },
+  "score": 1.8535839844877433,
+  "status": "SUCCEEDED",
+  "submission_id": "1340e69a-ac0f-4a1f-96a3-507b315c51aa",
+  "submitted_image_uri": "696254625193.dkr.ecr.us-east-1.amazonaws.com/teams/team-lucifer:wajepa-s2-20260904",
+  "team_id": "team-lucifer",
+  "throughput_limit": {
+    "limit_wall_time_s": 3000.0,
+    "margin_s": 1750.653,
+    "observed_wall_time_s": 1249.347,
+    "passed": true,
+    "track": "nuplan"
+  },
+  "track": "nuplan",
+  "updated_at": "2026-09-10T06:09:06+00:00"
+}

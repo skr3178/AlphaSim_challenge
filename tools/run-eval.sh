@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
-# usage: run-eval.sh <driver-image> <run-name> <scene-group> [preset]
+# usage: run-eval.sh <driver-image> <run-name> <scene-group> [preset] [hydra overrides...]
 #   preset: dev (default) | dev_fast | dev_fast2
 #   DRIVER_ENV="VAVAM_OUTPUT_GAIN=1.05 VAVAM_SEED=1234"  -> extra env vars passed into the driver container
+#   EVAL_BASELINE=<run name/path>                         -> append paired comparison to the board card
+#   EVAL_CALIBRATION=<official result json>               -> append a factual (never predictive) transfer record
 # One simulator stack on default ports + one hardened driver container; prints per-scene timing at the end.
 # Run detached:  setsid nohup run-eval.sh IMG NAME GROUP PRESET > ~/alpasim-challenge/logs/NAME.log 2>&1 < /dev/null &
 set -u
+if [ "$#" -lt 3 ]; then
+  echo "usage: $0 <driver-image> <run-name> <scene-group> [preset] [hydra overrides...]" >&2
+  exit 2
+fi
 IMG="$1"; NAME="$2"; GROUP="$3"; PRESET="${4:-dev}"
+if [ "$#" -ge 4 ]; then shift 4; else shift 3; fi
+EXTRA_HYDRA_ARGS=("$@")
 LOGDIR=/home/skr/alpasim-challenge/logs; cd /home/skr/alpasim-challenge/alpasim
 
 # --- MUTUAL EXCLUSION (added 2026-09-03) ------------------------------------------------------
@@ -44,8 +52,14 @@ VR=$LOGDIR/vram-$NAME.csv; : > "$VR"; : > "$VR.gpu"
     [ -n "$DP" ] && nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader 2>/dev/null | grep -E "^($DP)," >> "$VR"
     nvidia-smi --query-gpu=memory.used --format=csv,noheader >> "$VR.gpu" 2>/dev/null; sleep 5; done ) 9>&- & SAMP=$!
 ALPASIM_NUPLAN_ROOT=/home/skr/alpasim-challenge/nuplan-track ALPASIM_DRIVER_HOST=localhost ALPASIM_DRIVER_PORT=6789 \
-uv run --no-sync alpasim_wizard +e2e_challenge_nuplan=$PRESET nuplan_scenes=$GROUP scenes.limit_to_first_n=0 wizard.log_dir=./runs/$NAME
+uv run --no-sync alpasim_wizard +e2e_challenge_nuplan=$PRESET nuplan_scenes=$GROUP scenes.limit_to_first_n=0 wizard.log_dir=./runs/$NAME "${EXTRA_HYDRA_ARGS[@]}"
 RC=$?; T1=$(date +%s)
+# Save the container logs before teardown.  Querying `docker logs $CID` after
+# `docker rm -f` always returns nothing, which made the old inference-failure
+# validity check a false green.
+DRIVER_LOG="$LOGDIR/driver-$NAME.log"
+docker logs "$CID" > "$DRIVER_LOG" 2>&1 || true
+INFER_FAIL=$(grep -ciE 'inference failed|refusing to serve' "$DRIVER_LOG" 2>/dev/null || true)
 # remove BY CONTAINER ID: if another session has since taken the name, we must not kill theirs
 docker rm -f "$CID" >/dev/null 2>&1; rm -f "$LOGDIR/.run-eval.owner"
 echo "[$(date +%H:%M:%S)] wizard exit: $RC | total wall $((T1-T0)) s"
@@ -81,11 +95,24 @@ PYEOF
 # renderer-crashed run still exits 0 and aggregates empty rollouts (Defect 8, SETUP-NOTES 6.18).
 COMPLETED=$(grep -c "Session COMPLETED" "$LOG" 2>/dev/null || echo 0)
 EXPECTED=$(grep -cE "^\s+- [0-9]{4}\." "src/wizard/configs/nuplan_scenes/$GROUP.yaml" 2>/dev/null || echo 0)
-INFER_FAIL=$(docker logs "$CID" 2>&1 | grep -c "inference failed\|refusing to serve" 2>/dev/null || echo 0)
 echo "VALIDITY $NAME: completed $COMPLETED/${EXPECTED:-?} scenes | driver inference failures $INFER_FAIL | wizard rc $RC"
+VALID=1
 if [ "$EXPECTED" -gt 0 ] && [ "$COMPLETED" -lt "$EXPECTED" ]; then
   echo "RUN INVALID $NAME -- only $COMPLETED of $EXPECTED scenes completed; do not read the aggregate" >&2
+  VALID=0
+elif [ "$RC" -ne 0 ]; then
+  echo "RUN INVALID $NAME -- wizard exited with status $RC; do not read the aggregate" >&2
+  VALID=0
 elif [ "$INFER_FAIL" -gt 0 ]; then
   echo "RUN INVALID $NAME -- $INFER_FAIL driver inference failures; the policy did not run on every tick" >&2
+  VALID=0
+fi
+if [ "$VALID" -eq 1 ] && [ -f /home/skr/Downloads/alpasim_challenge/tools/eval-report.py ]; then
+  REPORT_ARGS=("$RUNDIR")
+  [ -n "${EVAL_BASELINE:-}" ] && REPORT_ARGS+=(--baseline "$EVAL_BASELINE")
+  [ -n "${EVAL_CALIBRATION:-}" ] && REPORT_ARGS+=(--calibration "$EVAL_CALIBRATION")
+  python3 /home/skr/Downloads/alpasim_challenge/tools/eval-report.py "${REPORT_ARGS[@]}" || echo "WARNING: board-card report failed" >&2
 fi
 echo "RUN DONE $NAME"
+[ "$VALID" -eq 1 ] && exit 0
+exit 1

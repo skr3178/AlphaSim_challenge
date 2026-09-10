@@ -2545,3 +2545,37 @@ corridor scenes. My earlier sign-flip check used a 0.01 rad deadband and found n
 **Also new:** `CONTROLLER_TUNING.md` explains *why* gains are tunable (closed-loop distribution shift), the
 NAVSIM adaptation guide is now linked from the challenge README, and `test_e2e_challenge_nuplan_configs.py` (+68)
 adds config tests for our track.
+
+## 6.48 SUBMITTED — and the nuPlan board has been WIPED and re-run (09-10)
+
+**Submission made** on explicit instruction: `submission_id 1340e69a-ac0f-4a1f-96a3-507b315c51aa`, track `nuplan`,
+image `…team-lucifer:wajepa-s2-20260904` → resolved digest `sha256:7bcc9e69…`. No `--controller-gains` (unscreened;
+bundling would make the result unattributable). Status **RUNNING**. Quota **1 of 3 used this month, 2 remain**.
+Terms `official-2026-08` accepted (captain acceptance covers the team). Push took ~3 min — most base layers already
+existed in the registry from the cand#2 pushes; only WA-JEPA's layers incl. the 1.58 GB checkpoint uploaded.
+
+**The old leaderboard is GONE.** `leaderboard --track nuplan` now returns **10 entries**, not the 62 in our 09-01
+snapshot. **Every previous competitor is absent — NaLa, 메타몽, SymPhi and our own `vavam-stock-20260829` included.**
+The organizers' announced "re-run best submissions on a new scene set" has happened, and the board restarted.
+`submissions` still lists our Aug-29 entry (`SUCCEEDED`), so submission history survived; only the board was reset.
+
+| rk | PCS | 95 % interval | avg scene | at-fault km | team | tag |
+|---:|---:|---|---:|---:|---|---|
+| 1 | **1600** | 1519–1681 | 0.9057 | 0.87 | py123d-garage | `007-nuplan-0062-v1` |
+| 2 | 1465 | 1400–1530 | 0.8891 | 1.72 | py123d-garage | `014-nuplan-0014-v1` |
+| 3 | 1443 | 1380–1506 | 0.8747 | 0.61 | py123d-garage | `017-nuplan-0014-v1` |
+| 4–5 | 1381 | 1322–1441 | 0.8194 | 0.37 | Host | `go_straight_with_delay_v2` |
+| 6 | 947 | 912–981 | 0.7514 | 0.40 | Host | `policy5` |
+| 7–10 | 811 → 600 | | 0.64 → 0.40 | 0.14–0.23 | Host / Alpain | `policy_4`, `mars-v0-2hz-nuplan` |
+
+**Consequences.**
+- **§6.36's whole anchor analysis is obsolete.** The 1000 = `go_straight` / 1600 = stock-VaVAM pinning is gone; the
+  top entry is now exactly 1600 and go-straight-with-delay sits at 1381. The **~1715 ceiling and the tied-#1
+  hypothesis no longer apply** to this board. Do not quote 26.1 PCS per 0.01 against it.
+- **The board now publishes what we had to derive**: `average_scene_score`, `policy_capability_score_lo/hi` with a
+  95 % interval, `policy_capability_score_spread`, and `rank_lo/hi/spread`. The uncertainty dimension is public.
+- **Only 10 entries and one serious competitor** (py123d-garage, 3 of the top 3). Submitting now was the right call
+  for a reason we did not anticipate: the field is nearly empty.
+- **Encouraging comparison, not a prediction:** the #1 entry has avg scene score **0.9057** and at-fault km **0.87**.
+  WA-JEPA scored **0.9247** with **5.40 km** on *our* 400 — different scene set, so not comparable, but the same
+  order on score and ~6× on the tiebreak metric.

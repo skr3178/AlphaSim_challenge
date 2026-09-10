@@ -2658,3 +2658,57 @@ public splits; nuPlan got none), which is consistent with the nuPlan set being h
 3. ⇒ **Submitting cand#2 is now the highest-value use of a slot**: zero prep (already in ECR as
    `…:vavam-b-mup-20260831b`, digest `bbe3a0af…`), and it yields the second point needed to estimate transfer for
    the VaVAM family, whose direction we already know differs from WA-JEPA's.
+
+## 6.51 WHY WA-JEPA under-performed officially — answered by issue #166 + our own data (09-10)
+
+**The organizer's warning (issue #166, `mwatson-nvidia`, COLLABORATOR):**
+> *"the dataset used is a **private dataset not published anywhere**, so the results will vary"*
+> *"a policy can get a very high 'distance between at-fault incidents' by simply **braking hard** due to the current
+> evaluation implementation. This will not result in a very high scene score and **highlights the case where the two
+> metrics don't increase together**."*
+
+That is a direct description of the model we selected — and it independently confirms §6.50's private-set inference.
+
+**Our data, paired on the same 400 scenes:**
+| run | at-fault km | dist driven /scene | GT dist /scene | progress | scene score |
+|---|---:|---:|---:|---:|---:|
+| starter (go-straight) | 0.47 | 25.8 | 31.4 | 0.7841 | 0.6192 |
+| stock | 0.58 | 31.8 | 31.4 | 1.0553 | 0.8493 |
+| cand#2 | 0.90 | 29.2 | 31.4 | 1.0204 | 0.8813 |
+| **WA-JEPA s2** | **5.40** | **27.0** | 31.4 | **0.9565** | 0.9247 |
+
+**WA-JEPA drives 7.4 % less distance than cand#2 and travels less far on 287 of 400 scenes (72 %).** It is the most
+*cautious* policy we have built. Note the at-fault-km ratio is not itself a braking artifact — 5.40 vs 0.90 comes
+from 2 vs 13 incidents, not from distance — but the caution that produces those 2 incidents costs progress
+everywhere.
+
+**The mechanism, stated plainly.** WA-JEPA trades **progress for caution**: −7.4 % distance, −0.064 progress,
+in exchange for −11 at-fault collisions per 400.
+- **On our local 400 that trade pays**: collisions are frequent (13/400 for cand#2), so 11 recovered scenes
+  (+0.0275) outweigh the progress loss. Net +0.0434.
+- **On the official set it does not**: `go_straight_with_delay_v2` scores **0.8194** there versus **0.6192** for our
+  starter locally. A set where driving straight earns 0.82 is a set with **little collision risk to avoid** — so the
+  safety premium collapses while the progress penalty is paid in full.
+
+**We optimised for the axis with the least headroom.** Our at-fault distance of 1.08 km is 2nd best on the board;
+scene score is 6th. The entire 13→2 selection criterion bought a metric we were already winning, at the cost of the
+one that determines PCS.
+
+**Other hints from the issue tracker (all `mwatson-nvidia`):**
+- **#170** — *"all team allocations will be reset ... significant changes to the competition (including the
+  **evaluation approach and the tests**) so the leaderboard will be wiped clean."* Explains the reset and that the
+  test set itself changed, not just the scores.
+- **#159** — competition hardware is **H100**; local hardware differs and *"the hardware issue will likely remain an
+  open gap."*
+- **#155** — the nuPlan track's **500 ms (2 Hz)** step is deliberate and permanent, kept for NAVSIM entrants;
+  scenarios are short (~6 s). PAI uses 10 Hz.
+- **#152** — nonlinear MPC + harsh braking → *"swerves to artificially shrink the path"*; fixed in PR #153, so this
+  is **not** our corridor mechanism (already ruled out empirically in §6.47).
+- **#138** — the route is built **once at initialisation from the recorded ~20 s ego path**, lane-matched by
+  heuristics; extrapolation only past the recording end. Confirms the route is GT-derived, not a live planner.
+- **#166** — rank ordering is by the **upper bound of the posterior rank interval**, then at-fault distance, then
+  point-estimate rank. Matches what evaluate.py does.
+
+**Actionable consequence.** The next submission should be selected on **progress/scene score**, not on at-fault
+count. cand#2 drives 7.4 % further, has progress 1.0204 vs 0.9565, and is already in ECR — on this analysis it is
+the better bet for the official set despite losing to WA-JEPA locally.

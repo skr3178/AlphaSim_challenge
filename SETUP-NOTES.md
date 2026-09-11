@@ -2876,3 +2876,39 @@ starter 2.33 · **cand#2 2.35** · stock 3.57.
 4. **py123d's checkpoint is the strongest asset we hold**: Apache-2.0, 62M params, 4.4 s/scene, best d2gt of
    anything we have run, and a known official score. Finetuning it (their docs give the recipe) targets the right
    metric from the best starting point.
+
+## 6.56 DECISION: adopt py123d_garage as the working platform (09-11)
+
+Rationale established across §6.53–§6.55: their public `model_0014.pth` scores **official ~1470** vs our
+**986**, has the **best `dist_to_gt_trajectory` of anything we have measured** (1.17 vs WA-JEPA 1.36), runs
+**1.7× faster** at 62M params vs 787M, is **Apache-2.0**, and is explicitly offered as a baseline to build on.
+The benchmark is an imitation benchmark (progress is *relative to the recorded human*; d2gt is *distance from*
+it), so an imitation-trained policy optimises the eval objective directly.
+
+**Data feasibility, measured from the HF API (not estimated):**
+- `logs/nuplan_val` = **225 logs, 775 arrow files, 336 GB** with all 8 cameras.
+- One representative log = 3.56 GB: lidar 654 MB · 8 cameras ~2.9 GB · labels/metadata ~21 MB.
+- Their documented `--exclude` keeps only `pcam_l0/f0/r0` ⇒ **~48 % of bytes** ⇒ **nuplan_val ≈ 161 GB**.
+- `nuplan_train` is substantially larger (nuPlan v1.1 train ≫ val); filtered, plausibly **~1–1.5 TB**.
+- Disk: **SeagateHub1 1.8 TB free**, storage 87 GB. So **val alone fits comfortably; train+val would nearly
+  fill the Seagate; train+val+PhysicalAI-AV does not fit.**
+- Possible further saving: the *latent* TransFuser feeds its BEV branch a learned latent, so lidar
+  (654 MB/log, ~18 % of bytes) may be unnecessary for this variant — **unverified**, their data doc says the
+  baselines read the lidar, so do not assume it.
+
+**The three readings of "go with it", and what each costs:**
+| path | cost | what we get |
+|---|---|---|
+| **A. Submit their checkpoint unchanged** | zero — image built and verified | ~1470 on our account, but it is their model, not our contribution |
+| **B. Finetune from `model_0014.pth`** | ~161 GB (val) → days of download + feature cache; 1 GPU is enough (their scripts derive batch from visible devices) | our own variant, **but we have no measured target to finetune toward** |
+| **C. Train from scratch in their framework** | 16 GPUs × 30 epochs + multi-TB | not feasible on one 24 GB Blackwell |
+
+**Cheapest real progress does not require training at all:** `--controller-gains` rides free with any image
+submission (no extra slot), the throughput margin is **58 %** (§6.49), and `CONTROLLER_TUNING.md` states the
+nonlinear MPC's lateral/longitudinal coupling is what turns imperfect trajectories into lateral error. Tuning
+gains *for their policy* is a genuine, cheap, organizer-sanctioned contribution measurable on d2gt.
+
+**Open question for the user:** whether to spend one of the 2 remaining slots submitting their unchanged
+checkpoint as a baseline-establishing calibration point. Argument for: it would verify our submission pipeline
+reproduces a known score, and lift our board position. Argument against: it is not our work and consumes a slot
+that an improved variant could use.

@@ -177,5 +177,10 @@ setsid nohup ~/alpasim-challenge/logs/run-eval.sh \
 
 ## Related
 
+**[MODEL.md](MODEL.md)** — full technical reference on the checkpoint itself: architecture, the 45 m
+route-conditioning recipe, training data and losses, and whether we could train it ourselves.
+
+## Related
+
 SETUP-NOTES §6.53 (the repos and what they are) · §6.54 (their submission volume vs our quota) ·
 §6.55 (this finding) · §6.49–§6.51 (the official result that prompted it)

@@ -15,7 +15,7 @@ _Last updated: 2026-08-31 16:00 IST_
 | Local (same 400 scenes as below, original preset) | 0.49 km at-fault dist, 7.0 % at-fault, progress 1.07 |
 
 **Throughput record for §1 (fetched 16:50):** `observed_wall_time_s 2265` vs `limit_wall_time_s 2485` → margin 220 s (**9 %**), passed. Every
-future candidate must not add more than ~9 % to official wall time — see `ROUTE-SELECTION-PLAN.md` §4b.
+future candidate must not add more than ~9 % to official wall time — see `archive/ROUTE-SELECTION-PLAN.md` §4b.
 
 ## 2. Candidate #2 (what we intend to submit next)
 
@@ -64,7 +64,7 @@ public leaderboard closes **2026-10-31**, final results **2026-11-15**. No quota
 
 ## 6. Next after candidate #2 is decided
 
-**Route-follower line (09-01/09-02):** implemented per `ROUTE-FOLLOWER-CONCEPT.md` (route_map v2 + follower + VaVAM speed cue).
+**Route-follower line (09-01/09-02):** implemented per `archive/ROUTE-FOLLOWER-CONCEPT.md` (route_map v2 + follower + VaVAM speed cue).
 Screens: F0 route-only = path thesis holds, no brake → front collisions; F1 min() = brake works, keep-cap cost 8 % progress;
 F1c cv = **best fair-seeded run: score proxy 0.893, at-fault 6, rear 0, corridor 4, wrong-lane 21, lateral 0.98 m, progress 1.011** —
 ties candidate #2's 0.858–0.907 seed bracket on the proxy, beats it on every path metric. **400-scene confirm FAILED the gate (09-02 17:35):** at-fault 18 vs 13 (+5, Boston 4→8), progress −3.1 %, proxy +0.008 — path metrics best-ever (corridor 23, lat 1.20) but the speed cue under-brakes at scale. **Candidate #2 stays the submission; follower parked pending a longitudinal fix** (SETUP-NOTES §6.24).
@@ -72,7 +72,7 @@ ties candidate #2's 0.858–0.907 seed bracket on the proxy, beats it on every p
 
 **Pivot 09-01 17:50 (user):** selection work parked (S1/S1b neutral on safety). Next line = **route-follower hybrid** — route geometry
 (accumulated over ticks, = recorded path on lane centres) fixes the lateral path; VaVAM only supplies the speed cue. Concept, references
-and validation ladder: `ROUTE-FOLLOWER-CONCEPT.md`. No training. First run F0 = route path + curvature-capped speed, no camera.
+and validation ladder: `archive/ROUTE-FOLLOWER-CONCEPT.md`. No training. First run F0 = route path + curvature-capped speed, no camera.
 
 
 **S1b `w_disc` sweep — done 09-01 17:04 (seed 1234, 100 scenes):** at-fault 6 / 6 / 5 / **4** and corridor 6 / 6 / 5 / 5 for w_disc 0 / 0.05 /
@@ -100,7 +100,7 @@ Cost: Drive mean **126 ms** (k=1: 103) = +22 %/call ≈ +0.5 % official wall; dr
 
 
 **Route-aware sample selection (B1+B4) + conditional slow-down (B2), never early termination (B7)** — full plan with staged gates in
-`ROUTE-SELECTION-PLAN.md` (written 2026-08-31 16:40, not implemented). Each stage through the same ladder, compared to **candidate #2**
+`archive/ROUTE-SELECTION-PLAN.md` (written 2026-08-31 16:40, not implemented). Each stage through the same ladder, compared to **candidate #2**
 as the baseline. Three exploration findings that reshape it: the route the driver gets starts **40 m ahead** (`route_start_offset_m: 40`),
 k flow samples come from **one batched call** (GPT trunk KV-cached), and the driver receives **no obstacle data** (brake must key on
 sample disagreement / curvature / failure, not on actors).

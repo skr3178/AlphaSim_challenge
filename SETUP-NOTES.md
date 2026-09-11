@@ -48,7 +48,7 @@ at-fault distance **0.51 → 1.11 km (2.2×)**, at-fault collisions **6 % → 3 
 dist_to_gt 3.40 → 2.16 m, lateral 1.84 → 1.33 m, wrong-lane 37 % → 29 %, progress 1.05 → 1.01 (drives at
 human speed instead of 5 % fast). Every metric improved. **This is the first validated submission
 candidate.** The submitted image and every team using the sample carry this bug
-- 🟢 **Fast eval preset validated 2026-08-31** — `dev_fast` (CAM_F0 only + no eval video): 7.4 s/scene vs ~13 s, identical benchmark (stock B on the same 300: 26 vs 27 at-fault incidents, 291/300 identical per-scene outcomes). Standard for all local evals; `strategy.md` has the tier ladder
+- 🟢 **Fast eval preset validated 2026-08-31** — `dev_fast` (CAM_F0 only + no eval video): 7.4 s/scene vs ~13 s, identical benchmark (stock B on the same 300: 26 vs 27 at-fault incidents, 291/300 identical per-scene outcomes). Standard for all local evals; `archive/strategy.md` has the tier ladder
 - 🟢 **VaVAM-L ruled out 2026-08-31** — on the same 300 scenes L+μP: 0.39 km at-fault, 8 % at-fault collisions (worse than stock B), and 3000/3000 `Drive` calls > 0.1 s (mean 107 ms) vs a 9.7 % official margin. Images deleted. Not a submission candidate
 - 🟢 **Singapore checked 2026-08-31** — submitted model on 100 one-north scenes: 2.90 km at-fault, 1 % at-fault, 0 offroad, progress 1.06. Left-hand traffic is not a failure mode; Singapore is the easiest slice (sparse traffic), drift is large (median 4.4 m) but consequence-free
 - 🟢 **VERIFIED — RISK RETIRED** — §4 Blackwell: the pinned `8.9;9.0+PTX` arch list **executes correctly on sm_120** inside the exact CUDA 12.4 base image. Measured, not predicted. **Do not bump the base image or the arch list** — the previously-proposed diff is unnecessary and would diverge from the competition environment for no gain
@@ -851,7 +851,7 @@ policy development), not environment.
 
 Leaderboard analysis (§ leaderboard snapshot in `leaderboard/SUMMARY.md`): the top 3 nuPlan teams all
 run VaVAM; the *stock* sample scores ~1587 vs ~1000 for the starter and ~1731 at the apparent cap.
-So VaVAM is the template. Checkpoint links: `VAVAM-CHECKPOINTS.md`.
+So VaVAM is the template. Checkpoint links: `archive/VAVAM-CHECKPOINTS.md`.
 
 | Step | Status |
 |---|---|
@@ -1245,7 +1245,7 @@ shapes + warm-up 3; gain 1.0 / seed off by default), 8.35 GiB; CPU check: `Appli
 
 ## 7. Next steps, in order
 
-> **The forward plan now lives in `strategy.md` §8** (fixes needed to compete locally, policy work in
+> **The forward plan now lives in `archive/strategy.md` §8** (fixes needed to compete locally, policy work in
 > evidence-ranked order, submission strategy). This section is kept for history.
 
 
@@ -1261,16 +1261,16 @@ Local environment is **done** (§6.5). What remains is competition-side:
    gtrs_dense) are reference points under `e2e_challenge/`.
 
    → **Start from VaVAM.** Rationale, evidence and the rejected alternatives are in
-   [`RANKING.md` §10](RANKING.md). Summary: it is the only sample that matches the driver
+   [`archive/RANKING.md` §10](archive/RANKING.md). Summary: it is the only sample that matches the driver
    API with no adapter; it is **pinhole-native and 2 Hz-native**, both of which are free wins
    on the nuPlan track specifically (the 546-line `rectification.py` and the plan-cache
    staleness are PAI-only concerns); its video pretraining survives MTGS novel viewpoints
    where open-loop NAVSIM models do not (`opendrivelab-org`'s 17-model sweep peaked at 1377
    vs VaVAM's 1587-1731); and the tuning surface is ~162 lines. **CarPlanner does not fit** —
    the driver API supplies no map and no agent tracks, so a privileged vector planner would
-   need a full perception stack built in front of it (`RANKING.md` §10.7).
+   need a full perception stack built in front of it (`archive/RANKING.md` §10.7).
 
-   What to optimise once it runs is [`RANKING.md` §3 and §9](RANKING.md): progress saturates
+   What to optimise once it runs is [`archive/RANKING.md` §3 and §9](archive/RANKING.md): progress saturates
    at 80%, and exactly three conditions zero a scene.
 4. Iterate locally: build policy image → `run_local_container.sh` → smoke test → metrics.
 5. When ready: push to ECR with a **specific tag** (`latest` rejected), `submit --track nuplan`.
@@ -1388,7 +1388,7 @@ Paired against stock B on the identical 400 scene ids (`local300-vavam` + `sg100
 Gate rule was "at-fault ≈ half, progress within a few %": at-fault −35 % (beyond the ±4/400 noise floor), progress −3 %. **Gate met.**
 Ship = push `alpasim-e2e-vavam-driver:submit-mup` + submit, on explicit go only (August quota expires 00:00 UTC Sept 1).
 
-**Exploration for the next round** (recorded in `ROUTE-SELECTION-PLAN.md`), three facts that change the design:
+**Exploration for the next round** (recorded in `archive/ROUTE-SELECTION-PLAN.md`), three facts that change the design:
 1. `route_start_offset_m: 40.0` in every challenge config → the route the driver sees spans 40–80 m ahead (≈10 finite waypoints,
    NaN-padded to 20). The 3 s prediction never overlaps it; `waypoints[0]` is not the ego's cross-track error. Scoring needs a bridged
    reference (Hermite from ego pose to route start).
@@ -1418,23 +1418,23 @@ So the announced Aug 31 – Sep 6 downtime closes the whole submission API. Cand
 |---|---|
 | Fix 1 (representative scene set) | **Done** — 400 scenes, 4 cities. Inventory + download in `EVAL-RUNBOOK.md` §1 |
 | Fix 2 (repeatable runs) | **Done** — `VAVAM_SEED` shipped in the A1 patch (2026-08-31 15:15) |
-| Fix 3 (per-scene official metrics) | **Blocked** — artifacts in a private S3 bucket; tracked as C4 in `strategy.md` §8 |
+| Fix 3 (per-scene official metrics) | **Blocked** — artifacts in a private S3 bucket; tracked as C4 in `archive/strategy.md` §8 |
 | Fast eval loop findings + exact YAML | `EVAL-RUNBOOK.md` §2-3 |
-| Policy work (P-series) | `strategy.md` §8 (as A/B/C/D + N + X rows) |
-| Submission strategy | `strategy.md` §6 |
-| Housekeeping | `strategy.md` §8 D-rows; practices in `EVAL-RUNBOOK.md` §4 |
-| Next round after candidate #2 | `ROUTE-SELECTION-PLAN.md` |
+| Policy work (P-series) | `archive/strategy.md` §8 (as A/B/C/D + N + X rows) |
+| Submission strategy | `archive/strategy.md` §6 |
+| Housekeeping | `archive/strategy.md` §8 D-rows; practices in `EVAL-RUNBOOK.md` §4 |
+| Next round after candidate #2 | `archive/ROUTE-SELECTION-PLAN.md` |
 
 **Doc set after consolidation** — one file per question:
 
 | File | Question it answers |
 |---|---|
 | `CURRENT-BEST.md` | What are we submitting, and against what baseline? |
-| `strategy.md` | What do we do next, and how do we decide? |
+| `archive/strategy.md` | What do we do next, and how do we decide? |
 | `EVAL-RUNBOOK.md` | How do I run a local evaluation? |
-| `RANKING.md` | Why does the score behave this way? |
+| `archive/RANKING.md` | Why does the score behave this way? |
 | `METRICS.md` | What does this term/metric mean? |
-| `ROUTE-SELECTION-PLAN.md` | How is the in-flight B1/B2/B4 change designed? (retire on ship) |
+| `archive/ROUTE-SELECTION-PLAN.md` | How is the in-flight B1/B2/B4 change designed? (retire on ship) |
 | `SETUP-NOTES.md` | What happened, and what broke? |
 
 ## 6.18 Defect 8 — silent inference fallback manufactured a complete, wrong run  [2026-09-01 14:10–14:30, peer session]

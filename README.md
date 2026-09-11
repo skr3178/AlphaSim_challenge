@@ -1,7 +1,7 @@
 # AlpaSim E2E Closed-Loop Challenge 2026 — team Lucifer AI (nuPlan track)
 
 Working notes, tooling and our submission-code changes. **Start with [CURRENT-BEST.md](CURRENT-BEST.md)** (what is submitted / staged,
-the eval standard, quota) and [ROUTE-SELECTION-PLAN.md](ROUTE-SELECTION-PLAN.md) (next round).
+the eval standard, quota), then [SETUP-NOTES.md](SETUP-NOTES.md) §6.48–§6.52 for the current state of play.
 
 | | |
 |---|---|
@@ -22,14 +22,15 @@ Commit discipline: `tools/snapshot.sh "what changed"` after every milestone, so 
 
 | File | Question it answers |
 |---|---|
-| [CURRENT-BEST.md](CURRENT-BEST.md) | **Start here.** What are we submitting, against what baseline, what's the quota? |
-| [strategy.md](strategy.md) | What do we do next, and how do we decide? (§8 = the ranked backlog) |
+| [CURRENT-BEST.md](CURRENT-BEST.md) | **Start here.** What is submitted / staged, against what baseline, what is the quota? |
+| [SETUP-NOTES.md](SETUP-NOTES.md) | The running log. Numbered §6.x sections, newest last — every result, defect and correction. |
 | [EVAL-RUNBOOK.md](EVAL-RUNBOOK.md) | How do I run a local evaluation? (scene sets, presets, launcher) |
-| [RANKING.md](RANKING.md) | Why does the score behave this way? (IRT/ZOIB, anchors, the asymmetry) |
 | [METRICS.md](METRICS.md) | What does this metric or abbreviation mean? |
-| [ROUTE-SELECTION-PLAN.md](ROUTE-SELECTION-PLAN.md) | How is the in-flight B1/B2/B4 change designed? (retire on ship) |
-| [SETUP-NOTES.md](SETUP-NOTES.md) | What happened, and what broke? (defects 0-7, every measurement) |
-| [CHECKPOINT-SURVEY.md](CHECKPOINT-SURVEY.md) · [VAVAM-CHECKPOINTS.md](VAVAM-CHECKPOINTS.md) | Model/checkpoint reference |
+| [LEADERBOARD-REVIEW.md](LEADERBOARD-REVIEW.md) | Post-reset board review and the next-submission recommendation (09-10). |
+| [ROBUSTNESS-PLAN.md](ROBUSTNESS-PLAN.md) | Proposed robustness work. Its trajectory-sanitiser premise is refuted (§6.52); its eval decision-support half stands. |
+| [SKR.md](SKR.md) | The user's own working notes. |
+| [archive/](archive/README.md) | Superseded plans and reference docs, with a note on why each was retired. |
+| [issues/](issues/) | Local mirror of all NVlabs/alpasim GitHub issues (`tools/sync-issues.sh` to refresh). |
 
 _`LOCAL-PLAN.md`, `SHARDS-RUNBOOK.md`, `STATUS.md`, `link.md` were merged into the above on 2026-09-01
 (backup in `.doc-backup-20260901/`)._

@@ -1,7 +1,7 @@
 # Metrics & abbreviations — AlpaSim nuPlan track
 
 Reference sheet. What decides the score, what is only diagnostic, and what every piece of
-shorthand in `strategy.md` / `RANKING.md` / `EVAL-RUNBOOK.md` / `SETUP-NOTES.md` means.
+shorthand in `archive/strategy.md` / `archive/RANKING.md` / `EVAL-RUNBOOK.md` / `SETUP-NOTES.md` means.
 
 Written 2026-08-31. Sources: `scene_score.py` and the proto (repo), DriveIRT docs
 (`navhard-docs/`), and the live leaderboard (`leaderboard/`).
@@ -53,7 +53,7 @@ team's per-scene results. Locally you compute the *input*, never the output.
    the recording does **not** fail (handled by timestep truncation)
 
 ⚠ **Unresolved:** DriveIRT §10 also lists "scene incompletion" as a zero, but the local code
-does not check it. See `strategy.md` **B7** — untested, and the sources conflict.
+does not check it. See `archive/strategy.md` **B7** — untested, and the sources conflict.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Everything needed to produce a comparable local number: which scenes exist, which preset to use,
 how to launch, and what the numbers mean. Method and measurements only — *what* to run next is
-`strategy.md` §8, *why* the score behaves as it does is `RANKING.md`, live state is `CURRENT-BEST.md`.
+`archive/strategy.md` §8, *why* the score behaves as it does is `archive/RANKING.md`, live state is `CURRENT-BEST.md`.
 
 Merged 2026-09-01 from `SHARDS-RUNBOOK.md` and `LOCAL-PLAN.md` (both retired).
 

@@ -65,3 +65,8 @@ WA-JEPA/
 *.pdf
 alpasim-latest/
 trees/
+
+# Upstream clones for reference (py123d / py123d_garage / their checkpoints) — not our code
+py123d/py123d_garage/
+py123d/py123d/
+py123d/checkpoints/

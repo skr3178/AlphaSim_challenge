@@ -2744,3 +2744,50 @@ tracks it faithfully (§6.47: steering commanded−achieved 0.010 rad, no oscill
 mechanism claim: recording-block confidence intervals (our 400 clips come from only 4 source recordings, so
 treating them as 400 independent units overstates significance — plausibly why +0.0434 looked solid and did not
 transfer), explicit public-suite coverage reporting, and no synthetic local PCS.
+
+## 6.53 py123d_garage — the board leader's code AND checkpoint are public, Apache-2.0 (09-11)
+
+Cloned to `py123d/` (gitignored): `py123d_garage` @ `288d34c` (v0.1.1, 19 MB), `py123d` @ `2a75cb6` (67 MB),
+and the HF checkpoint repo (474 MB).
+
+**Who they are.** `kesai-labs` publishes **all three** of: `drive-irt` (the algorithm that computes the
+leaderboard PCS), `py123d_garage` (self-described as *"the reference starting point for the Alpasim E2E Challenge
+2026"*), and the `ln2697` navhard-leaderboard docs that `mwatson-nvidia` linked in issue #133. They are also
+**`py123d-garage`, the team holding ranks 1–3** on the current nuPlan board.
+
+**🔑 The released checkpoint IS (at least) their rank-2/3 board entry.** The file is `model_0014.pth`; their board
+tags are `014-nuplan-0014-v1` (rank 2, **PCS 1470**) and `017-nuplan-0014-v1` (rank 3, **PCS 1456**). Rank 1 is
+`007-nuplan-0062-v1` — a `model_0062` that is **not** released. So a checkpoint scoring ~1460–1470 is public,
+against our **986**.
+
+**What it is** (`checkpoints/resnet34_v0.1.0/README.md`): camera-only **latent TransFuser, ResNet-34**, 248 MB.
+Inputs: **3 cameras (L/F/R) stitched to 1024×256, ego velocity, and ONE TARGET POINT 45 m ALONG THE ROUTE**.
+Output: 4 s trajectory at 0.5 s, with yaw. Trained on nuPlan + Physical AI AV train+val (nuPlan ~46 % per batch),
+2 stages × 15 epochs (perception pretrain with BEV-semantic + CenterNet aux heads, then planning posttrain).
+
+**Why this validates our diagnosis.** A 248 MB ResNet-34 imitation model beats a 1.58 GB world model by ~480 PCS.
+Their rank-2 entry has **d2gt 0.81** against our **1.85**, with a *lower* at-fault distance (1.72 vs our 1.08 is
+actually higher, but rank 1 sits at 0.87). The board pays for **tight trajectory imitation and progress**, not for
+world-modelling or caution — exactly what §6.51 concluded. Their route conditioning is also far more direct than
+ours: a continuous 45 m target point versus WA-JEPA's discrete LEFT/STRAIGHT/RIGHT command.
+
+**It ships a complete AlpaSim path**, already wired for our track:
+- `src/py123d_garage/evaluation/alpasim/` (driver + `evaluate.py`), `configs/cameras/nuplan_3cam.yaml`
+  (CAM_L0/F0/R0 at 1920×1080, 500 ms — the nuPlan contract), `configs/driver/garage_transfuser.yaml`
+- `scripts/evaluation/alpasim/latent_transfuser_nuplan.sh` — local nuPlan eval, preset
+  `+e2e_challenge_nuplan=dev +cameras=nuplan_3cam`, needs `ALPASIM_NUPLAN_ROOT` (we have 400 scenes of MTGS assets)
+- `scripts/alpasim_submission/{login_challenge,build_docker_image,smoke_test_image,submit_image}.sh` — the image
+  bakes one checkpoint + one sensor rig; **use `sensor_rig_0.yaml` (nuPlan) and `TRACK=nuplan`**
+- `lib/alpasim/tools/submission.Dockerfile`; there is even a `garage_vavam.yaml` driver config
+
+**Licence: Apache-2.0** on all three repos, and the checkpoint card is Apache-2.0. The challenge terms (§5)
+require the submission be Apache-2.0 licensable — this satisfies that. The nuPlan track requires publicly
+available training data; nuPlan and PhysicalAI-AV are public. So using it is permitted, and the project explicitly
+offers *"pretrained baselines to build on."*
+
+**HIGHEST-VALUE NEXT EXPERIMENT (no submission slot, no new data):** run this checkpoint on our own 400 scenes.
+We know its official standing (~1470) and ours (986). If our local 400 ALSO ranks it above WA-JEPA, our eval is
+sound and we simply selected wrongly; if our local 400 ranks it BELOW, our eval is actively misleading and must be
+rebuilt before any further model work. Either result is decisive, and it is the first time we can test our
+evaluation against a model with a known official score. Needs a 3-camera preset (we already have the pattern from
+`dev_fast2_wajepa`) and their driver container.

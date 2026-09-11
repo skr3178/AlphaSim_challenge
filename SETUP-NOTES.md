@@ -2912,3 +2912,38 @@ gains *for their policy* is a genuine, cheap, organizer-sanctioned contribution 
 checkpoint as a baseline-establishing calibration point. Argument for: it would verify our submission pipeline
 reproduces a known score, and lift our board position. Argument against: it is not our work and consumes a slot
 that an improved variant could use.
+
+## 6.57 CORRECTION to §6.54 — the submission-volume gap is NOT an organizer privilege (09-11)
+
+§6.54 concluded that py123d-garage's 11 September submissions against our 3/month quota were most economically
+explained by "an **organizer team** with elevated or unlimited quota". **That is refuted.** Counting every team
+across both post-reset boards:
+
+| team | entries | date span | organizer connection? |
+|---|---:|---|---|
+| py123d-garage | 11 | 09-04 → 09-08 | yes (drive-irt, reference impl) |
+| Host (NVIDIA baselines) | 10 | 09-01 → 09-09 | is the organizer |
+| **Alpain Autonomy** | **9** | **09-03 → 09-08** | **none known** |
+| **Lucifer AI (us)** | **1** | 09-10 | — |
+
+**Alpain Autonomy is an ordinary competitor with no organizer relationship and made 9 submissions — 6 of them on
+09-03 alone.** So high volume is not a py123d privilege; it is what every active team was doing in early
+September. The quota asymmetry is real but it is **not evidence of favouritism**, and §6.54's inference should be
+read as withdrawn.
+
+**What actually happened to us — and part of it is self-inflicted.** Our submission attempts:
+- 08-31 16:48 → `403 Competition status is CLOSED`
+- 09-04 ~05:30 → terms accepted, then `403 MAINTENANCE; image uploads are limited to organizer teams`
+- **09-04 → 09-10: we did not retry.** Six days during which both other teams were submitting freely.
+- 09-10 → open, we submitted once.
+
+So the window 09-04→09-08, when Alpain and py123d made **20 submissions between them**, was one we were locked
+out of at the start and then **simply failed to poll**. Whether the gate lifted hours after our 09-04 attempt is
+unknown — we never checked. That is an operational failure on our side, not an unfairness.
+
+**The quota reading is also uncertain.** Our `limits` reported "Monthly submission limit: 3" on 09-04, yet two
+teams exceeded that within September. Either the limit is per-track, or it was raised/unenforced during the
+soft-open, or it changed at the reset. **We do not know**, and should ask rather than infer.
+
+**Standing lesson:** when blocked by a transient API state, schedule a retry. The cost of not polling for six
+days was larger than any modelling decision we made in the same period.

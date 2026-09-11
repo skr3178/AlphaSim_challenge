@@ -2826,3 +2826,53 @@ running their public checkpoint through our own eval (§6.53): it is the one way
 **Not an accusation.** They released the rank-2/3 checkpoint publicly under Apache-2.0, which is the opposite of
 hoarding an advantage. If clarification is wanted, the channel is a GitHub issue phrased as a question; the
 organizers have answered such questions within hours. **Do not file anything without the user's explicit go.**
+
+## 6.55 ⚠️ OUR LOCAL EVAL IS INVERTED — proved with a known-good reference model (09-11)
+
+Ran **py123d_garage's public `model_0014.pth`** — the checkpoint behind their board ranks 2–3 (**official PCS
+~1470**) — through our own harness on the identical 400 scenes. Image `py123d-garage-alpasim:nuplan-0014`
+(their Dockerfile, `nvidia/cuda:12.8.1`, Blackwell-compatible), preset `dev_fast2_3cam` (CAM_L0/F0/R0),
+VALIDITY 400/400, **0 inference failures**, 1963 s wall (4.4 s/scene — ~1.7× faster than WA-JEPA).
+
+| model | mean | zeros | ones | at-fault | corridor | atf km | **d2gt** | OFFICIAL |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| starter (go-straight) | 0.6192 | 104 | 218 | 22 | 82 | 0.47 | 2.33 | — |
+| stock | 0.8493 | 60 | 335 | 22 | 38 | 0.58 | 3.57 | 1592 (old board) |
+| cand#2 | 0.8813 | 46 | 329 | 13 | 33 | 0.90 | 2.35 | — |
+| **WA-JEPA s2** | **0.9247** | 26 | 351 | 2 | 24 | 5.40 | 1.36 | **986 (rank 6)** |
+| **py123d-0014** | **0.8420** | 33 | 292 | 9 | 24 | 1.14 | **1.17** | **~1470 (rank 2)** |
+
+**THE RESULT: our local mean scene score ranks the known-better model BELOW the known-worse one, by
+−0.0827 at 4.81 σ.** Not noise — confidently, decisively backwards. Every selection we have made on mean scene
+score (including choosing WA-JEPA over cand#2 and spending a submission slot on it) rested on a metric that is
+*anti-correlated* with the official result on the one pair where we have ground truth.
+
+**Which local metrics order the pair correctly?** Only one of seven tested:
+
+| metric | py123d | WA-JEPA | verdict |
+|---|---:|---:|---|
+| mean scene score | 0.8420 | 0.9247 | INVERTED |
+| **`dist_to_gt_trajectory`** | **1.167** | **1.356** | ✅ **CORRECT** |
+| lateral_dist_to_gt | 0.977 | 0.961 | INVERTED |
+| clipped progress | 0.8345 | 0.9096 | INVERTED |
+| dist_traveled_m | 25.60 | 27.00 | INVERTED |
+| hard-failure rate | 0.0825 | 0.0650 | INVERTED |
+| fraction scoring 1.0 | 0.730 | 0.878 | INVERTED |
+
+**`dist_to_gt_trajectory` is the metric that transfers**, and it agrees with the official board's own ordering:
+official d2gt is py123d **0.77/0.81/1.18** (ranks 1–3), go-straight 1.18 (4–5), WA-JEPA **1.85** (6), policy5 2.30
+(7) — the board is almost perfectly ordered by tracking tightness, and our local d2gt reproduces the direction
+(py123d 1.17 < WA-JEPA 1.36). Note **lateral** d2gt does NOT work; it must be the full trajectory distance.
+
+**Local d2gt ranking of every arm we have** (lower = tighter): py123d **1.17** · WA-JEPA 1.36 · follower 2.07 ·
+starter 2.33 · **cand#2 2.35** · stock 3.57.
+
+**Consequences.**
+1. **Select on `dist_to_gt_trajectory`, not scene score.** This supersedes the open question in §6.49–§6.51.
+2. **cand#2 (d2gt 2.35) is NOT the right next submission** — it is barely better than the go-straight starter on
+   the only metric that transfers, and worse than WA-JEPA. §6.50/§6.51's recommendation is withdrawn.
+3. The route-follower (2.07) beats both our candidates on d2gt — the parked branch was aimed at the right target
+   and was killed by the wrong metric (§6.38 ranked it last on scene-score-derived IRT).
+4. **py123d's checkpoint is the strongest asset we hold**: Apache-2.0, 62M params, 4.4 s/scene, best d2gt of
+   anything we have run, and a known official score. Finetuning it (their docs give the recipe) targets the right
+   metric from the best starting point.

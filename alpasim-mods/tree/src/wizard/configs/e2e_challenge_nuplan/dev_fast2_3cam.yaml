@@ -1,0 +1,31 @@
+# @package _global_
+# LOCAL preset (not upstream): dev_fast2 concurrency with the three cameras the
+# py123d_garage latent TransFuser consumes (CAM_L0/F0/R0) — the same list as their
+# own src/py123d_garage/evaluation/alpasim/configs/cameras/nuplan_3cam.yaml.
+# The MTGS renderer rasterises all views internally either way; this only adds
+# 2x JPEG encode / gRPC / ASL volume over the 1-camera dev_fast2.
+#
+#   uv run alpasim_wizard +e2e_challenge_nuplan=dev_fast2_3cam nuplan_scenes=navtest_local400 wizard.log_dir=./runs/<name>
+defaults:
+  - dev_fast2
+  - _self_
+
+wizard:
+  run_name: "e2e_challenge_nuplan_dev_fast2_3cam"
+  description: "NuPlan local fast preset, 3 cameras for py123d_garage latent TransFuser (no video)"
+
+runtime:
+  simulation_config:
+    cameras:
+      - logical_id: CAM_L0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920
+      - logical_id: CAM_F0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920
+      - logical_id: CAM_R0
+        frame_interval_us: 500_000
+        height: 1080
+        width: 1920

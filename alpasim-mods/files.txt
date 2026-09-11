@@ -66,6 +66,7 @@ e2e_challenge/sample_submission_wajepa/wajepa_src/UPSTREAM_COMMIT
 e2e_challenge/sample_submission_wajepa/wajepa_src/utils/__init__.py
 e2e_challenge/sample_submission_wajepa/wajepa_src/utils/utils.py
 src/controller/pyproject.toml
+src/wizard/configs/e2e_challenge_nuplan/dev_fast2_3cam.yaml
 src/wizard/configs/e2e_challenge_nuplan/dev_fast2_wajepa.yaml
 src/wizard/configs/e2e_challenge_nuplan/dev_fast2.yaml
 src/wizard/configs/e2e_challenge_nuplan/dev_fast.yaml

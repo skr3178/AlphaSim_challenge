@@ -2791,3 +2791,38 @@ sound and we simply selected wrongly; if our local 400 ranks it BELOW, our eval 
 rebuilt before any further model work. Either result is decisive, and it is the first time we can test our
 evaluation against a model with a known official score. Needs a 3-camera preset (we already have the pattern from
 `dev_fast2_wajepa`) and their driver container.
+
+## 6.54 py123d-garage's submission volume vs our quota (09-11, factual record)
+
+Counted from the two post-reset board snapshots. **py123d-garage holds 11 entries, all submitted 09-04 → 09-08:**
+
+| track | n | dates |
+|---|---:|---|
+| nuPlan | 3 | 09-04 14:43, 09-07 00:27, 09-07 21:13 |
+| PAI | 8 | 09-04 11:03, 09-04 14:13, 09-06 23:54, 09-07 ×4 (09:09/12:19/15:32/20:41), 09-08 00:23 |
+
+**Our quota is 3 per month, team-wide** (`limits`: "Monthly submission limit: 3 / Submitted this month: 1 /
+Remaining this month: 2" — our single nuPlan submission decremented it). Eleven submissions inside one calendar
+month is inconsistent with that limit, and 8 on one track alone exceeds it even if the quota were per-track.
+
+**Suggestive but not conclusive on timing:** on **09-04** our `ecr-login` returned
+`403 "Competition is in MAINTENANCE; image uploads are limited to organizer teams"` (§6.45, ~05:30 UTC), and
+py123d-garage has three submissions timestamped later the same day (11:03, 14:13, 14:43 UTC). Maintenance may
+simply have lifted between those times — we did not re-poll — so this is **not** proof they uploaded during a
+window closed to us. The quota discrepancy stands on its own regardless.
+
+**Reading.** Combined with §6.53 (they author `drive-irt`, the scoring algorithm, and the challenge's
+self-described reference implementation, and co-author the AlpaSim simulator paper with the NVIDIA staff running
+the challenge), the most economical explanation is that the platform classifies them as an **organizer team with
+elevated or unlimited quota**. Note they nonetheless appear on the board as a *team*, ranked 1–3, not under the
+`Host` label NVIDIA uses for its own baselines.
+
+**What follows for us, practically:** their ranks reflect **~11 iterations in 5 days**; ours reflect one. In a
+competition where local eval does not predict official score (§6.49–§6.51), submission bandwidth *is* the
+optimisation loop, and we have roughly a quarter of theirs per month. That raises the value of (a) every
+submission we do spend, and (b) any local proxy we can make trustworthy. It is also the strongest argument yet for
+running their public checkpoint through our own eval (§6.53): it is the one way to buy calibration without a slot.
+
+**Not an accusation.** They released the rank-2/3 checkpoint publicly under Apache-2.0, which is the opposite of
+hoarding an advantage. If clarification is wanted, the channel is a GitHub issue phrased as a question; the
+organizers have answered such questions within hours. **Do not file anything without the user's explicit go.**

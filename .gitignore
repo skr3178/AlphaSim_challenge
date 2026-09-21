@@ -70,3 +70,8 @@ trees/
 py123d/py123d_garage/
 py123d/py123d/
 py123d/checkpoints/
+
+# GTRS local evaluation assets and third-party reference clone
+alpasim-upstream-20260916/
+alternative_models/**/artifacts/
+alternative_models/**/*.npy

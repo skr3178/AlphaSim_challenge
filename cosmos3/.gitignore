@@ -1,0 +1,9 @@
+*.log
+__pycache__/
+artifacts/
+checkpoint
+.venv
+vendor/*
+!vendor/pose_utils.py
+!vendor/README.md
+!vendor/LICENSE

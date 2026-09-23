@@ -58,6 +58,8 @@ No camera model on the lateral path. The lateral error is then just the lane-cen
 | what our tuning knobs were   | k, seed, gain, w_disc, consensus, guards    | speed profile, path smoothing, accumulation window                  |
 
 
+
+
 ## Route accumulation
 
 route (accumulated, lane-centre)  ──►  reference path            ◄── fixes the lateral path
@@ -69,17 +71,16 @@ camera model (VaVAM / lead guard) ──►  longitudinal choice only   ◄─�
                                           ▼
                                    trajectory → controller
 
-
-
-
 ## Model review
 
 All verified against the renderer and the rollout data. Answers in order:
 
 1. The orange/yellow line — the driver's own plan
+
 It's selected_trajectory: the trajectory our driver returned to the simulator on that tick, drawn with color="orange", linewidth=3 (data.py:488-497). It's re-drawn every frame from driver_responses.render_at_time(..., "now"), so you're watching the plan change tick by tick. (If we ever emitted debug_info.sampled_trajectories, the k candidates would appear as thin blue lines; we don't, so you only see the chosen one.) The same plan is projected into the camera image at the bottom — that's the orange curve on the road (overlay_plans_on_camera: true).
 
-2. The green — three different things, all green
+1. The green — three different things, all green
+
 element	style	meaning
 gt_linestring	thin solid green	the recorded human path for the whole clip — what dist_to_gt is measured against
 route	solid green	the map route the driver was sent (starts 40 m ahead)
@@ -88,7 +89,8 @@ ego_gt_ghost_polygon + EGO box	limegreen fill, α 0.3	the ego and the ghost of w
 other actors	black outline, α 0.1 (grey)	replayed traffic
 So in your screenshot: the dashed green line running up the middle is the ego→route connector, the green box at the bottom is our car, and the grey box overlapping its left side is the vehicle it hit.
 
-3. Inputs — and yes, your instinct about side/rear impacts is right
+1. Inputs — and yes, your instinct about side/rear impacts is right
+
 Our policy sees one camera: CAM_F0, rectified to a pinhole (fx = 1545 over 1920 px) → 63.7° horizontal FOV, ±32°. Plus ego pose history, rig-frame velocities/accelerations, and the route. No actor or obstacle data is ever sent — no boxes, no tracks.
 
 But the interface offers more than we use: the official challenge config requests 8 cameras — CAM_F0, L0/L1/L2, R0/R1/R2 and CAM_B0 (rear) (base.yaml:125-153). VaVAM is architecturally front-only, so we discard seven of them.
@@ -101,10 +103,12 @@ to the side (45–135°)	6
 behind (> 135°)	0
 6 of 13 were beyond ±32° — outside our camera's view at the moment of contact, including two lateral hits at +106° and −123° (vehicles overtaking on the left at 5–10 m/s; the scene in your screenshot is the +106° one). Note the scorer's rule: front bumper → collision_front, rear bumper → collision_rear, anything else → collision_lateral, and at-fault = front ∪ lateral. So drifting into a car alongside counts against us even though we couldn't see it. True rear-endings (us being hit from behind) are not at fault and happened only once in 400 scenes.
 
-4. Do the inputs evolve?
+1. Do the inputs evolve?
+
 Yes — a new image every 500 ms, fresh egomotion and a fresh route every tick. But the model doesn't accumulate any of it: VaVAM is called with a single frame (context length 1), so it has no memory between ticks. The driver keeps 32 poses, and the route follower was the only component that accumulated anything. The checkpoint was actually fine-tuned with an 8-frame context at 2 Hz — feeding it one frame is a train/test mismatch, which is exactly the B3 experiment still queued.
 
-5. Why the plan zig-zags
+1. Why the plan zig-zags
+
 Four compounding reasons, in order of contribution:
 
 The model is stochastic. VaVAM is a flow-matching sampler — every inference integrates from fresh Gaussian noise, so consecutive plans genuinely differ. We measured a 1.7 m median spread between 5 samples at the 3 s point.
@@ -113,7 +117,8 @@ Replanning every 500 ms with new noise, so the orange line jumps between ticks (
 Single-frame input (no temporal smoothing from history).
 The μP fix shrank the amplitude (the raw model output was 4× too large) but didn't remove the wander — it's inherent to sampling one draw per tick.
 
-6. The layout
+1. The layout
+
 Top-left — BEV, rotated so the ego always points up (rotate_map_to_ego: true), ego pinned at bottom-centre, 20 m radius. Shows map lanes/edges, replayed traffic (grey), the ego (green), the human path and route (green solid/dashed), and the driver's current plan (orange).
 Top-right — metrics table. Agg = the value aggregated over the rollout so far with its aggregation rule in brackets (max for collisions/drift, last for progress, min for progress_rel); Per-Ts = the value at the current frame. In your screenshot collision_lateral 1.00 (max) with Per-Ts 0.00 means the contact happened at a different timestep than the frame you're paused on. N/A on collision_at_fault is because it's a derived event, computed at aggregation time, not per-timestep.
 Bottom — CAM_F0, the actual image the model saw, with the same plan projected onto the road.
@@ -138,8 +143,7 @@ Is WA-JEPA substantially better? Unknown, and I'd resist the temptation to belie
 
 And we have a specific reason for caution from our own work: the route follower also produced excellent path metrics (lateral 1.20 m, best we'd ever seen) and still failed the 400-scene gate because it traded drift for collisions. Better tracking does not automatically convert into score. So the honest bar I gave that session is: WA-JEPA needs lateral error below our follower's (median 0.67 / p90 2.44 m) with at-fault no worse, and then it needs to survive 400 scenes. Until then it's a promising lead, not a better solution.
 
-
-# Results 12-arm 
+# Results 12-arm
 
 On the frozen 300 (stock vs μP, paired):
 
@@ -161,18 +165,18 @@ steps	ms/prediction
 encoder only (fixed floor)	59
 That works out to roughly 63 ms fixed plus ~77 ms per step.
 
-
-
 # ON board metrics
 
-	km between at-fault ↑	dist_to_gt ↓
+```
+km between at-fault ↑	dist_to_gt ↓
+```
+
 NaLa (#1, PCS 1715)	3.36	0.98
 메타몽 (#1=, PCS 1715)	3.09	2.65
 SymPhi (#3, 1690)	1.75	3.72
 us — stock, submitted (1592)	1.62	3.05
 candidate #2 (400 scenes, local)	0.90	2.35
 WA-JEPA 2-step (100 scenes, local)	> 2.58 (zero incidents in 2.58 km)	1.50
-
 
 ## Run score
 
@@ -184,7 +188,6 @@ route follower (best prior)	0.8926	10	6	4	16	0.67 / 2.29	109	18.2%
 WA-JEPA 12 steps	0.9667	3	0	3	8	0.63 / 1.76	1516	104%
 WA-JEPA 4 steps	0.9493	5	0	5	5	0.35 / 2.43	520	58.3%
 WA-JEPA 2 steps	0.9499	5	0	5	4	0.42 / 2.38	295	38.9%
-
 
 ## per scene score
 
@@ -201,7 +204,6 @@ per-city at-fault	6, 4, 3, 0	0, 1, 0, 1	✅
 latency	103 ms	290 ms	✅
 Per scene: 59 better, 35 worse, 306 identical — sign test p = 0.017. At-fault 13 → 2 across 400 scenes. My pre-registered prediction was "0–4 if the n=100 zero was real, 9–13 if it was noise." It's 2. The zero was real.
 
-
 ## Co-relation
 
 The quadrant table (split at the medians: 1.66 km, 1.24 m)
@@ -211,9 +213,7 @@ avgDist high + d2gt low	16	1096	1715	1
 avgDist low + d2gt high	16	1152	1601	1
 avgDist low + d2gt low	15	879	1009	0
 
-
 ## controller-gains
-
 
 runs/wajepa-s2-400/controller-config.yaml:
 
@@ -226,3 +226,22 @@ rel_front_steering_angle_weight	5.0	0–10
 rel_acceleration_weight	1.0	0–10
 idx_start_penalty	10	0–19
 Plus mpc_implementation: nonlinear, dt_mpc: 0.1.
+
+
+
+
+| Element                                     | Source                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------------------- |
+| Current ego pose and motion                 | Simulator—not inferred by the checkpoint                               |
+| Planned ego trajectory                      | **Py123d checkpoint**                                                  |
+| Object/road predictions                     | Auxiliary perception components; not a replacement for the ego planner |
+| Coordinate conversion and output formatting | Py123d’s supplied adapter, with our optional patches                   |
+| MPC controller                              | **AlpaSim’s supplied controller**                                      |
+| Evaluation metrics and scene score          | **AlpaSim’s evaluation package**                                       |
+| Private leaderboard PCS                     | Organizers’ server-side scoring—not our local evaluator                |
+
+
+
+
+
+

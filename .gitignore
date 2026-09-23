@@ -75,3 +75,11 @@ py123d/checkpoints/
 alpasim-upstream-20260916/
 alternative_models/**/artifacts/
 alternative_models/**/*.npy
+py123d/shortened_plan/artifacts/
+
+# Local model links, third-party clone, and optimizer databases
+/cosmos
+/cosmos3_fine_tuning/so101-cosmos-nano-policy/
+*.db
+*.db-shm
+*.db-wal

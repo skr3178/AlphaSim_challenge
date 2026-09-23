@@ -1,0 +1,185 @@
+{
+  "mode": "metadata_only_no_model_or_training",
+  "pilot": "/home/skr/Downloads/alpasim_challenge/cosmos3/pilots/real-driving-v1/manifest.json",
+  "pilot_manifest_sha256": "58d3c4e5c5fc28eb5329e3514a0812d18c50e069bcff6f9170d22ae36349186a",
+  "scenes": [
+    {
+      "scene_id": "2021.09.09.14.18.22_veh-48_00322_00895-8659bfccd4195fb6",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.09.09.14.18.22_veh-48_00322_00895-4b721ff0b7025f21",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.09.16.15.47.30_veh-45_01199_01391-09cd7b3746d65a79",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.09.16.15.47.30_veh-45_01199_01391-bf896d504b4356c7",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.10.06.07.26.10_veh-52_00422_00728-fb1d534ccf82583f",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.10.06.07.26.10_veh-52_01245_02064-b031e4b0aea8528b",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.05.25.15.59.03_veh-30_00625_00855-5c34deba76605c7b",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    },
+    {
+      "scene_id": "2021.05.25.15.59.03_veh-30_00625_00855-247ba5f9646c5528",
+      "basic_assets_present": true,
+      "config_unchanged": true,
+      "missing": []
+    }
+  ],
+  "excluded_same_log_scenes": 207,
+  "protected_suite_sizes": {
+    "py123d_validation": 150,
+    "py123d_validation_pool": 589,
+    "py123d_holdout": 313
+  },
+  "rules_status": "not_verified_by_preflight",
+  "training_ready": false,
+  "remaining_checks": [
+    "reviewed training-data permission",
+    "expert-aligned data export",
+    "actual-checkpoint feature probe",
+    "numerical/resource checks"
+  ],
+  "authentication_required_for_this_command": false,
+  "saved_log_inventory": [
+    {
+      "scene_id": "2021.09.09.14.18.22_veh-48_00322_00895-8659bfccd4195fb6",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.09.09.14.18.22_veh-48_00322_00895-8659bfccd4195fb6/7ad3e728-a527-11f1-815b-7bf8f4305fac/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 257430
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.09.09.14.18.22_veh-48_00322_00895-4b721ff0b7025f21",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.09.09.14.18.22_veh-48_00322_00895-4b721ff0b7025f21/668a479e-a527-11f1-815b-7bf8f4305fac/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 248593
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.09.16.15.47.30_veh-45_01199_01391-09cd7b3746d65a79",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.09.16.15.47.30_veh-45_01199_01391-09cd7b3746d65a79/2bffde48-a529-11f1-84d2-81f28dfbece3/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 334144
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.09.16.15.47.30_veh-45_01199_01391-bf896d504b4356c7",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.09.16.15.47.30_veh-45_01199_01391-bf896d504b4356c7/3ab3dbec-a529-11f1-815b-7bf8f4305fac/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 315859
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.10.06.07.26.10_veh-52_00422_00728-fb1d534ccf82583f",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.10.06.07.26.10_veh-52_00422_00728-fb1d534ccf82583f/5c47c5d4-a529-11f1-84d2-81f28dfbece3/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 370388
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.10.06.07.26.10_veh-52_01245_02064-b031e4b0aea8528b",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.10.06.07.26.10_veh-52_01245_02064-b031e4b0aea8528b/ca3dd632-a529-11f1-84d2-81f28dfbece3/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 367917
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.05.25.15.59.03_veh-30_00625_00855-5c34deba76605c7b",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.05.25.15.59.03_veh-30_00625_00855-5c34deba76605c7b/521c8330-a527-11f1-84d2-81f28dfbece3/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 341566
+      },
+      "first_observation_contract_present": true
+    },
+    {
+      "scene_id": "2021.05.25.15.59.03_veh-30_00625_00855-247ba5f9646c5528",
+      "saved_rollouts": 1,
+      "source": "/media/skr/storage/alpasim-runs/confirm400-mup-g100/rollouts/2021.05.25.15.59.03_veh-30_00625_00855-247ba5f9646c5528/4d26e1f4-a527-11f1-84d2-81f28dfbece3/rollout.asl",
+      "priming_end_us": 500000,
+      "first_time_now_us": 17000,
+      "first_time_query_us": 517000,
+      "front_camera": {
+        "start_us": 0,
+        "end_us": 17000,
+        "encoded_bytes": 356586
+      },
+      "first_observation_contract_present": true
+    }
+  ],
+  "saved_log_inventory_limit": "First-request metadata/byte presence only; no frame export, image decode or expert-pose alignment certification. First sorted rollout per scene, no scores consulted."
+}

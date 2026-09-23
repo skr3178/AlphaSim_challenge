@@ -42,6 +42,13 @@ mean.
 
 ## 1. Scene sets — inventory and download
 
+**2026-09-18 update:** the frozen development/validation/holdout selection and
+current asset/storage status are in [evaluation/README.md](evaluation/README.md).
+Use those fixed lists instead of regenerating a validation set from whichever
+assets are on disk. New validation assets have not yet been downloaded. The
+historical shard table and storage/download examples below are not current
+readiness or disk-budget checks.
+
 ### Shard inventory  (updated 2026-08-31)
 
 | Shard | Contents (inferred, verified for downloaded ones) | Size (tar / extracted) | Status |

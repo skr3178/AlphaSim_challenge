@@ -39,12 +39,15 @@ def recording_window(scene: str) -> str:
 def load_yaml(path: Path):
     # BaseLoader also reads MTGS CentralConfig's Python-tagged YAML as inert
     # mappings/scalars. Never instantiate Python objects from dataset metadata.
-    return yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+    try:
+        return yaml.load(path.read_text(), Loader=yaml.BaseLoader)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"{path}: invalid YAML") from exc
 
 
 def scene_ids(path: Path) -> list[str]:
     data = load_yaml(path)
-    scenes = data.get("scenes", {})
+    scenes = data.get("scenes", {}) if isinstance(data, dict) else {}
     ids = scenes.get("scene_ids") if isinstance(scenes, dict) else None
     if not isinstance(ids, list) or not ids or any(not isinstance(s, str) for s in ids):
         raise ValueError(f"{path}: expected non-empty scenes.scene_ids")
@@ -76,6 +79,29 @@ def load_manifest(path: Path | None = None) -> dict:
     for scene, meta in data["scenes"].items():
         if meta.get("source_log") != source_log(scene):
             raise ValueError(f"{path}: inconsistent source log for {scene}")
+    if not isinstance(data.get("suites"), dict) or not data["suites"]:
+        raise ValueError(f"{path}: missing suites")
+    for name, ids in data["suites"].items():
+        if (not isinstance(ids, list) or any(not isinstance(s, str) for s in ids)
+                or len(ids) != len(set(ids)) or set(ids) - data["scenes"].keys()):
+            raise ValueError(f"{path}: invalid scene membership in {name}")
+    # These four sets partition the public universe; compact validation is a
+    # subset of its pool. Enforce whole-source-log separation, not just clip IDs.
+    names = ("py123d_development400", "py123d_seen_log_extension",
+             "py123d_validation_pool", "py123d_holdout")
+    if all(name in data["suites"] for name in names):
+        parts = [set(data["suites"][name]) for name in names]
+        combined = set().union(*parts)
+        if sum(map(len, parts)) != len(combined) or combined != set(data["scenes"]):
+            raise ValueError(f"{path}: public split is not a disjoint partition")
+        if not set(data["suites"].get("py123d_validation", [])) <= parts[2]:
+            raise ValueError(f"{path}: validation scenes escape their pool")
+        log_sets = [{data["scenes"][s]["source_log"] for s in part}
+                    for part in (parts[0] | parts[1], parts[2], parts[3])]
+        if any(a & b for i, a in enumerate(log_sets) for b in log_sets[i + 1:]):
+            raise ValueError(f"{path}: source-log leakage across development/validation/holdout")
+        if set(data["suites"].get("py123d_public_full", [])) != combined:
+            raise ValueError(f"{path}: full suite differs from the public universe")
     return data
 
 

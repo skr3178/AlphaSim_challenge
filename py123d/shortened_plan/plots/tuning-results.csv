@@ -1,0 +1,38 @@
+suite,arm,scenes,score,collisions,corridor_exits,source
+Development 24,acceleration_weight_0p0,24,0.4671689034390907,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/acceleration_weight_0p0/result.json
+Development 24,acceleration_weight_0p5,24,0.5009824545605496,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/acceleration_weight_0p5/result.json
+Development 24,acceleration_weight_2p0,24,0.5460719251007341,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/acceleration_weight_2p0/result.json
+Development 24,baseline,24,0.4844925190602174,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/baseline/result.json
+Development 24,combo_1,24,0.5282724170681613,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/combo_1/result.json
+Development 24,combo_2,24,0.5508073858501613,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/combo_2/result.json
+Development 24,combo_3,24,0.5251670057673566,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/combo_3/result.json
+Development 24,combo_4,24,0.5391040717904609,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/combo_4/result.json
+Development 24,combo_5,24,0.5344628206142489,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/combo_5/result.json
+Development 24,combo_6,24,0.525245292490245,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/combo_6/result.json
+Development 24,heading_weight_0p25,24,0.4867710527113424,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/heading_weight_0p25/result.json
+Development 24,heading_weight_3p0,24,0.5118526305927821,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/heading_weight_3p0/result.json
+Development 24,heading_weight_8p0,24,0.4731696872277813,0.0,9.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/heading_weight_8p0/result.json
+Development 24,idx_start_penalty_0,24,0.46365882424336863,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/idx_start_penalty_0/result.json
+Development 24,idx_start_penalty_15,24,0.513776296458282,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/idx_start_penalty_15/result.json
+Development 24,idx_start_penalty_5,24,0.4992709724576538,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/idx_start_penalty_5/result.json
+Development 24,lat_position_weight_0p25,24,0.46527664125832424,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/lat_position_weight_0p25/result.json
+Development 24,lat_position_weight_3p0,24,0.5061994518509452,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/lat_position_weight_3p0/result.json
+Development 24,lat_position_weight_8p0,24,0.5087379516694849,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/lat_position_weight_8p0/result.json
+Development 24,long_position_weight_0p5,24,0.52504747851279,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/long_position_weight_0p5/result.json
+Development 24,long_position_weight_4p0,24,0.4604396023033322,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/long_position_weight_4p0/result.json
+Development 24,long_position_weight_8p0,24,0.4612001035255537,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/long_position_weight_8p0/result.json
+Development 24,predicted_yaw,24,0.4990257225775279,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/predicted_yaw/result.json
+Development 24,rel_acceleration_weight_0p1,24,0.4616881863807985,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/rel_acceleration_weight_0p1/result.json
+Development 24,rel_acceleration_weight_3p0,24,0.5152863668025324,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/rel_acceleration_weight_3p0/result.json
+Development 24,rel_acceleration_weight_8p0,24,0.5272905734411645,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/rel_acceleration_weight_8p0/result.json
+Development 24,rel_front_steering_angle_weight_0p5,24,0.5067499633733756,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/rel_front_steering_angle_weight_0p5/result.json
+Development 24,rel_front_steering_angle_weight_2p0,24,0.510815334543161,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/rel_front_steering_angle_weight_2p0/result.json
+Development 24,rel_front_steering_angle_weight_9p0,24,0.47354637856859405,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/rel_front_steering_angle_weight_9p0/result.json
+Development 24,repeat_baseline,24,0.4844925190602174,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/repeat_baseline/result.json
+Development 24,repeat_candidate_1,24,0.5508073858501613,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/repeat_candidate_1/result.json
+Development 24,repeat_candidate_2,24,0.5460719251007341,0.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/repeat_candidate_2/result.json
+Development 24,stabilization_0p05,24,0.4845148763773406,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/stabilization_0p05/result.json
+Development 24,stabilization_0p15,24,0.4829585703447796,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/stabilization_0p15/result.json
+Development 24,stabilization_0p25,24,0.48762702313819367,0.0,8.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/sweep-20260922T070619Z/stabilization_0p25/result.json
+Validation 141 (partial),baseline,141,0.8523217630056659,1.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/split-validation-20260922T100233Z/available144_baseline/simulation
+Validation 141 (partial),combo_2,141,0.8549332797420066,1.0,7.0,/home/skr/Downloads/alpasim_challenge/py123d/shortened_plan/artifacts/tuned141-20260922T104409Z/combo_2/result.json

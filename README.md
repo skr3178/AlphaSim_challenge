@@ -18,6 +18,32 @@ result images (`viz/`), the mirrored DriveIRT docs (`navhard-docs/`), and the un
 
 Commit discipline: `tools/snapshot.sh "what changed"` after every milestone, so each commit is a consistent restore point of notes + code.
 
+### Methods and findings — 2026-09-23
+
+Local scene scores are **not official PCS**; compare configurations only within
+the same scene set. Official figures below are the September 23 public-board
+reading, not promises of transfer or a new submission from us.
+
+| Method tried | Local result | Official / global result | Finding |
+|---|---|---|---|
+| WA-JEPA S2 / S4 | 400 scenes: **0.9247 / 0.9302** | Our S2: **1034 PCS**, scene score **0.7618** | Strong local scores did not transfer. |
+| Stock VaVAM / μP variant | 400 scenes: **0.8493 / 0.8813** | No matched official result reported here | Local improvement, not proof of private-set gains. |
+| Pretrained GTRS-Dense | 400 scenes: **0.8424**, 61 zero scores | Our tested adapter not submitted | No clear local advantage. |
+| Public Py123d-0014 | 400 scenes: **0.8420**; validation141: **0.8523** | Host `014-nuplan-0014-v1`: **1427 PCS**, **0.8479** scene score | Competitive reference; host submission is not our exact container. |
+| Frozen Cosmos + small driving head (early pilot) | Nine unseen-log examples: ADE **2.414 m**, versus **1.977 m** without visual features | Not submitted | Tiny open-loop pilot did not demonstrate a visual-feature advantage. |
+| Py123d MPC sweep (`combo_2`) | Development24: **0.4845 → 0.5508**; validation141: **0.8523 → 0.8549** | Not submitted | Development gains mostly disappeared. |
+| Py123d Optuna search + stabilization | 36 completed trials; development64 best: **0.8243 → 0.8643** | Not submitted | Trial 26 validation: **0.8567**; trial 21: **0.8553**. Both increased corridor exits **7 → 8**; collisions stayed at 1. |
+
+**Conclusion:** tuning produced small validation gains with a safety regression,
+not a clear upgrade. Prioritize a bounded route/prediction/execution audit before
+more search or training. A temporal neural adapter remains **proposed, not trained**.
+Validation141 excludes three route-generation failures and six untested scenes
+from the planned 150; the protected final holdout remains separate.
+
+Sources: [validation results](py123d/shortened_plan/VALIDATION-20260923.md),
+[Cosmos pilot](cosmos3/ABLATION-RESULT.md),
+[public leaderboard](https://nvidia-alpasime2eclosedloopchallenge2026.hf.space/#registration).
+
 ### Local 400-scene model comparison — 2026-09-21
 
 Saved aggregates use the same 400 scene IDs (`navtest_local400`) and configured
